@@ -1,0 +1,595 @@
+<!-- views/events/edit.ejs -->
+<div class="container" style="max-width: 860px; padding-bottom: 80px;">
+
+  <!-- Page header -->
+  <div class="page-header" style="text-align:left; padding-top:20px;" data-aos="fade-down">
+    <a href="/events/<%= event._id %>" class="btn-details" style="margin-bottom:16px; display:inline-flex;">
+      <i class="bi bi-arrow-left"></i> Back to Event
+    </a>
+    <div class="section-label">Admin Panel</div>
+    <h1 class="page-title" style="font-size:clamp(1.6rem,3.5vw,2.2rem);">Edit Event</h1>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 1 — EVENT DETAILS
+  ════════════════════════════════ -->
+  <div class="edit-section-card" data-aos="fade-up">
+    <div class="edit-section-header">
+      <div class="edit-section-icon">📋</div>
+      <div>
+        <div class="edit-section-title">Event Details</div>
+        <div class="edit-section-sub">Title, description, dates and banner</div>
+      </div>
+    </div>
+
+    <form action="/events/edit/<%= event._id %>" method="POST" enctype="multipart/form-data">
+
+      <div class="edit-field-group">
+        <label class="form-label-custom">Event Title <span style="color:#c0392b;">*</span></label>
+        <input type="text" name="title" class="form-control-custom" value="<%= event.title %>" required>
+      </div>
+
+      <div class="edit-field-group">
+        <label class="form-label-custom">Short Description <span style="color:#c0392b;">*</span></label>
+        <textarea name="shortDescription" class="form-control-custom" rows="2" required><%= event.shortDescription %></textarea>
+      </div>
+
+      <div class="edit-field-group">
+        <label class="form-label-custom">Full Description <span style="color:#c0392b;">*</span></label>
+        <textarea name="description" class="form-control-custom" rows="4" required><%= event.description %></textarea>
+      </div>
+
+      <div class="edit-field-group">
+        <label class="form-label-custom">About</label>
+        <textarea name="about" class="form-control-custom" rows="3"><%= event.about %></textarea>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="edit-field-group">
+          <label class="form-label-custom">Start Date <span style="color:#c0392b;">*</span></label>
+          <input type="date" name="startDate" class="form-control-custom" value="<%= event.startDate.toISOString().split('T')[0] %>" required>
+        </div>
+        <div class="edit-field-group">
+          <label class="form-label-custom">End Date <span style="color:#c0392b;">*</span></label>
+          <input type="date" name="endDate" class="form-control-custom" value="<%= event.endDate.toISOString().split('T')[0] %>" required>
+        </div>
+      </div>
+
+      <div class="edit-field-group">
+        <label class="form-label-custom">Replace Banner Image</label>
+        <% if (event.bannerImage) { %>
+          <div style="margin-bottom:10px;">
+            <img src="<%= event.bannerImage %>" style="max-height:120px; border-radius:var(--r-md); border:1px solid var(--border-l);">
+            <div style="font-size:0.75rem; color:var(--tx-muted); margin-top:4px;">Current banner</div>
+          </div>
+        <% } %>
+        <input type="file" name="bannerImage" class="form-control-custom" accept="image/*">
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
+        <button type="submit" class="btn-register">
+          <i class="bi bi-floppy"></i> Save Event Details
+        </button>
+        <a href="/events/<%= event._id %>" class="btn-details">Cancel</a>
+      </div>
+
+    </form>
+  </div>
+
+
+  <!-- ═══════════════════════════════
+       SECTION 2 — ADD NEW SUBEVENT
+  ════════════════════════════════ -->
+  <div class="edit-section-card" data-aos="fade-up" style="border-left: 4px solid var(--br);">
+    <div class="edit-section-header">
+      <div class="edit-section-icon" style="background:rgba(166,124,82,0.15);">➕</div>
+      <div>
+        <div class="edit-section-title">Create New Sub-Event</div>
+        <div class="edit-section-sub">Add a session, workshop or category for this event</div>
+      </div>
+    </div>
+
+    <form action="/events/<%= event._id %>/subevents/add" method="POST" enctype="multipart/form-data">
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="edit-field-group" style="grid-column:1/-1;">
+          <label class="form-label-custom">Sub-Event Title <span style="color:#c0392b;">*</span></label>
+          <input type="text" name="title" class="form-control-custom" placeholder="e.g. AI Workshop, Paper Presentation" required>
+        </div>
+
+        <div class="edit-field-group" style="grid-column:1/-1;">
+          <label class="form-label-custom">Description</label>
+          <textarea name="description" class="form-control-custom" rows="2" placeholder="Brief description of this session"></textarea>
+        </div>
+
+        <div class="edit-field-group">
+          <label class="form-label-custom">Max Participants</label>
+          <input type="number" name="maxParticipants" class="form-control-custom" placeholder="Leave empty = unlimited">
+        </div>
+
+        <div class="edit-field-group">
+          <label class="form-label-custom">Event Type</label>
+          <select name="isGroupEvent" class="form-control-custom">
+            <option value="false">👤 Individual</option>
+            <option value="true">👥 Team / Group</option>
+          </select>
+        </div>
+
+        <div class="edit-field-group">
+          <label class="form-label-custom">Min Team Size</label>
+          <input type="number" name="minTeamSize" class="form-control-custom" value="1" min="1">
+        </div>
+
+        <div class="edit-field-group">
+          <label class="form-label-custom">Max Team Size</label>
+          <input type="number" name="maxTeamSize" class="form-control-custom" value="1" min="1">
+        </div>
+
+        <div class="edit-field-group" style="grid-column:1/-1;">
+          <label class="form-label-custom">QR Code Image (for payment)</label>
+          <input type="file" name="qrImage" class="form-control-custom" accept="image/*">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-register" style="margin-top:6px;">
+        <i class="bi bi-plus-circle"></i> Create Sub-Event
+      </button>
+
+    </form>
+  </div>
+
+
+  <!-- ═══════════════════════════════
+       SECTION 3 — EXISTING SUBEVENTS
+  ════════════════════════════════ -->
+  <% if (!subEvents || subEvents.length === 0) { %>
+    <div class="gallery-empty" data-aos="fade-up">
+      <div class="gallery-empty-icon">🧩</div>
+      <p>No sub-events yet. Create one above.</p>
+    </div>
+  <% } %>
+
+  <% if (subEvents && subEvents.length > 0) { %>
+    <div data-aos="fade-up" style="margin-bottom:8px;">
+      <div class="section-label">Existing Sub-Events</div>
+      <h2 class="page-title" style="font-size:1.4rem; margin:0;">
+        <%= subEvents.length %> Session<%= subEvents.length > 1 ? 's' : '' %> Created
+      </h2>
+    </div>
+
+    <% subEvents.forEach(function(sub, si) { %>
+
+      <!-- Each subevent gets a clearly bordered card with colored top accent -->
+      <div
+        id="subevent-<%= sub._id %>"
+        class="subevent-master-card"
+        data-aos="fade-up"
+        data-aos-delay="<%= si * 60 %>"
+      >
+
+        <!-- Subevent card title bar -->
+        <div class="subevent-title-bar">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="subevent-number"><%= si + 1 %></div>
+            <div>
+              <div class="subevent-name"><%= sub.title %></div>
+              <div style="font-size:0.75rem; color:var(--tx-muted); margin-top:2px;">
+                <%= sub.isGroupEvent ? '👥 Team Event' : '👤 Individual' %>
+                <% if (sub.maxParticipants) { %> · Max <%= sub.maxParticipants %><% } %>
+                <% if (sub.formFields && sub.formFields.length > 0) { %> · <%= sub.formFields.length %> form field<%= sub.formFields.length > 1 ? 's' : '' %><% } %>
+              </div>
+            </div>
+          </div>
+          <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem; padding:5px 12px; flex-shrink:0;">
+            <i class="bi bi-people"></i> Registrations
+          </a>
+        </div>
+
+        <!-- ── Part A: Edit Sub-Event Settings ── -->
+        <div class="subevent-part">
+          <div class="subevent-part-label">
+            <i class="bi bi-gear"></i> Settings
+          </div>
+
+          <form action="/subevents/<%= sub._id %>/edit" method="POST" enctype="multipart/form-data">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+
+              <div class="edit-field-group" style="grid-column:1/-1;">
+                <label class="form-label-custom">Title</label>
+                <input type="text" name="title" class="form-control-custom" value="<%= sub.title %>" required>
+              </div>
+
+              <div class="edit-field-group" style="grid-column:1/-1;">
+                <label class="form-label-custom">Description</label>
+                <textarea name="description" class="form-control-custom" rows="2"><%= sub.description || '' %></textarea>
+              </div>
+
+              <div class="edit-field-group">
+                <label class="form-label-custom">Max Participants</label>
+                <input type="number" name="maxParticipants" class="form-control-custom" value="<%= sub.maxParticipants || '' %>" placeholder="Unlimited">
+              </div>
+
+              <div class="edit-field-group">
+                <label class="form-label-custom">Event Type</label>
+                <select name="isGroupEvent" class="form-control-custom">
+                  <option value="false" <%= !sub.isGroupEvent ? 'selected' : '' %>>👤 Individual</option>
+                  <option value="true"  <%= sub.isGroupEvent  ? 'selected' : '' %>>👥 Team / Group</option>
+                </select>
+              </div>
+
+              <div class="edit-field-group">
+                <label class="form-label-custom">Min Team Size</label>
+                <input type="number" name="minTeamSize" class="form-control-custom" value="<%= sub.minTeamSize || 1 %>" min="1">
+              </div>
+
+              <div class="edit-field-group">
+                <label class="form-label-custom">Max Team Size</label>
+                <input type="number" name="maxTeamSize" class="form-control-custom" value="<%= sub.maxTeamSize || 1 %>" min="1">
+              </div>
+
+            </div>
+
+            <!-- Toggles -->
+            <div style="display:flex; flex-wrap:wrap; gap:12px; margin:14px 0;">
+              <label class="toggle-pill">
+                <input type="checkbox" name="enableTeamMembers" <%= sub.enableTeamMembers ? 'checked' : '' %>>
+                <span class="toggle-track"></span>
+                Enable Team Member Input
+              </label>
+              <label class="toggle-pill">
+                <input type="checkbox" name="requirePaymentScreenshot" <%= sub.requirePaymentScreenshot ? 'checked' : '' %>>
+                <span class="toggle-track"></span>
+                Require Payment Screenshot
+              </label>
+            </div>
+
+            <!-- QR Image -->
+            <div class="edit-field-group">
+              <label class="form-label-custom">QR Code Image</label>
+              <% if (sub.qrImage) { %>
+                <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                  <img src="<%= sub.qrImage %>" style="width:48px; height:48px; object-fit:contain; border-radius:var(--r-sm); border:1px solid var(--border-l);">
+                  <span style="font-size:0.78rem; color:#27ae60; font-weight:600;">✓ QR uploaded</span>
+                </div>
+              <% } %>
+              <input type="file" name="qrImage" class="form-control-custom" accept="image/*">
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="submit" class="btn-register" style="padding:8px 18px; font-size:0.85rem;">
+                <i class="bi bi-floppy"></i> Save Settings
+              </button>
+              <form action="/subevents/<%= sub._id %>/delete" method="POST" onsubmit="return confirm('Delete this sub-event and all its registrations?')" style="margin:0;">
+                <button type="submit" class="btn-admin-danger" style="font-size:0.85rem;">
+                  <i class="bi bi-trash3"></i> Delete Sub-Event
+                </button>
+              </form>
+            </div>
+
+          </form>
+        </div>
+
+
+        <!-- ── Part B: Form Builder ── -->
+        <div class="subevent-part" style="border-top:1px dashed var(--border-l);">
+          <div class="subevent-part-label">
+            <i class="bi bi-card-list"></i> Registration Form Fields
+          </div>
+
+          <!-- Existing fields -->
+          <% if (sub.formFields && sub.formFields.length > 0) { %>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+              <% sub.formFields.slice().sort(function(a,b){ return a.order - b.order; }).forEach(function(field) { %>
+                <div class="field-chip">
+                  <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+                    <span class="field-type-badge field-type-<%= field.type %>"><%= field.type %></span>
+                    <div style="min-width:0;">
+                      <div style="font-weight:600; font-size:0.88rem; color:var(--tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        <%= field.label %>
+                        <% if (field.required) { %><span style="color:#c0392b; margin-left:3px;">*</span><% } %>
+                      </div>
+                      <% if (field.options && field.options.length > 0) { %>
+                        <div style="font-size:0.72rem; color:var(--tx-muted);">Options: <%= field.options.join(' · ') %></div>
+                      <% } %>
+                    </div>
+                  </div>
+                  <form action="/subevents/<%= sub._id %>/fields/<%= field._id %>/delete" method="POST" style="margin:0;">
+                    <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--tx-muted);padding:4px 6px;border-radius:var(--r-sm);transition:color 0.2s;" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='var(--tx-muted)'">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </form>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <p style="font-size:0.85rem; color:var(--tx-muted); font-style:italic; margin-bottom:14px;">No fields yet — add your first field below.</p>
+          <% } %>
+
+          <!-- Add new field form -->
+          <!-- anchor so page scrolls back here after submit -->
+          <div id="add-field-<%= sub._id %>"></div>
+          <div class="add-field-box">
+            <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--br); margin-bottom:12px;">
+              <i class="bi bi-plus-circle"></i> Add New Field
+            </div>
+
+            <form action="/subevents/<%= sub._id %>/fields/add" method="POST">
+              <!-- hidden anchor so redirect goes back here -->
+              <input type="hidden" name="_anchor" value="subevent-<%= sub._id %>">
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+
+                <div class="edit-field-group" style="grid-column:1/-1;">
+                  <label class="form-label-custom">Field Label <span style="color:#c0392b;">*</span></label>
+                  <input type="text" name="label" class="form-control-custom" placeholder="e.g. Full Name, College, Branch" required>
+                </div>
+
+                <div class="edit-field-group">
+                  <label class="form-label-custom">Field Type <span style="color:#c0392b;">*</span></label>
+                  <select name="type" class="form-control-custom" id="typeSelect-<%= sub._id %>" required>
+                    <option value="text">Text (single line)</option>
+                    <option value="textarea">Textarea (multi-line)</option>
+                    <option value="dropdown">Dropdown</option>
+                    <option value="checkbox">Checkbox (multi-select)</option>
+                    <option value="file">File Upload</option>
+                  </select>
+                </div>
+
+                <div class="edit-field-group">
+                  <label class="form-label-custom">Placeholder</label>
+                  <input type="text" name="placeholder" class="form-control-custom" placeholder="Optional hint text">
+                </div>
+
+                <div class="edit-field-group" id="optionsBox-<%= sub._id %>" style="display:none; grid-column:1/-1;">
+                  <label class="form-label-custom">Options <span style="color:#c0392b;">*</span></label>
+                  <input type="text" name="options" class="form-control-custom" placeholder="Option1, Option2, Option3">
+                  <div style="font-size:0.72rem; color:var(--tx-muted); margin-top:4px;">Separate options with commas</div>
+                </div>
+
+              </div>
+
+              <label class="toggle-pill" style="margin:10px 0 14px;">
+                <input type="checkbox" name="required">
+                <span class="toggle-track"></span>
+                Required field
+              </label>
+
+              <button type="submit" class="btn-register" style="padding:9px 20px; font-size:0.85rem;">
+                <i class="bi bi-floppy"></i> Save Field
+              </button>
+
+            </form>
+          </div>
+
+        </div>
+        <!-- end Part B -->
+
+      </div>
+      <!-- end subevent-master-card -->
+
+    <% }); %>
+  <% } %>
+
+</div>
+
+
+<style>
+  /* ── Section cards ── */
+  .edit-section-card {
+    background: var(--cream-alt);
+    border: 1px solid var(--border-l);
+    border-radius: var(--r-lg);
+    padding: clamp(20px,3vw,32px);
+    margin-bottom: 24px;
+  }
+  .edit-section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-l);
+  }
+  .edit-section-icon {
+    width: 44px; height: 44px;
+    border-radius: var(--r-md);
+    background: rgba(166,124,82,0.10);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+  .edit-section-title { font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--tx); }
+  .edit-section-sub   { font-size:0.78rem; color:var(--tx-muted); margin-top:2px; }
+
+  /* ── Field group ── */
+  .edit-field-group { margin-bottom: 14px; }
+  .edit-field-group:last-child { margin-bottom: 0; }
+
+  /* ── Sub-event master card ── */
+  .subevent-master-card {
+    background: var(--cream-alt);
+    border: 2px solid var(--br);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 20px rgba(166,124,82,0.10);
+  }
+
+  /* Title bar at top of each subevent */
+  .subevent-title-bar {
+    background: linear-gradient(135deg, var(--br), var(--br-deep));
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .subevent-number {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  .subevent-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #fff;
+  }
+
+  /* Subevent part sections */
+  .subevent-part {
+    padding: clamp(16px,2.5vw,24px);
+  }
+  .subevent-part-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--br);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ── Field chip ── */
+  .field-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--cream);
+    border: 1px solid var(--border-l);
+    border-radius: var(--r-md);
+    transition: border-color 0.2s;
+  }
+  .field-chip:hover { border-color: var(--br); }
+
+  .field-type-badge {
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .field-type-text      { background:rgba(102,126,234,0.12); color:#4a5bbf; }
+  .field-type-textarea  { background:rgba(102,126,234,0.12); color:#4a5bbf; }
+  .field-type-dropdown  { background:rgba(166,124,82,0.12); color:var(--br); }
+  .field-type-checkbox  { background:rgba(39,174,96,0.12);  color:#27ae60; }
+  .field-type-file      { background:rgba(192,57,43,0.10);  color:#c0392b; }
+
+  /* ── Add field box ── */
+  .add-field-box {
+    background: rgba(166,124,82,0.04);
+    border: 1.5px dashed rgba(166,124,82,0.30);
+    border-radius: var(--r-md);
+    padding: 18px;
+  }
+
+  /* ── Toggle pill ── */
+  .toggle-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--tx-mid);
+    padding: 6px 12px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--border-l);
+    background: var(--cream);
+    user-select: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .toggle-pill:has(input:checked) {
+    border-color: var(--br);
+    background: rgba(166,124,82,0.07);
+    color: var(--br);
+  }
+  .toggle-pill input { display: none; }
+  .toggle-track {
+    width: 28px; height: 16px;
+    border-radius: 8px;
+    background: var(--border-l);
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    top: 2px; left: 2px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle-pill:has(input:checked) .toggle-track { background: var(--br); }
+  .toggle-pill:has(input:checked) .toggle-track::after { transform: translateX(12px); }
+
+  /* dark mode */
+  body.dark-mode .edit-section-card,
+  body.dark-mode .subevent-master-card { background: var(--dk-surface); border-color: var(--border-d); }
+  body.dark-mode .add-field-box { background: rgba(255,255,255,0.03); }
+  body.dark-mode .field-chip { background: var(--dk-bg); }
+  body.dark-mode .toggle-pill { background: var(--dk-surface); }
+</style>
+
+
+<script>
+  // Show/hide options box based on field type
+  document.querySelectorAll('[id^="typeSelect-"]').forEach(function(select) {
+    var subId = select.id.replace('typeSelect-', '');
+    var box = document.getElementById('optionsBox-' + subId);
+
+    function toggleOptions() {
+      if (select.value === 'dropdown' || select.value === 'checkbox') {
+        box.style.display = 'block';
+        box.style.gridColumn = '1/-1';
+      } else {
+        box.style.display = 'none';
+      }
+    }
+
+    select.addEventListener('change', toggleOptions);
+    toggleOptions(); // run on load
+  });
+
+  // ── Scroll anchor fix ──
+  // After "Save Field" submits, server redirects to /events/edit/:id
+  // We store the last-used subevent ID so we can scroll back to it
+  document.querySelectorAll('.add-field-box form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      var anchor = form.querySelector('[name="_anchor"]');
+      if (anchor) {
+        sessionStorage.setItem('editScrollAnchor', anchor.value);
+      }
+    });
+  });
+
+  // On page load, if we stored an anchor, scroll to it
+  window.addEventListener('load', function() {
+    var anchor = sessionStorage.getItem('editScrollAnchor');
+    if (anchor) {
+      sessionStorage.removeItem('editScrollAnchor');
+      var el = document.getElementById(anchor);
+      if (el) {
+        setTimeout(function() {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
+    }
+  });
+</script>

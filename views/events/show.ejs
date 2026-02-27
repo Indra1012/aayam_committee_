@@ -1,0 +1,319 @@
+<!-- views/events/show.ejs -->
+<div class="container my-5">
+  <div class="event-detail-content">
+
+    <!-- Banner -->
+    <% if (event.bannerImage) { %>
+      <div class="event-detail-banner" data-aos="fade-down" style="position:relative; overflow:hidden; border-radius:var(--r-lg); margin-bottom:32px;">
+        <img src="<%= event.bannerImage %>" alt="<%= event.title %>" style="width:100%; max-height:420px; object-fit:cover; display:block;">
+        <% if (isPast) { %>
+          <div style="position:absolute; top:16px; right:16px;">
+            <span class="badge-completed" style="font-size:0.8rem; padding:6px 14px;">Completed</span>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
+
+    <!-- Admin edit button -->
+    <% if (user && (user.role === 'admin' || user.role === 'superadmin')) { %>
+      <div class="mb-3" data-aos="fade-up">
+        <a href="/events/edit/<%= event._id %>" class="btn-details">
+          <i class="bi bi-pencil-square"></i> Edit Event
+        </a>
+      </div>
+    <% } %>
+
+    <!-- ── Event title & meta ── -->
+    <div data-aos="fade-up" data-aos-delay="60" style="margin-bottom:28px;">
+
+      <% if (!event.bannerImage && isPast) { %>
+        <span class="badge-completed" style="margin-bottom:10px; display:inline-block;">Completed</span>
+      <% } %>
+
+      <h1 style="
+        font-family: var(--font-display);
+        font-size: clamp(2rem,5vw,3.2rem);
+        font-weight: 900;
+        color: var(--tx);
+        line-height: 1.12;
+        margin-bottom: 14px;
+        letter-spacing: -0.5px;
+      "><%= event.title %></h1>
+
+      <% if (event.startDate && event.endDate) { %>
+        <div style="display:inline-flex; align-items:center; gap:8px; padding:7px 16px; background:rgba(166,124,82,0.08); border:1px solid rgba(166,124,82,0.2); border-radius:var(--r-full); margin-bottom:20px;">
+          <i class="bi bi-calendar3" style="color:var(--br);"></i>
+          <span style="font-size:0.88rem; font-weight:600; color:var(--tx-mid);">
+            <% if (new Date(event.startDate).toDateString() === new Date(event.endDate).toDateString()) { %>
+              <%= new Date(event.startDate).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) %>
+            <% } else { %>
+              <%= new Date(event.startDate).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) %> → <%= new Date(event.endDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) %>
+            <% } %>
+          </span>
+        </div>
+      <% } %>
+
+      <!-- Description -->
+      <p style="
+        font-size: clamp(1rem,1.6vw,1.12rem);
+        color: var(--tx-mid);
+        line-height: 1.9;
+        margin-bottom: 18px;
+        max-width: 780px;
+      "><%= event.description %></p>
+
+      <% if (event.about) { %>
+        <div style="
+          background: rgba(166,124,82,0.05);
+          border-left: 3px solid var(--br);
+          border-radius: 0 var(--r-md) var(--r-md) 0;
+          padding: 16px 20px;
+          margin-bottom: 20px;
+          max-width: 780px;
+        " data-aos="fade-up">
+          <p style="font-size:clamp(0.93rem,1.4vw,1.03rem); color:var(--tx-mid); line-height:1.85; margin:0;">
+            <%= event.about %>
+          </p>
+        </div>
+      <% } %>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         SUB-EVENTS / REGISTRATION SECTION
+         Shown for UPCOMING events + admin on PAST events
+    ════════════════════════════════════════ -->
+    <% var isAdmin = user && (user.role === 'admin' || user.role === 'superadmin'); %>
+    <% var hasSubEvents = subEvents && subEvents.length > 0; %>
+
+    <% if (hasSubEvents && (!isPast || isAdmin)) { %>
+
+      <div class="detail-section" data-aos="fade-up">
+
+        <h2 class="detail-section-title">
+          <% if (isPast) { %>
+            🗂 Sessions & Registrations
+          <% } else { %>
+            📝 Register for Sessions
+          <% } %>
+        </h2>
+
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          <% subEvents.forEach(function(sub) { %>
+
+            <div style="
+              background: var(--cream-alt);
+              border: 1px solid var(--border-l);
+              border-radius: var(--r-md);
+              padding: 16px 18px;
+              transition: border-color 0.22s, box-shadow 0.22s;
+            " onmouseover="this.style.borderColor='var(--br)'; this.style.boxShadow='0 4px 16px rgba(166,124,82,0.10)'"
+               onmouseout="this.style.borderColor='var(--border-l)'; this.style.boxShadow='none'">
+
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%; gap:12px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-family:var(--font-display); font-weight:700; font-size:1rem; color:var(--tx); margin-bottom:4px;">
+                    <%= sub.title %>
+                  </div>
+                  <% if (sub.description) { %>
+                    <div style="font-size:0.83rem; color:var(--tx-muted); margin-bottom:6px;"><%= sub.description %></div>
+                  <% } %>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(166,124,82,0.09); color:var(--br);">
+                      <%= sub.isGroupEvent ? '👥 Team' : '👤 Individual' %>
+                    </span>
+                    <% if (sub.maxParticipants) { %>
+                      <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(241,196,15,0.10); color:#b8860b;">
+                        Max <%= sub.maxParticipants %>
+                      </span>
+                    <% } %>
+                    <% if (sub.requirePaymentScreenshot) { %>
+                      <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(39,174,96,0.09); color:#27ae60;">
+                        💳 Payment required
+                      </span>
+                    <% } %>
+                  </div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex-shrink:0;">
+                  <!-- Register button only for upcoming events -->
+                  <% if (!isPast) { %>
+                    <a href="/register/<%= sub._id %>" class="btn-register" style="white-space:nowrap;">
+                      Register <i class="bi bi-arrow-right"></i>
+                    </a>
+                  <% } %>
+
+                  <!-- Admin: View Registrations — shown for BOTH upcoming AND past -->
+                  <% if (isAdmin) { %>
+                    <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem; padding:5px 12px; white-space:nowrap;">
+                      <i class="bi bi-people"></i> View Registrations
+                    </a>
+                  <% } %>
+                </div>
+
+              </div>
+            </div>
+
+          <% }); %>
+        </div>
+
+        <% if (!isPast && subEvents.length > 1) { %>
+          <div style="margin-top:18px;">
+            <a href="/events/<%= event._id %>/register" class="btn-register">
+              Browse All Sessions <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+        <% } %>
+
+      </div>
+
+    <% } else if (!isPast && !hasSubEvents) { %>
+      <p style="color:var(--tx-muted); font-size:0.93rem; margin:20px 0 30px; padding:14px 18px; background:rgba(166,124,82,0.05); border-radius:var(--r-md); border:1px solid var(--border-l);">
+        <i class="bi bi-clock"></i> Registrations will open soon.
+      </p>
+    <% } %>
+
+    <!-- ═══════════════════════════════════════
+         GALLERY
+    ════════════════════════════════════════ -->
+    <div class="detail-section" data-aos="fade-up">
+      <h2 class="detail-section-title">Event Gallery</h2>
+      <% if (event.galleryImages && event.galleryImages.length > 0) { %>
+        <div class="gallery-grid-sm">
+          <% event.galleryImages.forEach(function(img, i) { %>
+            <div class="gallery-img-wrap" data-aos="zoom-in" data-aos-delay="<%= i * 50 %>">
+              <img src="<%= img %>" alt="Event Image" style="width:100%;height:100%;object-fit:cover;">
+              <% if (isAdmin) { %>
+                <form action="/events/<%= event._id %>/gallery/<%= i %>/delete" method="POST" class="gallery-delete-form" onsubmit="return confirm('Remove this image?')">
+                  <button class="gallery-delete-btn"><i class="bi bi-x-lg"></i></button>
+                </form>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <div class="gallery-empty">
+          <div class="gallery-empty-icon">🖼</div>
+          <p>No gallery images yet.</p>
+        </div>
+      <% } %>
+      <% if (isAdmin) { %>
+        <form action="/events/<%= event._id %>/gallery" method="POST" enctype="multipart/form-data" class="admin-add-form mt-4">
+          <label class="form-label-custom">Upload Gallery Images</label>
+          <input type="file" name="galleryImages" multiple accept="image/*" class="form-control mb-2" required>
+          <button class="btn-register">➕ Upload Images</button>
+        </form>
+      <% } %>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         CONDUCTED BY
+    ════════════════════════════════════════ -->
+    <div class="detail-section" data-aos="fade-up">
+      <h2 class="detail-section-title">Conducted By</h2>
+      <% if (event.conductedBy && event.conductedBy.length > 0) { %>
+        <% event.conductedBy.forEach(function(person, i) { %>
+          <div class="person-item">
+            <div>
+              <div class="person-name"><%= person.name %></div>
+              <div class="person-email"><%= person.email %></div>
+            </div>
+            <% if (isAdmin) { %>
+              <form action="/events/<%= event._id %>/conducted-by/<%= i %>/delete" method="POST" onsubmit="return confirm('Remove this coordinator?')">
+                <button class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
+              </form>
+            <% } %>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <p style="color:var(--tx-muted);font-size:0.92rem;">Coordinator details will be updated.</p>
+      <% } %>
+      <% if (isAdmin) { %>
+        <form action="/events/<%= event._id %>/conducted-by" method="POST" class="admin-add-form mt-3">
+          <div class="row g-2">
+            <div class="col-md-5"><input type="text" name="name" class="form-control" placeholder="Coordinator name" required></div>
+            <div class="col-md-5"><input type="email" name="email" class="form-control" placeholder="Email address" required></div>
+            <div class="col-md-2"><button class="btn-register w-100">Add</button></div>
+          </div>
+        </form>
+      <% } %>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         DOCUMENTS
+    ════════════════════════════════════════ -->
+    <div class="detail-section" data-aos="fade-up">
+      <h2 class="detail-section-title">Event Documents</h2>
+      <% if (event.documents && event.documents.length > 0) { %>
+        <% event.documents.forEach(function(doc, i) { %>
+          <% if (doc.isPublic || isAdmin) { %>
+            <div class="person-item">
+              <div>
+                <div class="person-name"><%= doc.title %></div>
+                <% if (!doc.isPublic) { %>
+                  <span style="font-size:0.72rem;color:#b8860b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Admin Only</span>
+                <% } %>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <a href="<%= doc.file %>" target="_blank" class="btn-details" style="font-size:0.82rem;padding:6px 14px;">📄 View</a>
+                <% if (isAdmin) { %>
+                  <form action="/events/<%= event._id %>/documents/<%= i %>/delete" method="POST" onsubmit="return confirm('Delete this document?')">
+                    <button class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
+                  </form>
+                <% } %>
+              </div>
+            </div>
+          <% } %>
+        <% }); %>
+      <% } else { %>
+        <p style="color:var(--tx-muted);font-size:0.92rem;">No documents uploaded yet.</p>
+      <% } %>
+      <% if (isAdmin) { %>
+        <form action="/events/<%= event._id %>/documents" method="POST" enctype="multipart/form-data" class="admin-add-form mt-3">
+          <div class="row g-2">
+            <div class="col-md-5"><input type="text" name="title" class="form-control" placeholder="Document title" required></div>
+            <div class="col-md-4"><input type="file" name="document" class="form-control" required></div>
+            <div class="col-md-3">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="isPublic" id="isPublicDoc">
+                <label class="form-check-label" for="isPublicDoc" style="font-size:0.82rem;color:var(--tx-muted);">Public</label>
+              </div>
+              <button class="btn-register w-100">Upload</button>
+            </div>
+          </div>
+        </form>
+      <% } %>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         REVIEWS (PAST EVENTS ONLY)
+    ════════════════════════════════════════ -->
+    <% if (isPast) { %>
+      <div class="detail-section" data-aos="fade-up">
+        <h2 class="detail-section-title">⭐ Event Reviews</h2>
+        <form action="/events/<%= event._id %>/reviews" method="POST" class="admin-add-form mb-4">
+          <div class="row g-2">
+            <div class="col-md-4"><input type="text" name="name" class="form-control" placeholder="Your name" required></div>
+            <div class="col-md-6"><textarea name="message" class="form-control" placeholder="Write your review..." rows="2" required></textarea></div>
+            <div class="col-md-2 d-flex align-items-end"><button class="btn-register w-100">Submit</button></div>
+          </div>
+        </form>
+        <% if (reviews.length === 0) { %>
+          <p style="color:var(--tx-muted);font-size:0.92rem;">No reviews yet. Be the first!</p>
+        <% } %>
+        <% reviews.forEach(function(review) { %>
+          <div class="review-card" data-aos="fade-up">
+            <div class="review-name"><%= review.name %></div>
+            <p class="review-body"><%= review.message %></p>
+            <% if (isAdmin) { %>
+              <form action="/events/<%= event._id %>/reviews/<%= review._id %>/delete" method="POST" class="mt-2" onsubmit="return confirm('Delete review?')">
+                <button class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕ Delete</button>
+              </form>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+  </div>
+</div>

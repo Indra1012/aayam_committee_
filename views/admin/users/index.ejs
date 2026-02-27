@@ -1,0 +1,95 @@
+<section class="container my-5">
+  <h2 class="mb-4">👮 Admin Management</h2>
+
+  <p class="text-muted mb-4">
+    You can manage up to <strong>10 admins</strong>. Super Admin cannot be disabled.
+  </p>
+
+  <!-- INVITE ADMIN -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="mb-3">➕ Invite New Admin</h5>
+
+      <form action="/admin/users/invite" method="POST" class="row g-2">
+        <div class="col-md-5">
+          <input
+            type="email"
+            name="email"
+            class="form-control"
+            placeholder="Admin email"
+            required
+          />
+        </div>
+
+        <div class="col-md-5">
+          <input
+            type="password"
+            name="password"
+            class="form-control"
+            placeholder="Temporary password"
+            required
+          />
+        </div>
+
+        <div class="col-md-2 d-grid">
+          <button class="btn btn-dark">
+            Invite
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN LIST -->
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th style="width: 180px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% admins.forEach(admin => { %>
+          <tr>
+            <td><%= admin.email %></td>
+
+            <td>
+              <% if (admin.role === "superadmin") { %>
+                <span class="badge bg-dark">Super Admin</span>
+              <% } else { %>
+                <span class="badge bg-secondary">Admin</span>
+              <% } %>
+            </td>
+
+            <td>
+              <% if (admin.isActive) { %>
+                <span class="badge bg-success">Active</span>
+              <% } else { %>
+                <span class="badge bg-danger">Disabled</span>
+              <% } %>
+            </td>
+
+            <td>
+              <% if (admin.role !== "superadmin" && admin.isActive) { %>
+                <form
+                  action="/admin/users/<%= admin._id %>/deactivate"
+                  method="POST"
+                  onsubmit="return confirm('Disable this admin?')"
+                >
+                  <button class="btn btn-sm btn-warning w-100">
+                    🚫 Disable
+                  </button>
+                </form>
+              <% } else { %>
+                <span class="text-muted">—</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>

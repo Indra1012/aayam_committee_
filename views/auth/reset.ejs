@@ -1,0 +1,7 @@
+<section class="container py-5" style="max-width:400px">
+  <h4 class="mb-3">Set New Password</h4>
+  <form method="POST" action="/reset/<%= token %>">
+    <input type="password" class="form-control mb-3" name="password" placeholder="New password" required>
+    <button class="btn btn-dark w-100">Update Password</button>
+  </form>
+</section>

@@ -1,0 +1,267 @@
+<!-- views/admin/registrations.ejs -->
+<div class="container my-5">
+
+  <!-- Header -->
+  <div class="page-header" style="text-align:left; padding-top: 10px;" data-aos="fade-down">
+    <a href="/events/<%= subEvent.eventId %>" class="btn-details" style="margin-bottom: 20px; display: inline-flex;">
+      <i class="bi bi-arrow-left"></i> Back to Event
+    </a>
+    <div class="section-label">Admin Panel</div>
+    <h1 class="page-title" style="font-size: clamp(1.6rem,3.5vw,2.4rem);"><%= subEvent.title %></h1>
+    <p class="page-subtitle">Registration Management</p>
+  </div>
+
+  <%
+    var totalCount    = registrations.length;
+    var verifiedCount = registrations.filter(function(r){ return r.status === 'verified'; }).length;
+    var pendingCount  = registrations.filter(function(r){ return r.status === 'pending'; }).length;
+    var rejectedCount = registrations.filter(function(r){ return r.status === 'rejected'; }).length;
+  %>
+
+  <!-- Stats -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px; margin-bottom:28px;" data-aos="fade-up">
+    <div class="reg-stat-card reg-stat-total">
+      <div class="reg-stat-value"><%= totalCount %></div>
+      <div class="reg-stat-label">Total</div>
+    </div>
+    <div class="reg-stat-card reg-stat-verified">
+      <div class="reg-stat-value"><%= verifiedCount %></div>
+      <div class="reg-stat-label">Verified</div>
+    </div>
+    <div class="reg-stat-card reg-stat-pending">
+      <div class="reg-stat-value"><%= pendingCount %></div>
+      <div class="reg-stat-label">Pending</div>
+    </div>
+    <div class="reg-stat-card reg-stat-rejected">
+      <div class="reg-stat-value"><%= rejectedCount %></div>
+      <div class="reg-stat-label">Rejected</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:22px;" data-aos="fade-up">
+    <div class="events-toggle-bar" style="margin:0;">
+      <button class="evt-tab active" data-tab="all">All (<%= totalCount %>)</button>
+      <button class="evt-tab" data-tab="pending">Pending (<%= pendingCount %>)</button>
+      <button class="evt-tab" data-tab="verified">Verified (<%= verifiedCount %>)</button>
+      <button class="evt-tab" data-tab="rejected">Rejected (<%= rejectedCount %>)</button>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div style="display:inline-flex; align-items:center; gap:6px; padding:5px 13px; border-radius:var(--r-full); background:rgba(39,174,96,0.09); border:1px solid rgba(39,174,96,0.22); font-size:0.78rem; font-weight:600; color:#27ae60;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#27ae60;animation:livePulse 2s ease-in-out infinite;display:inline-block;"></span>
+        Live · <span id="countdown">30</span>s
+      </div>
+      <a href="/admin/subevents/<%= subEvent._id %>/registrations/export" class="btn-details" style="white-space:nowrap;">
+        <i class="bi bi-download"></i> Export CSV (<%= totalCount %>)
+      </a>
+    </div>
+  </div>
+
+  <!-- Cards -->
+  <div id="registrationsContainer">
+
+    <% if (registrations.length === 0) { %>
+      <div class="gallery-empty" id="emptyState" data-aos="fade-up">
+        <div class="gallery-empty-icon">📋</div>
+        <p>No registrations yet.</p>
+      </div>
+    <% } %>
+
+    <% for (var idx = 0; idx < registrations.length; idx++) { %>
+      <% var reg = registrations[idx]; %>
+
+      <div class="registration-card" data-status="<%= reg.status %>" data-aos="fade-up">
+
+        <!-- Header -->
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--br),var(--br-deep));display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:700;font-size:1rem;flex-shrink:0;">
+              <%= idx + 1 %>
+            </div>
+            <div>
+              <div style="font-size:0.72rem;font-weight:600;color:var(--tx-muted);text-transform:uppercase;letter-spacing:1px;">
+                Submitted <%= new Date(reg.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) %>
+              </div>
+              <div style="font-size:0.8rem;color:var(--tx-muted);">
+                <%= new Date(reg.createdAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) %>
+              </div>
+            </div>
+          </div>
+
+          <% if (reg.status === 'verified') { %>
+            <span class="reg-badge reg-badge-verified">✓ Verified</span>
+          <% } else if (reg.status === 'rejected') { %>
+            <span class="reg-badge reg-badge-rejected">✕ Rejected</span>
+          <% } else { %>
+            <span class="reg-badge reg-badge-pending">⏳ Pending</span>
+          <% } %>
+        </div>
+
+        <!-- Responses table -->
+        <% if (subEvent.formFields && subEvent.formFields.length > 0) { %>
+          <div style="overflow-x:auto; margin-bottom:14px;">
+            <table class="admin-table" style="border-radius:var(--r-sm); overflow:hidden;">
+              <thead><tr><th style="width:38%;">Field</th><th>Response</th></tr></thead>
+              <tbody>
+                <% var sortedFields = subEvent.formFields.slice().sort(function(a,b){ return a.order - b.order; }); %>
+                <% for (var fi = 0; fi < sortedFields.length; fi++) { %>
+                  <% var field = sortedFields[fi]; %>
+                  <% var resp = null; %>
+                  <% for (var ri = 0; ri < reg.responses.length; ri++) { %>
+                    <% if (reg.responses[ri].fieldId && reg.responses[ri].fieldId.toString() === field._id.toString()) { %>
+                      <% resp = reg.responses[ri]; %>
+                    <% } %>
+                  <% } %>
+                  <tr>
+                    <td><strong><%= field.label %></strong></td>
+                    <td>
+                      <% if (!resp || resp.value === null || resp.value === undefined || resp.value === '') { %>
+                        <span style="color:var(--tx-muted);font-style:italic;">—</span>
+                      <% } else if (Array.isArray(resp.value)) { %>
+                        <%= resp.value.join(', ') %>
+                      <% } else if (field.type === 'file') { %>
+                        <a href="<%= resp.value %>" target="_blank" class="btn-details" style="font-size:0.78rem;padding:4px 10px;">
+                          <i class="bi bi-file-earmark"></i> View File
+                        </a>
+                      <% } else { %>
+                        <%= resp.value %>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+
+        <!-- Team members -->
+        <% if (reg.teamMembers && reg.teamMembers.length > 0) { %>
+          <div style="background:rgba(166,124,82,0.05);border:1px solid var(--border-l);border-radius:var(--r-sm);padding:12px 16px;margin-bottom:14px;">
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--br);margin-bottom:8px;">
+              <i class="bi bi-people"></i> Team Members
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <% for (var mi = 0; mi < reg.teamMembers.length; mi++) { %>
+                <span style="padding:3px 12px;border-radius:var(--r-full);background:var(--cream);border:1px solid var(--border-l);font-size:0.83rem;color:var(--tx-mid);"><%= reg.teamMembers[mi] %></span>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+
+        <!-- Payment screenshot -->
+        <% if (reg.paymentScreenshot) { %>
+          <div style="margin-bottom:14px;">
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--br);margin-bottom:10px;">
+              <i class="bi bi-credit-card"></i> Payment Screenshot
+            </div>
+            <a href="<%= reg.paymentScreenshot %>" target="_blank">
+              <img src="<%= reg.paymentScreenshot %>" alt="Payment" style="max-width:220px;border-radius:var(--r-md);border:1px solid var(--border-l);box-shadow:var(--sh-sm);transition:transform 0.26s ease;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+            </a>
+          </div>
+        <% } %>
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border-l);">
+
+          <% if (reg.status !== 'verified') { %>
+            <form action="/registrations/<%= reg._id %>/verify" method="POST">
+              <button type="submit" class="btn-register" style="padding:7px 16px;font-size:0.82rem;">
+                <i class="bi bi-check-circle"></i> Verify
+              </button>
+            </form>
+          <% } %>
+
+          <% if (reg.status !== 'pending') { %>
+            <form action="/registrations/<%= reg._id %>/pending" method="POST">
+              <button type="submit" class="btn-admin-warn" style="font-size:0.82rem;">
+                <i class="bi bi-clock"></i> Move to Pending
+              </button>
+            </form>
+          <% } %>
+
+          <% if (reg.status !== 'rejected') { %>
+            <form action="/registrations/<%= reg._id %>/reject" method="POST" onsubmit="return confirm('Reject this registration?')">
+              <button type="submit" style="padding:7px 14px;font-size:0.82rem;border-radius:var(--r-full);border:1px solid rgba(192,57,43,0.3);background:rgba(192,57,43,0.08);color:#c0392b;font-weight:600;cursor:pointer;">
+                <i class="bi bi-x-circle"></i> Reject
+              </button>
+            </form>
+          <% } %>
+
+          <form action="/registrations/<%= reg._id %>/delete" method="POST" onsubmit="return confirm('Permanently delete this registration?')">
+            <button type="submit" class="btn-admin-danger" style="font-size:0.82rem;">
+              <i class="bi bi-trash3"></i> Delete
+            </button>
+          </form>
+
+        </div>
+
+      </div>
+
+    <% } %>
+
+  </div>
+
+  <div style="text-align:center;padding:20px 0 40px;font-size:0.78rem;color:var(--tx-muted);">
+    Auto-refreshing in <span id="countdown2" style="font-weight:700;color:var(--br);">30</span>s
+    &nbsp;·&nbsp;
+    <a href="#" onclick="location.reload();return false;" style="color:var(--br);font-weight:600;">Refresh now</a>
+  </div>
+
+</div>
+
+<style>
+  @keyframes livePulse {
+    0%,100% { box-shadow:0 0 0 2px rgba(39,174,96,0.2); }
+    50%     { box-shadow:0 0 0 5px rgba(39,174,96,0); }
+  }
+  .reg-stat-card  { border-radius:var(--r-md);padding:16px 18px;text-align:center; }
+  .reg-stat-value { font-family:var(--font-display);font-size:2rem;font-weight:700;line-height:1; }
+  .reg-stat-label { font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx-muted);margin-top:5px; }
+  .reg-stat-total    { background:rgba(166,124,82,0.09);border:1px solid rgba(166,124,82,0.22); }
+  .reg-stat-total    .reg-stat-value { color:var(--br); }
+  .reg-stat-verified { background:rgba(39,174,96,0.09);border:1px solid rgba(39,174,96,0.22); }
+  .reg-stat-verified .reg-stat-value { color:#27ae60; }
+  .reg-stat-pending  { background:rgba(241,196,15,0.09);border:1px solid rgba(241,196,15,0.28); }
+  .reg-stat-pending  .reg-stat-value { color:#b8860b; }
+  .reg-stat-rejected { background:rgba(192,57,43,0.09);border:1px solid rgba(192,57,43,0.22); }
+  .reg-stat-rejected .reg-stat-value { color:#c0392b; }
+  .registration-card { background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-lg);padding:clamp(18px,2.5vw,26px);margin-bottom:16px;transition:box-shadow 0.26s ease; }
+  body.dark-mode .registration-card { background:var(--dk-surface);border-color:var(--border-d); }
+  .reg-badge { padding:4px 14px;border-radius:var(--r-full);font-size:0.78rem;font-weight:700;letter-spacing:0.5px; }
+  .reg-badge-verified { background:rgba(39,174,96,0.11);border:1px solid rgba(39,174,96,0.24);color:#27ae60; }
+  .reg-badge-pending  { background:rgba(241,196,15,0.11);border:1px solid rgba(241,196,15,0.28);color:#b8860b; }
+  .reg-badge-rejected { background:rgba(192,57,43,0.10);border:1px solid rgba(192,57,43,0.22);color:#c0392b; }
+</style>
+
+<script>
+  // Tab filtering
+  var tabs  = document.querySelectorAll('[data-tab]');
+  var cards = document.querySelectorAll('.registration-card');
+
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      tabs.forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+      var filter = tab.dataset.tab;
+      var visible = 0;
+      cards.forEach(function(card){
+        var show = filter === 'all' || card.dataset.status === filter;
+        card.style.display = show ? 'block' : 'none';
+        if (show) visible++;
+      });
+      var empty = document.getElementById('emptyState');
+      if (empty) empty.style.display = visible === 0 ? 'block' : 'none';
+    });
+  });
+
+  // Auto-refresh countdown
+  var secs = 30;
+  var cdEl = document.getElementById('countdown2');
+  var timer = setInterval(function(){
+    secs--;
+    if (cdEl) cdEl.textContent = secs;
+    if (secs <= 0){ clearInterval(timer); location.reload(); }
+  }, 1000);
+  document.addEventListener('focusin',  function(){ clearInterval(timer); if(cdEl) cdEl.textContent = '—'; });
+  document.addEventListener('focusout', function(){ secs=30; clearInterval(timer); timer=setInterval(function(){ secs--; if(cdEl) cdEl.textContent=secs; if(secs<=0){ clearInterval(timer); location.reload(); }},1000); });
+</script>

@@ -1,0 +1,38 @@
+<!-- views/admin/reachout/index.ejs -->
+<div class="container my-5">
+  <div class="page-header" data-aos="fade-down">
+    <div class="section-label">Submissions</div>
+    <h1 class="page-title">Reach Out Inbox</h1>
+    <p class="page-subtitle"><%= reachouts.length %> submission<%= reachouts.length !== 1 ? 's' : '' %> received</p>
+  </div>
+
+  <% if (reachouts.length === 0) { %>
+    <div class="gallery-empty" data-aos="fade-up">
+      <div class="gallery-empty-icon">📭</div>
+      <p>No submissions yet.</p>
+    </div>
+  <% } %>
+
+  <% reachouts.forEach((item, i) => { %>
+    <div class="reachout-item <%= item.isRead ? '' : 'unread' %>" data-aos="fade-up" data-aos-delay="<%= i * 50 %>">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <div>
+          <div class="reachout-name"><%= item.name %></div>
+          <div class="reachout-email"><%= item.email %></div>
+        </div>
+        <span class="reachout-purpose"><%= item.purpose %></span>
+      </div>
+      <p class="reachout-message"><%= item.message %></p>
+      <div class="reachout-actions">
+        <form action="/admin/reachout/<%= item._id %>/toggle-read" method="POST">
+          <button class="btn-details" style="font-size:0.82rem;padding:7px 14px;">
+            <%= item.isRead ? '◉ Mark Unread' : '○ Mark Read' %>
+          </button>
+        </form>
+        <form action="/admin/reachout/<%= item._id %>/delete" method="POST" onsubmit="return confirm('Delete this submission?')">
+          <button class="btn-admin-danger" style="font-size:0.82rem;padding:7px 14px;">✕ Delete</button>
+        </form>
+      </div>
+    </div>
+  <% }) %>
+</div>

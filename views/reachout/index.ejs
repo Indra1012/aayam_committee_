@@ -1,0 +1,68 @@
+<!-- views/reachout/index.ejs -->
+<div class="reachout-wrapper container">
+
+  <div class="page-header text-center" data-aos="fade-down">
+    <div class="section-label">Connect With Us</div>
+    <h1 class="page-title">Reach Out</h1>
+    <p class="page-subtitle">Have an idea, feedback, or collaboration in mind? We'd love to hear from you.</p>
+  </div>
+
+  <% if (user && (user.role === "admin" || user.role === "superadmin")) { %>
+    <div class="text-center mb-4" data-aos="fade-up">
+      <a href="/admin/reachout" class="btn-details">
+        <i class="bi bi-inbox-fill"></i> View All Submissions
+      </a>
+    </div>
+  <% } %>
+
+  <div class="form-card" data-aos="fade-up" data-aos-delay="100">
+    <div class="contact-card-band" aria-hidden="true"></div>
+
+    <% if (success) { %>
+      <div class="success-alert" role="alert">
+        ✅ Your message was sent successfully. We'll get back to you soon!
+      </div>
+    <% } %>
+
+    <form action="/reachout" method="POST">
+
+      <div class="row g-3">
+        <div class="col-md-6 form-group-custom">
+          <label class="form-label-custom">Name *</label>
+          <input type="text" name="name" class="form-control-custom" placeholder="Your full name" required>
+        </div>
+        <div class="col-md-6 form-group-custom">
+          <label class="form-label-custom">Email *</label>
+          <input type="email" name="email" class="form-control-custom" placeholder="your@email.com" required>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6 form-group-custom">
+          <label class="form-label-custom">Contact</label>
+          <input type="text" name="contact" class="form-control-custom" placeholder="Phone number (optional)">
+        </div>
+        <div class="col-md-6 form-group-custom">
+          <label class="form-label-custom">Purpose *</label>
+          <select name="purpose" class="form-control-custom" required>
+            <option value="">Select a purpose...</option>
+            <option value="Event Feedback">Event Feedback</option>
+            <option value="Event Idea">Event Idea</option>
+            <option value="Collaboration">Collaboration</option>
+            <option value="General Query">General Query</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group-custom">
+        <label class="form-label-custom">Message *</label>
+        <textarea name="message" class="form-control-custom" rows="5" placeholder="Tell us what's on your mind..." required style="resize:vertical;min-height:120px;"></textarea>
+      </div>
+
+      <button type="submit" class="form-submit-btn">
+        🚀 Send Message
+      </button>
+
+    </form>
+  </div>
+</div>

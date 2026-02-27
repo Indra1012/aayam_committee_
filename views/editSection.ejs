@@ -1,0 +1,22 @@
+<section class="container my-5">
+  <h3 class="text-center mb-4">✏ Edit Team Section</h3>
+
+  <form
+    action="/team/section/edit/<%= section._id %>"
+    method="POST"
+    class="mx-auto"
+    style="max-width: 400px;"
+  >
+    <input
+      type="text"
+      name="title"
+      value="<%= section.title %>"
+      class="form-control mb-3"
+      required
+    />
+
+    <button class="btn btn-dark w-100">
+      💾 Save Changes
+    </button>
+  </form>
+</section>

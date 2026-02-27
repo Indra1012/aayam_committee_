@@ -1,0 +1,151 @@
+<section class="container my-5">
+
+  <h2 class="text-center mb-5">📅 Events</h2>
+
+  <div class="row g-4 justify-content-center events-wrapper">
+
+    <!-- =========================
+         UPCOMING EVENTS
+    ========================== -->
+    <div class="col-md-6">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Upcoming Events</h4>
+
+        <% if (user && (user.role === "admin" || user.role === "superadmin")) { %>
+
+          <a href="#" class="btn btn-sm btn-outline-primary">
+            ➕ Add Event
+          </a>
+        <% } %>
+      </div>
+
+      <% if (!upcomingEvents || upcomingEvents.length === 0) { %>
+        <p class="text-muted">No upcoming events.</p>
+      <% } %>
+
+      <% upcomingEvents.forEach(event => { %>
+        <a href="/events/<%= event._id %>" class="text-decoration-none text-dark">
+          <div class="card mb-3 shadow-sm event-card">
+
+            <% if (event.bannerImage) { %>
+              <img
+                src="<%= event.bannerImage %>"
+                class="card-img-top"
+                alt="<%= event.title %>"
+                style="height: 200px; object-fit: cover;"
+              />
+            <% } %>
+
+            <div class="card-body">
+              <h5 class="fw-bold mb-2">
+                <%= event.title %>
+              </h5>
+
+              <p class="text-muted mb-2">
+                <%= event.shortDescription %>
+              </p>
+
+              <!-- DATE LOGIC -->
+              <% if (event.startDate && event.endDate) { %>
+                <small class="text-muted d-block mb-2">
+                  📅
+                  <% if (
+                    new Date(event.startDate).toDateString() ===
+                    new Date(event.endDate).toDateString()
+                  ) { %>
+                    <%= new Date(event.startDate).toDateString() %>
+                  <% } else { %>
+                    <%= new Date(event.startDate).toDateString() %>
+                    →
+                    <%= new Date(event.endDate).toDateString() %>
+                  <% } %>
+                </small>
+              <% } %>
+
+              <!-- REGISTER BUTTON -->
+              <% if (event.registrationLink) { %>
+                <a
+                  href="<%= event.registrationLink %>"
+                  target="_blank"
+                  class="btn btn-sm btn-outline-success mt-2"
+                >
+                  📝 Register
+                </a>
+              <% } %>
+
+            </div>
+          </div>
+        </a>
+      <% }) %>
+
+    </div>
+
+    <!-- =========================
+         PAST EVENTS
+    ========================== -->
+    <div class="col-md-6">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Past Events</h4>
+
+        <% if (user && user.role === "admin") { %>
+          <a href="#" class="btn btn-sm btn-outline-secondary">
+            ➕ Add Event
+          </a>
+        <% } %>
+      </div>
+
+      <% if (!pastEvents || pastEvents.length === 0) { %>
+        <p class="text-muted">No past events.</p>
+      <% } %>
+
+      <% pastEvents.forEach(event => { %>
+        <a href="/events/<%= event._id %>" class="text-decoration-none text-dark">
+          <div class="card mb-3 shadow-sm event-card">
+
+            <% if (event.bannerImage) { %>
+              <img
+                src="<%= event.bannerImage %>"
+                class="card-img-top"
+                alt="<%= event.title %>"
+                style="height: 200px; object-fit: cover;"
+              />
+            <% } %>
+
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start">
+                <h5 class="fw-bold mb-2">
+                  <%= event.title %>
+                </h5>
+                <span class="badge bg-secondary">
+                  Completed
+                </span>
+              </div>
+
+              <!-- DATE LOGIC -->
+              <% if (event.startDate && event.endDate) { %>
+                <small class="text-muted d-block">
+                  📅
+                  <% if (
+                    new Date(event.startDate).toDateString() ===
+                    new Date(event.endDate).toDateString()
+                  ) { %>
+                    <%= new Date(event.startDate).toDateString() %>
+                  <% } else { %>
+                    <%= new Date(event.startDate).toDateString() %>
+                    →
+                    <%= new Date(event.endDate).toDateString() %>
+                  <% } %>
+                </small>
+              <% } %>
+
+            </div>
+          </div>
+        </a>
+      <% }) %>
+
+    </div>
+
+  </div>
+</section>

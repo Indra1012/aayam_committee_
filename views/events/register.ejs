@@ -1,0 +1,518 @@
+<!-- views/events/register.ejs -->
+<div class="container">
+
+  <!-- Back link -->
+  <div style="padding: clamp(18px,2.5vw,30px) 0 0;" data-aos="fade-up">
+    <% if (subEvent.eventId) { %>
+      <a href="/events/<%= subEvent.eventId._id %>/register" class="btn-details">
+        <i class="bi bi-arrow-left"></i> Back to Sessions
+      </a>
+    <% } %>
+  </div>
+
+  <!-- Header -->
+  <div class="page-header" data-aos="fade-down">
+    <div class="section-label">
+      <% if (subEvent.eventId) { %><%= subEvent.eventId.title %><% } %>
+    </div>
+    <h1 class="page-title"><%= subEvent.title %></h1>
+    <% if (subEvent.description) { %>
+      <p class="page-subtitle"><%= subEvent.description %></p>
+    <% } %>
+  </div>
+
+  <div style="max-width: 620px; margin: 0 auto; padding-bottom: clamp(50px,6vw,90px);">
+
+    <!-- ── Error banners ── -->
+    <% if (typeof query !== 'undefined' && query && query.error) { %>
+      <% if (query.error === 'full') { %>
+        <div style="
+          background: rgba(192,57,43,0.09);
+          border: 1px solid rgba(192,57,43,0.24);
+          border-radius: var(--r-md);
+          padding: 14px 18px;
+          margin-bottom: 22px;
+          color: #c0392b;
+          font-weight: 600;
+          font-size: 0.9rem;
+        " data-aos="fade-up">
+          ⚠ Sorry, registrations for this session are full.
+        </div>
+      <% } else if (query.error === 'required') { %>
+        <div style="
+          background: rgba(192,57,43,0.09);
+          border: 1px solid rgba(192,57,43,0.24);
+          border-radius: var(--r-md);
+          padding: 14px 18px;
+          margin-bottom: 22px;
+          color: #c0392b;
+          font-weight: 600;
+          font-size: 0.9rem;
+        " data-aos="fade-up">
+          ⚠ Please fill in all required fields.
+        </div>
+      <% } else if (query.error === 'payment') { %>
+        <div style="
+          background: rgba(192,57,43,0.09);
+          border: 1px solid rgba(192,57,43,0.24);
+          border-radius: var(--r-md);
+          padding: 14px 18px;
+          margin-bottom: 22px;
+          color: #c0392b;
+          font-weight: 600;
+          font-size: 0.9rem;
+        " data-aos="fade-up">
+          ⚠ Please upload your payment screenshot.
+        </div>
+      <% } %>
+    <% } %>
+
+    <!-- ── Capacity indicator ── -->
+    <% if (subEvent.maxParticipants) { %>
+      <%
+        const pct = Math.min(100, Math.round((subEvent.registrationCount / subEvent.maxParticipants) * 100));
+        const isFull = subEvent.registrationCount >= subEvent.maxParticipants;
+      %>
+      <div style="
+        background: var(--cream-alt);
+        border: 1px solid var(--border-l);
+        border-radius: var(--r-md);
+        padding: 14px 18px;
+        margin-bottom: 22px;
+      " data-aos="fade-up">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+          <span style="font-size: 0.82rem; font-weight: 600; color: var(--tx-mid);">
+            Spots filled
+          </span>
+          <span style="font-size: 0.82rem; font-weight: 700; color: var(--br);">
+            <%= subEvent.registrationCount %>/<%= subEvent.maxParticipants %>
+          </span>
+        </div>
+          <div style="
+            height: 6px;
+            border-radius: 6px;
+            background: rgba(166,124,82,0.14);
+            overflow: hidden;
+          ">
+            <div
+              class="<%= isFull ? 'progress-fill-full' : 'progress-fill-normal' %>"
+              style="height:100%; width:<%= pct %>%; border-radius:6px; transition:width 0.6s ease;"
+            ></div>
+          </div>
+        <% if (isFull) { %>
+          <p style="font-size: 0.8rem; color: #c0392b; margin-top: 8px; margin-bottom: 0; font-weight: 600;">
+            This session is full. Registrations are closed.
+          </p>
+        <% } %>
+      </div>
+    <% } %>
+
+    <!-- ── QR Code / Payment info ── -->
+    <% if (subEvent.qrImage) { %>
+      <div style="
+        background: var(--cream-alt);
+        border: 1px solid rgba(201,168,76,0.28);
+        border-radius: var(--r-lg);
+        padding: clamp(20px,3vw,32px);
+        margin-bottom: 26px;
+        text-align: center;
+      " data-aos="fade-up">
+        <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--br); margin-bottom: 12px;">
+          Payment Instructions
+        </div>
+        <p style="font-size: 0.9rem; color: var(--tx-muted); margin-bottom: 16px;">
+          Scan the QR code to complete your payment, then upload the screenshot below.
+        </p>
+        <div style="
+          display: inline-block;
+          padding: 10px;
+          background: #fff;
+          border-radius: var(--r-md);
+          box-shadow: var(--sh-sm);
+        ">
+          <img
+            src="<%= subEvent.qrImage %>"
+            alt="Payment QR"
+            style="max-width: 200px; display: block;"
+          >
+        </div>
+      </div>
+    <% } %>
+
+    <!-- ── Registration Form ── -->
+    <%
+      const isFull = subEvent.maxParticipants && subEvent.registrationCount >= subEvent.maxParticipants;
+    %>
+
+    <% if (!isFull) { %>
+
+      <div class="form-card" data-aos="fade-up" data-aos-delay="100">
+
+        <form
+          id="registrationForm"
+          action="/register/<%= subEvent._id %>"
+          method="POST"
+          enctype="multipart/form-data"
+          novalidate
+        >
+
+          <!-- ── Dynamic form fields ── -->
+          <% if (subEvent.formFields && subEvent.formFields.length > 0) { %>
+
+            <% subEvent.formFields
+                .slice()
+                .sort((a, b) => a.order - b.order)
+                .forEach((field, fi) => {
+            %>
+
+              <div class="form-group-custom" data-aos="fade-up" data-aos-delay="<%= fi * 40 %>">
+
+                <label class="form-label-custom" for="field-<%= field._id %>">
+                  <%= field.label %>
+                  <% if (field.required) { %>
+                    <span style="color: #c0392b; margin-left: 2px;">*</span>
+                  <% } %>
+                </label>
+
+                <!-- TEXT -->
+                <% if (field.type === "text") { %>
+                  <input
+                    type="text"
+                    id="field-<%= field._id %>"
+                    name="responses[<%= field._id %>]"
+                    class="form-control-custom"
+                    placeholder="<%= field.placeholder || '' %>"
+                    <%= field.required ? 'required' : '' %>
+                  >
+
+                <!-- TEXTAREA -->
+                <% } else if (field.type === "textarea") { %>
+                  <textarea
+                    id="field-<%= field._id %>"
+                    name="responses[<%= field._id %>]"
+                    class="form-control-custom"
+                    rows="3"
+                    placeholder="<%= field.placeholder || '' %>"
+                    style="resize: vertical;"
+                    <%= field.required ? 'required' : '' %>
+                  ></textarea>
+
+                <!-- DROPDOWN -->
+                <% } else if (field.type === "dropdown") { %>
+                  <select
+                    id="field-<%= field._id %>"
+                    name="responses[<%= field._id %>]"
+                    class="form-control-custom"
+                    style="cursor: pointer;"
+                    <%= field.required ? 'required' : '' %>
+                  >
+                    <option value="">— Select an option —</option>
+                    <% field.options.forEach(opt => { %>
+                      <option value="<%= opt %>"><%= opt %></option>
+                    <% }) %>
+                  </select>
+
+                <!-- CHECKBOX -->
+                <% } else if (field.type === "checkbox") { %>
+                  <div style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    padding: 10px 0;
+                  ">
+                    <% field.options.forEach((opt, oi) => { %>
+                      <label style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        cursor: pointer;
+                        font-size: 0.93rem;
+                        color: var(--tx-mid);
+                        padding: 10px 14px;
+                        border-radius: var(--r-sm);
+                        border: 1.5px solid var(--border-l);
+                        background: var(--cream);
+                        transition: border-color 0.2s ease, background 0.2s ease;
+                      " class="checkbox-opt">
+                        <input
+                          type="checkbox"
+                          name="responses[<%= field._id %>][]"
+                          value="<%= opt %>"
+                          style="
+                            width: 17px; height: 17px;
+                            accent-color: var(--br);
+                            cursor: pointer;
+                            flex-shrink: 0;
+                          "
+                        >
+                        <%= opt %>
+                      </label>
+                    <% }) %>
+                  </div>
+
+                <!-- FILE UPLOAD -->
+                <% } else if (field.type === "file") { %>
+                  <div style="
+                    border: 2px dashed rgba(166,124,82,0.32);
+                    border-radius: var(--r-md);
+                    padding: 20px;
+                    text-align: center;
+                    cursor: pointer;
+                    transition: border-color 0.24s ease;
+                  " onclick="document.getElementById('file-<%= field._id %>').click()">
+                    <div style="font-size: 1.6rem; margin-bottom: 6px; opacity: 0.5;">📎</div>
+                    <div style="font-size: 0.85rem; color: var(--tx-muted);">Click to upload file</div>
+                    <input
+                      type="file"
+                      id="file-<%= field._id %>"
+                      name="responses[<%= field._id %>]"
+                      style="display: none;"
+                      <%= field.required ? 'required' : '' %>
+                      onchange="showFileName(this)"
+                    >
+                    <div id="filename-<%= field._id %>" style="font-size:0.8rem; color:var(--br); margin-top:6px; font-weight:600;"></div>
+                  </div>
+                <% } %>
+
+              </div>
+
+            <% }) %>
+
+          <% } else { %>
+            <div class="gallery-empty" style="padding: 30px 0; margin-bottom: 20px;">
+              <div class="gallery-empty-icon" style="font-size:2rem;">📋</div>
+              <p style="color:var(--tx-muted); font-size:0.9rem;">No form fields set up yet.</p>
+            </div>
+          <% } %>
+
+          <!-- ── Team Members (if enabled) ── -->
+          <% if (subEvent.enableTeamMembers) { %>
+            <div style="
+              border-top: 1px solid var(--border-l);
+              padding-top: 22px;
+              margin-top: 10px;
+              margin-bottom: 22px;
+            ">
+              <div class="form-label-custom" style="margin-bottom: 14px;">
+                <i class="bi bi-people"></i> Team Members
+                <span style="font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 0.78rem; color: var(--tx-muted); margin-left: 6px;">
+                  (<%= subEvent.minTeamSize %>–<%= subEvent.maxTeamSize %> members)
+                </span>
+              </div>
+
+              <div id="teamMembersContainer" style="display:flex; flex-direction:column; gap:10px;">
+                <input
+                  type="text"
+                  name="teamMembers[]"
+                  class="form-control-custom"
+                  placeholder="Member 1 name"
+                >
+              </div>
+
+              <button
+                type="button"
+                id="addMemberBtn"
+                class="btn-details"
+                style="margin-top: 12px;"
+                data-max="<%= subEvent.maxTeamSize %>"
+              >
+                <i class="bi bi-plus"></i> Add Member
+              </button>
+
+              <div id="teamError" style="
+                display: none;
+                font-size: 0.82rem;
+                color: #c0392b;
+                margin-top: 8px;
+                font-weight: 600;
+              ">
+                Maximum <%= subEvent.maxTeamSize %> members allowed.
+              </div>
+            </div>
+          <% } %>
+
+          <!-- ── Payment Screenshot (if required) ── -->
+          <% if (subEvent.requirePaymentScreenshot) { %>
+            <div class="form-group-custom" style="border-top: 1px solid var(--border-l); padding-top: 22px;">
+              <label class="form-label-custom">
+                <i class="bi bi-credit-card"></i> Payment Screenshot
+                <span style="color: #c0392b; margin-left: 2px;">*</span>
+              </label>
+              <div
+                id="paymentDropzone"
+                style="
+                  border: 2px dashed rgba(166,124,82,0.32);
+                  border-radius: var(--r-md);
+                  padding: clamp(22px,3vw,36px) 20px;
+                  text-align: center;
+                  cursor: pointer;
+                  transition: border-color 0.24s ease, background 0.24s ease;
+                  background: rgba(166,124,82,0.02);
+                "
+                onclick="document.getElementById('paymentInput').click()"
+              >
+                <div style="font-size: 2.2rem; margin-bottom: 8px; opacity: 0.5;">🧾</div>
+                <div style="font-size: 0.9rem; color: var(--tx-muted); margin-bottom: 4px;">
+                  Click to upload screenshot
+                </div>
+                <div style="font-size: 0.75rem; color: var(--tx-muted); opacity: 0.7;">
+                  JPG, PNG, WEBP — max 5MB
+                </div>
+                <input
+                  type="file"
+                  id="paymentInput"
+                  name="paymentScreenshot"
+                  accept="image/*"
+                  required
+                  style="display: none;"
+                  onchange="handlePaymentUpload(this)"
+                >
+                <div id="paymentPreview" style="margin-top: 14px; display: none;">
+                  <img id="paymentPreviewImg" src="" alt="Preview" style="
+                    max-height: 160px;
+                    border-radius: var(--r-md);
+                    border: 1px solid var(--border-l);
+                    box-shadow: var(--sh-sm);
+                  ">
+                  <div id="paymentFileName" style="
+                    font-size: 0.8rem;
+                    color: var(--br);
+                    margin-top: 8px;
+                    font-weight: 600;
+                  "></div>
+                </div>
+              </div>
+            </div>
+          <% } %>
+
+          <!-- ── Submit ── -->
+          <button
+            type="submit"
+            id="submitBtn"
+            class="btn-register"
+            style="width: 100%; justify-content: center; padding: 14px; font-size: 0.97rem; border-radius: var(--r-md); margin-top: 8px;"
+          >
+            <span id="submitText">Submit Registration <i class="bi bi-arrow-right"></i></span>
+            <span id="submitSpinner" style="display:none;">
+              <span style="display:inline-block; animation: spin 0.7s linear infinite;">⟳</span>
+              Submitting...
+            </span>
+          </button>
+
+        </form>
+      </div>
+
+    <% } else { %>
+
+      <!-- Full state -->
+      <div class="gallery-empty" data-aos="fade-up">
+        <div class="gallery-empty-icon">🔒</div>
+        <p style="color: var(--tx-muted);">Registrations for this session are full.</p>
+        <% if (subEvent.eventId) { %>
+          <a href="/events/<%= subEvent.eventId._id %>/register" class="btn-details" style="margin-top: 16px;">
+            ← View Other Sessions
+          </a>
+        <% } %>
+      </div>
+
+    <% } %>
+
+  </div>
+</div>
+
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .checkbox-opt:has(input:checked) {
+    border-color: var(--br);
+    background: rgba(166,124,82,0.06);
+  }
+
+  .progress-fill-normal { background: linear-gradient(90deg, var(--br), var(--gold)); }
+  .progress-fill-full   { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+</style>
+
+
+<script>
+  // ── Show filename after file pick ──
+  function showFileName(input) {
+    const id = input.id.replace('file-', 'filename-');
+    const el = document.getElementById(id);
+    if (el && input.files.length > 0) {
+      el.textContent = '✓ ' + input.files[0].name;
+    }
+  }
+
+  // ── Payment screenshot preview ──
+  function handlePaymentUpload(input) {
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    const preview = document.getElementById('paymentPreview');
+    const img = document.getElementById('paymentPreviewImg');
+    const name = document.getElementById('paymentFileName');
+    const dropzone = document.getElementById('paymentDropzone');
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      img.src = e.target.result;
+      name.textContent = '✓ ' + file.name;
+      preview.style.display = 'block';
+      dropzone.style.borderColor = 'var(--br)';
+      dropzone.style.background = 'rgba(166,124,82,0.04)';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Team member add/remove ──
+  const addBtn = document.getElementById('addMemberBtn');
+  const container = document.getElementById('teamMembersContainer');
+  const teamError = document.getElementById('teamError');
+
+  if (addBtn && container) {
+    const maxMembers = parseInt(addBtn.dataset.max) || 99;
+
+    addBtn.addEventListener('click', () => {
+      const current = container.querySelectorAll('input').length;
+
+      if (current >= maxMembers) {
+        teamError.style.display = 'block';
+        return;
+      }
+
+      teamError.style.display = 'none';
+      const idx = current + 1;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.name = 'teamMembers[]';
+      input.placeholder = `Member ${idx} name`;
+      input.className = 'form-control-custom';
+      input.style.animation = 'fadeSlideIn 0.3s ease';
+
+      container.appendChild(input);
+
+      if (idx >= maxMembers) {
+        addBtn.style.display = 'none';
+      }
+    });
+  }
+
+  // ── Submit spinner ──
+  const form = document.getElementById('registrationForm');
+  if (form) {
+    form.addEventListener('submit', function() {
+      const submitText = document.getElementById('submitText');
+      const submitSpinner = document.getElementById('submitSpinner');
+      const submitBtn = document.getElementById('submitBtn');
+
+      if (submitText && submitSpinner && submitBtn) {
+        submitText.style.display = 'none';
+        submitSpinner.style.display = 'inline';
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.8';
+      }
+    });
+  }
+</script>

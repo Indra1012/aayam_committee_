@@ -1,0 +1,93 @@
+<!-- views/events/register-success.ejs -->
+<div class="container">
+  <div style="
+    max-width: 520px;
+    margin: 0 auto;
+    padding: clamp(60px,8vw,110px) 0;
+    text-align: center;
+  ">
+
+    <!-- Success icon -->
+    <div data-aos="zoom-in" style="
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: rgba(39,174,96,0.12);
+      border: 2px solid rgba(39,174,96,0.28);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      margin: 0 auto 24px;
+    ">
+      ✓
+    </div>
+
+    <div class="section-label" data-aos="fade-up">Registration Complete</div>
+
+    <h1 class="page-title" data-aos="fade-up" data-aos-delay="60" style="margin-top: 6px; margin-bottom: 14px;">
+      You're registered!
+    </h1>
+
+    <p data-aos="fade-up" data-aos-delay="100" style="
+      font-size: clamp(0.93rem,1.5vw,1.05rem);
+      color: var(--tx-muted);
+      line-height: 1.75;
+      margin-bottom: 10px;
+    ">
+      Your registration for <strong style="color: var(--tx);"><%= subEvent.title %></strong> has been submitted successfully.
+    </p>
+
+    <% if (subEvent.requirePaymentScreenshot) { %>
+      <div style="
+        background: rgba(201,168,76,0.10);
+        border: 1px solid rgba(201,168,76,0.26);
+        border-radius: var(--r-md);
+        padding: 14px 18px;
+        margin: 22px 0 28px;
+        font-size: 0.9rem;
+        color: #8a6914;
+        font-weight: 500;
+        text-align: left;
+      " data-aos="fade-up" data-aos-delay="130">
+        <strong>⏳ Pending verification</strong><br>
+        Your payment screenshot has been received. The organiser will verify your payment and confirm your seat shortly.
+      </div>
+    <% } else { %>
+      <div style="
+        background: rgba(39,174,96,0.08);
+        border: 1px solid rgba(39,174,96,0.22);
+        border-radius: var(--r-md);
+        padding: 14px 18px;
+        margin: 22px 0 28px;
+        font-size: 0.9rem;
+        color: #27ae60;
+        font-weight: 500;
+      " data-aos="fade-up" data-aos-delay="130">
+        ✅ Your seat is confirmed!,
+      </div>
+      <div style="
+        background: rgba(39,174,96,0.08);
+        border: 1px solid rgba(39,174,96,0.22);
+        border-radius: var(--r-md);
+        padding: 14px 18px;
+        margin: 22px 0 28px;
+        font-size: 0.9rem;
+        color: #ae3d27;
+        font-weight: 500;
+      " data-aos="fade-up" data-aos-delay="130">
+“If anything goes wrong, we will inform you via your registered email or contact number.”
+</div>
+    <% } %>
+
+    <!-- Action buttons -->
+    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;" data-aos="fade-up" data-aos-delay="160">
+      <% if (subEvent.eventId) { %>
+        <a href="/events/<%= subEvent.eventId._id %>" class="btn-register">
+          View Event <i class="bi bi-arrow-right"></i>
+        </a>
+      <% } %>
+      <a href="/events" class="btn-details">
+        All Events
+      </a>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,133 @@
+Folder PATH listing for volume Windows
+Volume serial number is 48C3-D98D
+C:.
+|   .env
+|   .gitignore
+|   app.js
+|   package-lock.json
+|   package.json
+|   structure.txt
+|   vercel.json
+|   
++---api
+|       index.js
+|       
++---config
+|       db.js
+|       passport.js
+|       
++---controllers
+|       adminController.js
+|       authController.js
+|       eventController.js
+|       homeController.js
+|       reachOutController.js
+|       teamController.js
+|       
++---middlewares
+|       authMiddleware.js
+|       upload.js
+|       uploadEvent.js
+|       uploadReachOut.js
+|       uploadTeam.js
+|       
++---models
+|       Event.js
+|       HomeGallery.js
+|       ReachOut.js
+|       Review.js
+|       TeamMember.js
+|       TeamSection.js
+|       User.js
+|       
+|           
++---public
+|   +---css
+|   |       style.css
+|   |       
+|   +---images
+|   |       aayam_img.jpg
+|   |       
+|   \---js
+|           theme.js
+|           
++---routes
+|       adminRoutes.js
+|       authRoutes.js
+|       eventRoutes.js
+|       homeRoutes.js
+|       reachOutRoutes.js
+|       teamRoutes.js
+|       
++---uploads
+|   +---events
+|   |       1769655844258-Uzu-logo.png
+|   |       1769672777020-aayam_img.jpg
+|   |       1769672808255-Uzu-logo.png
+|   |       1769672815928-aayam_img.jpg
+|   |       1769672846588-Experiment 6.docx
+|   |       1769672896784-aayam_img.jpg
+|   |       1769672904063-Uzu-logo.png
+|   |       1769672950899-Step 1.docx
+|   |       1769941530795-Uzu-logo.png
+|   |       1771917348088-aayam_img.jpg
+|   |       
+|   +---home
+|   |       1769655815812.jpg
+|   |       1769672671418.png
+|   |       1771872153722.jpg
+|   |       1771876953902.jpg
+|   |       1771879588694.jpg
+|   |       1771915854889.jpg
+|   |       1771915872335.png
+|   |       1771915887707.jpg
+|   |       1771915921739.jpg
+|   |       1771915946530.jpg
+|   |       1771915957807.jpg
+|   |       1771916035379.jpg
+|   |       
+|   +---reachout
+|   \---team
+|           1769672693910.png
+|           1769673060399.jpg
+|           1771916388026.jpeg
+|           
+\---views
+    |   editMember.ejs
+    |   editSection.ejs
+    |   events.ejs
+    |   home.ejs
+    |   team.ejs
+    |   
+    +---admin
+    |   |   index.ejs
+    |   |   
+    |   +---reachout
+    |   |       index.ejs
+    |   |       
+    |   \---users
+    |           index.ejs
+    |           
+    +---auth
+    |       forgot.ejs
+    |       index.ejs
+    |       login.ejs
+    |       register.ejs
+    |       reset.ejs
+    |       
+    +---events
+    |       edit.ejs
+    |       index.ejs
+    |       show.ejs
+    |       
+    +---layouts
+    |       main.ejs
+    |       
+    +---partials
+    |       footer.ejs
+    |       homeSections.ejs
+    |       navbar.ejs
+    |       
+    \---reachout
+            index.ejs
+            

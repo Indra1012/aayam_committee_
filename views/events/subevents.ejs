@@ -1,0 +1,181 @@
+<!-- views/events/subevents.ejs -->
+<div class="container">
+
+  <!-- Back link -->
+  <div style="padding: clamp(18px,2.5vw,30px) 0 0;" data-aos="fade-up">
+    <a href="/events/<%= event._id %>" class="btn-details">
+      <i class="bi bi-arrow-left"></i> Back to Event
+    </a>
+  </div>
+
+  <!-- Header -->
+  <div class="page-header" data-aos="fade-down">
+    <div class="section-label">Registration</div>
+    <h1 class="page-title"><%= event.title %></h1>
+    <p class="page-subtitle">Select a session below to register</p>
+  </div>
+
+  <div style="max-width: 680px; margin: 0 auto; padding-bottom: clamp(50px,6vw,90px);">
+
+    <% if (!subEvents || subEvents.length === 0) { %>
+      <!-- No sub-events state -->
+      <div class="gallery-empty" data-aos="fade-up">
+        <div class="gallery-empty-icon">📋</div>
+        <p style="color: var(--tx-muted); font-size: 1rem;">
+          Registration details will be announced soon.
+        </p>
+        <a href="/events/<%= event._id %>" class="btn-details" style="margin-top: 16px;">
+          ← Back to Event
+        </a>
+      </div>
+
+    <% } else { %>
+
+      <% subEvents.forEach((sub, i) => { %>
+
+        <div
+          class="event-card"
+          data-aos="fade-up"
+          data-aos-delay="<%= i * 80 %>"
+          style="margin-bottom: 18px; cursor: default;"
+        >
+          <div class="event-card-body" style="padding: clamp(18px,3vw,28px);">
+
+            <!-- Sub-event title + badge -->
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom: 10px;">
+              <h3 class="event-card-title" style="margin-bottom: 0;">
+                <%= sub.title %>
+              </h3>
+
+              <% if (sub.maxParticipants) { %>
+                <%
+                  const isFull = sub.registrationCount >= sub.maxParticipants;
+                  const spotsLeft = sub.maxParticipants - sub.registrationCount;
+                %>
+                <% if (isFull) { %>
+                  <span style="
+                    padding: 4px 12px;
+                    border-radius: var(--r-full);
+                    background: rgba(192,57,43,0.10);
+                    border: 1px solid rgba(192,57,43,0.22);
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    color: #c0392b;
+                    white-space: nowrap;
+                    flex-shrink: 0;
+                  ">Full</span>
+                <% } else if (spotsLeft <= 10) { %>
+                  <span style="
+                    padding: 4px 12px;
+                    border-radius: var(--r-full);
+                    background: rgba(241,196,15,0.10);
+                    border: 1px solid rgba(241,196,15,0.28);
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    color: #b8860b;
+                    white-space: nowrap;
+                    flex-shrink: 0;
+                  ">Only <%= spotsLeft %> left</span>
+                <% } %>
+              <% } %>
+            </div>
+
+            <!-- Description -->
+            <% if (sub.description) { %>
+              <p class="event-card-desc" style="margin-bottom: 14px;">
+                <%= sub.description %>
+              </p>
+            <% } %>
+
+            <!-- Meta info row -->
+            <div style="display:flex; flex-wrap:wrap; gap: 10px; margin-bottom: 18px;">
+
+              <% if (sub.isGroupEvent) { %>
+                <span style="
+                  display:inline-flex; align-items:center; gap:5px;
+                  padding: 4px 12px;
+                  border-radius: var(--r-full);
+                  background: rgba(166,124,82,0.08);
+                  border: 1px solid rgba(166,124,82,0.18);
+                  font-size: 0.78rem; font-weight: 600;
+                  color: var(--tx-mid);
+                ">
+                  <i class="bi bi-people"></i>
+                  Team — <%= sub.minTeamSize %>–<%= sub.maxTeamSize %> members
+                </span>
+              <% } else { %>
+                <span style="
+                  display:inline-flex; align-items:center; gap:5px;
+                  padding: 4px 12px;
+                  border-radius: var(--r-full);
+                  background: rgba(166,124,82,0.08);
+                  border: 1px solid rgba(166,124,82,0.18);
+                  font-size: 0.78rem; font-weight: 600;
+                  color: var(--tx-mid);
+                ">
+                  <i class="bi bi-person"></i> Individual
+                </span>
+              <% } %>
+
+              <% if (sub.maxParticipants) { %>
+                <span style="
+                  display:inline-flex; align-items:center; gap:5px;
+                  padding: 4px 12px;
+                  border-radius: var(--r-full);
+                  background: rgba(166,124,82,0.08);
+                  border: 1px solid rgba(166,124,82,0.18);
+                  font-size: 0.78rem; font-weight: 600;
+                  color: var(--tx-mid);
+                ">
+                  <i class="bi bi-person-check"></i>
+                  <%= sub.registrationCount %>/<%= sub.maxParticipants %> registered
+                </span>
+              <% } %>
+
+              <% if (sub.requirePaymentScreenshot) { %>
+                <span style="
+                  display:inline-flex; align-items:center; gap:5px;
+                  padding: 4px 12px;
+                  border-radius: var(--r-full);
+                  background: rgba(201,168,76,0.10);
+                  border: 1px solid rgba(201,168,76,0.24);
+                  font-size: 0.78rem; font-weight: 600;
+                  color: #8a6914;
+                ">
+                  <i class="bi bi-credit-card"></i> Payment required
+                </span>
+              <% } %>
+
+            </div>
+
+            <!-- Register button -->
+            <% const isFull = sub.maxParticipants && sub.registrationCount >= sub.maxParticipants; %>
+
+            <% if (isFull) { %>
+              <button disabled style="
+                padding: 9px 22px;
+                border-radius: var(--r-full);
+                background: rgba(166,124,82,0.08);
+                border: 1.5px solid var(--border-l);
+                font-size: 0.88rem;
+                font-weight: 600;
+                color: var(--tx-muted);
+                cursor: not-allowed;
+              ">
+                Registrations Closed
+              </button>
+            <% } else { %>
+              <a href="/register/<%= sub._id %>" class="btn-register">
+                Register Now <i class="bi bi-arrow-right"></i>
+              </a>
+            <% } %>
+
+          </div>
+        </div>
+
+      <% }) %>
+
+    <% } %>
+
+  </div>
+</div>

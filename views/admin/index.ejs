@@ -1,0 +1,80 @@
+<!-- views/admin/index.ejs -->
+<div class="container my-5">
+  <div class="page-header" data-aos="fade-down">
+    <div class="section-label">Control Panel</div>
+    <h1 class="page-title">Admin Dashboard</h1>
+    <p class="page-subtitle">Logged in as <strong style="color:var(--br);"><%= user.email %></strong> · <%= user.role === "superadmin" ? "Main Admin" : "Admin" %></p>
+  </div>
+
+  <!-- Admin List -->
+  <div class="admin-card" data-aos="fade-up">
+    <h3 class="detail-section-title" style="border:none;margin:0 0 20px;padding:0;">Admins & Roles</h3>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% admins.forEach(admin => { %>
+            <tr>
+              <td><%= admin.email %></td>
+              <td>
+                <span class="badge-role <%= admin.role === 'superadmin' ? 'badge-super' : 'badge-admin' %>">
+                  <%= admin.role === "superadmin" ? "Main Admin" : "Admin" %>
+                </span>
+              </td>
+              <td>
+                <span class="badge-role <%= admin.isActive ? 'badge-active' : 'badge-disabled' %>">
+                  <%= admin.isActive ? "Active" : "Disabled" %>
+                </span>
+              </td>
+              <td>
+                <% if (user.role === "superadmin" && admin.role !== "superadmin") { %>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <form action="/admin/toggle/<%= admin._id %>" method="POST" class="d-inline" onsubmit="return confirm('Toggle admin active status?')">
+                      <button class="btn-admin-warn" style="font-size:0.78rem;padding:5px 12px;">Toggle Active</button>
+                    </form>
+                    <form action="/admin/make-super/<%= admin._id %>" method="POST" class="d-inline" onsubmit="return confirm('Make this admin the MAIN admin?')">
+                      <button class="btn-admin-danger" style="font-size:0.78rem;padding:5px 12px;">Make Main</button>
+                    </form>
+                    <form action="/admin/delete/<%= admin._id %>" method="POST" class="d-inline" onsubmit="return confirm('Delete this admin permanently?')">
+                      <button class="btn-admin-danger" style="font-size:0.78rem;padding:5px 12px;">Delete</button>
+                    </form>
+                  </div>
+                <% } else { %>
+                  <span style="color:var(--tx-muted);font-size:0.85rem;">—</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Invite Admin -->
+  <% if (user.role === "superadmin") { %>
+    <div class="admin-card" data-aos="fade-up" data-aos-delay="100">
+      <h3 class="detail-section-title" style="border:none;margin:0 0 6px;padding:0;">Invite New Admin</h3>
+      <p style="font-size:0.88rem;color:var(--tx-muted);margin-bottom:20px;">You can invite up to <strong>10 admins</strong>.</p>
+      <form action="/admin/invite" method="POST">
+        <div class="row g-3" style="max-width:560px;">
+          <div class="col-md-5">
+            <input type="email" name="email" class="form-control" placeholder="Admin email" required>
+          </div>
+          <div class="col-md-5">
+            <input type="password" name="password" class="form-control" placeholder="Temporary password" required>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn-register w-100">Invite</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  <% } %>
+</div>

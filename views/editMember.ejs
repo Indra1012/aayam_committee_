@@ -1,0 +1,39 @@
+<section class="container my-5">
+  <h3 class="text-center mb-4">✏ Edit Team Member</h3>
+
+  <form
+    action="/team/member/edit/<%= member._id %>"
+    method="POST"
+    enctype="multipart/form-data"
+    class="mx-auto"
+    style="max-width: 400px;"
+  >
+
+    <!-- MEMBER NAME -->
+    <div class="mb-3">
+      <label class="form-label">Member Name</label>
+      <input
+        type="text"
+        name="name"
+        value="<%= member.name %>"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <!-- MEMBER IMAGE (OPTIONAL) -->
+    <div class="mb-3">
+      <label class="form-label">Change Image (optional)</label>
+      <input
+        type="file"
+        name="image"
+        class="form-control"
+        accept="image/*"
+      />
+    </div>
+
+    <button type="submit" class="btn btn-dark w-100">
+      💾 Save Changes
+    </button>
+  </form>
+</section>
