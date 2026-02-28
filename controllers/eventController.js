@@ -133,7 +133,7 @@ exports.addEvent = async (req, res) => {
       about,
       startDate,
       endDate,
-      bannerImage: `/uploads/events/${req.file.filename}`,
+      bannerImage: req.file.path,
     });
 
     res.redirect("/events");
@@ -186,7 +186,7 @@ exports.updateEvent = async (req, res) => {
     };
 
     if (req.file) {
-      updateData.bannerImage = `/uploads/events/${req.file.filename}`;
+      updateData.bannerImage = req.file.path;
     }
 
     await Event.findByIdAndUpdate(req.params.id, updateData);
@@ -297,7 +297,7 @@ exports.addGalleryImages = async (req, res) => {
     }
 
     const images = req.files.map(
-      (file) => `/uploads/events/${file.filename}`
+      (file) => file.path
     );
 
     await Event.findByIdAndUpdate(req.params.id, {
@@ -392,7 +392,7 @@ exports.addDocument = async (req, res) => {
       $push: {
         documents: {
           title,
-          file: `/uploads/events/${req.file.filename}`,
+          file: req.file.path,
           isPublic: isPublic === "on",
         },
       },
@@ -445,7 +445,7 @@ exports.createSubEvent = async (req, res) => {
     } = req.body;
 
     const qrImage = req.file
-      ? `/uploads/events/${req.file.filename}`
+      ? req.file.path
       : null;
 
     await SubEvent.create({
@@ -486,7 +486,7 @@ exports.updateSubEvent = async (req, res) => {
     };
 
     if (req.file) {
-      updateData.qrImage = `/uploads/events/${req.file.filename}`;
+      updateData.qrImage = req.file.path;
     }
 
     const updated = await SubEvent.findByIdAndUpdate(id, updateData, { new: true });
