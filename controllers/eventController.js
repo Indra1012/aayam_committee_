@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const Review = require("../models/Review");
 const SubEvent = require("../models/SubEvent");
 const Registration = require("../models/Registration");
+const { uploadDocToCloud } = require("../middlewares/uploadEvent");
 
 
 /* ===============================
@@ -73,9 +74,7 @@ exports.getEventDetail = async (req, res) => {
 
 
 /* ===============================
-   SUBEVENT SELECTION PAGE (NEW)
-   Shows all sub-events for an event
-   so the user can pick one to register
+   SUBEVENT SELECTION PAGE
 ================================ */
 exports.getSubEventsPage = async (req, res) => {
   try {
@@ -86,12 +85,10 @@ exports.getSubEventsPage = async (req, res) => {
     const event = await Event.findById(req.params.eventId).lean();
     if (!event) return res.redirect("/events");
 
-    // Don't allow registration for past events
     if (event.type === "past") return res.redirect(`/events/${event._id}`);
 
     const subEvents = await SubEvent.find({ eventId: event._id }).lean();
 
-    // Attach registration count to each sub-event
     for (let sub of subEvents) {
       sub.registrationCount = await Registration.countDocuments({
         subEventId: sub._id,
@@ -296,9 +293,7 @@ exports.addGalleryImages = async (req, res) => {
       return res.redirect(`/events/${req.params.id}`);
     }
 
-    const images = req.files.map(
-      (file) => file.path
-    );
+    const images = req.files.map((file) => file.path);
 
     await Event.findByIdAndUpdate(req.params.id, {
       $push: { galleryImages: { $each: images } },
@@ -388,11 +383,14 @@ exports.addDocument = async (req, res) => {
       return res.redirect(`/events/${req.params.id}`);
     }
 
+    // Upload buffer manually to Cloudinary with resource_type:"raw"
+    const fileUrl = await uploadDocToCloud(req.file.buffer, req.file.originalname);
+
     await Event.findByIdAndUpdate(req.params.id, {
       $push: {
         documents: {
           title,
-          file: req.file.path,
+          file: fileUrl,
           isPublic: isPublic === "on",
         },
       },
@@ -444,9 +442,8 @@ exports.createSubEvent = async (req, res) => {
       maxTeamSize,
     } = req.body;
 
-    const qrImage = req.file
-      ? req.file.path
-      : null;
+    // file.path is the Cloudinary URL (works locally and on Render)
+    const qrImage = req.file ? req.file.path : null;
 
     await SubEvent.create({
       title,
@@ -486,6 +483,7 @@ exports.updateSubEvent = async (req, res) => {
     };
 
     if (req.file) {
+      // file.path is the Cloudinary URL
       updateData.qrImage = req.file.path;
     }
 
@@ -622,7 +620,6 @@ exports.showRegistrationForm = async (req, res) => {
 
     if (!subEvent) return res.redirect("/events");
 
-    // Block registration if event is past
     if (subEvent.eventId && subEvent.eventId.type === "past") {
       return res.redirect(`/events/${subEvent.eventId._id}`);
     }
@@ -658,7 +655,7 @@ exports.submitRegistration = async (req, res) => {
 
     // ── Build a map of uploaded files by field name ──
     // req.files is an array from multer .any()
-    // e.g. [{ fieldname: 'paymentScreenshot', filename: '...' }, ...]
+    // Each file.path is now the Cloudinary URL
     const uploadedFiles = {};
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
@@ -673,42 +670,38 @@ exports.submitRegistration = async (req, res) => {
       for (const [fieldId, value] of Object.entries(req.body.responses)) {
         if (!mongoose.Types.ObjectId.isValid(fieldId)) continue;
 
-        // Check if this field had a file uploaded
-        // File fields are named: responses[fieldId]
         const fileKey = `responses[${fieldId}]`;
         const uploadedFile = uploadedFiles[fileKey];
 
         responses.push({
           fieldId: new mongoose.Types.ObjectId(fieldId),
+          // Use file.path (Cloudinary URL) instead of building a local path
           value: uploadedFile
-            ? `/uploads/registrations/${uploadedFile.filename}`
+            ? uploadedFile.path
             : Array.isArray(value) ? value : value,
         });
       }
     }
 
     // Also catch file fields that weren't in req.body.responses
-    // (browser may not send empty file fields in body)
     if (req.files && req.files.length > 0) {
       req.files.forEach((file) => {
-        // Skip paymentScreenshot — handled separately below
         if (file.fieldname === "paymentScreenshot") return;
 
-        // Extract fieldId from fieldname like "responses[abc123]"
         const match = file.fieldname.match(/^responses\[(.+)\]$/);
         if (!match) return;
 
         const fieldId = match[1];
         if (!mongoose.Types.ObjectId.isValid(fieldId)) return;
 
-        // Only add if not already added above
         const alreadyAdded = responses.find(
           (r) => r.fieldId.toString() === fieldId
         );
         if (!alreadyAdded) {
           responses.push({
             fieldId: new mongoose.Types.ObjectId(fieldId),
-            value: `/uploads/registrations/${file.filename}`,
+            // Use file.path (Cloudinary URL)
+            value: file.path,
           });
         }
       });
@@ -722,8 +715,13 @@ exports.submitRegistration = async (req, res) => {
         (r) => r.fieldId.toString() === field._id.toString()
       );
 
-      if (!found || found.value === null || found.value === undefined ||
-          found.value === "" || (Array.isArray(found.value) && found.value.length === 0)) {
+      if (
+        !found ||
+        found.value === null ||
+        found.value === undefined ||
+        found.value === "" ||
+        (Array.isArray(found.value) && found.value.length === 0)
+      ) {
         return res.redirect(`/register/${subEventId}?error=required`);
       }
     }
@@ -737,14 +735,14 @@ exports.submitRegistration = async (req, res) => {
     }
 
     // ── Payment screenshot ──
-    // Now pulled from uploadedFiles map instead of req.file
+    // Use file.path (Cloudinary URL) instead of building a local path
     let paymentScreenshot = null;
     if (subEvent.requirePaymentScreenshot) {
       const screenshotFile = uploadedFiles["paymentScreenshot"];
       if (!screenshotFile) {
         return res.redirect(`/register/${subEventId}?error=payment`);
       }
-      paymentScreenshot = `/uploads/registrations/${screenshotFile.filename}`;
+      paymentScreenshot = screenshotFile.path;
     }
 
     // ── Save registration ──
@@ -753,7 +751,7 @@ exports.submitRegistration = async (req, res) => {
       responses,
       teamMembers,
       paymentScreenshot,
-      status: "pending", // always starts pending, admin manually verifies
+      status: "pending",
     });
 
     res.redirect(`/register/${subEventId}/success`);
@@ -876,7 +874,7 @@ exports.deleteRegistration = async (req, res) => {
 // Export registrations as CSV
 exports.exportRegistrationsCSV = async (req, res) => {
   try {
-    const { id } = req.params; // subEventId
+    const { id } = req.params;
 
     const subEvent = await SubEvent.findById(id).lean();
     if (!subEvent) return res.redirect("/events");
@@ -885,7 +883,6 @@ exports.exportRegistrationsCSV = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Build CSV headers from form fields
     const fieldHeaders = subEvent.formFields
       .sort((a, b) => a.order - b.order)
       .map((f) => `"${f.label}"`);
@@ -898,7 +895,6 @@ exports.exportRegistrationsCSV = async (req, res) => {
       '"Registered At"',
     ].join(",");
 
-    // Build rows
     const rows = registrations.map((reg, i) => {
       const fieldValues = subEvent.formFields
         .sort((a, b) => a.order - b.order)
@@ -910,7 +906,6 @@ exports.exportRegistrationsCSV = async (req, res) => {
           const val = Array.isArray(resp.value)
             ? resp.value.join("; ")
             : resp.value;
-          // Escape quotes in CSV
           return `"${String(val).replace(/"/g, '""')}"`;
         });
 
@@ -932,10 +927,7 @@ exports.exportRegistrationsCSV = async (req, res) => {
     const filename = `${subEvent.title.replace(/\s+/g, "_")}_registrations.csv`;
 
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${filename}"`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send(csv);
   } catch (error) {
     console.error("Export CSV Error:", error.message);

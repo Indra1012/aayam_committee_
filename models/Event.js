@@ -44,10 +44,6 @@ const eventSchema = new mongoose.Schema(
       required: true,
     },
 
-    // registrationLink: {
-    //   type: String,
-    // },
-
     // For Phase 4D / 4F (future)
     galleryImages: [String],
     conductedBy: [

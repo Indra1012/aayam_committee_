@@ -16,7 +16,7 @@ const getTeamPage = async (req, res) => {
 
     res.render("team", { sections });
   } catch (err) {
-    console.error("Get Team Page Error:", err);
+    console.error("Get Team Page Error:", err.message);
     res.redirect("/");
   }
 };
@@ -36,7 +36,7 @@ const addTeamSection = async (req, res) => {
 
     res.redirect("/team");
   } catch (err) {
-    console.error("Add Team Section Error:", err);
+    console.error("Add Team Section Error:", err.message);
     res.redirect("/team");
   }
 };
@@ -51,7 +51,7 @@ const getEditSection = async (req, res) => {
 
     res.render("editSection", { section });
   } catch (err) {
-    console.error("Edit Section View Error:", err);
+    console.error("Edit Section View Error:", err.message);
     res.redirect("/team");
   }
 };
@@ -73,7 +73,7 @@ const updateSection = async (req, res) => {
 
     res.redirect("/team");
   } catch (err) {
-    console.error("Update Section Error:", err);
+    console.error("Update Section Error:", err.message);
     res.redirect("/team");
   }
 };
@@ -91,7 +91,8 @@ const addTeamMember = async (req, res) => {
       return res.redirect("/team");
     }
 
-    const imagePath = `/uploads/team/${req.file.filename}`;
+    // file.path is the Cloudinary URL (works locally and on Render)
+    const imagePath = req.file.path;
 
     await TeamMember.create({
       name: name.trim(),
@@ -101,10 +102,11 @@ const addTeamMember = async (req, res) => {
 
     res.redirect("/team");
   } catch (error) {
-    console.error("Add Team Member Error:", error);
+    console.error("Add Team Member Error:", error.message);
     res.redirect("/team");
   }
 };
+
 /* ===============================
    GET EDIT MEMBER PAGE
 ================================ */
@@ -115,7 +117,7 @@ const getEditMember = async (req, res) => {
 
     res.render("editMember", { member });
   } catch (error) {
-    console.error("Get Edit Member Error:", error);
+    console.error("Get Edit Member Error:", error.message);
     res.redirect("/team");
   }
 };
@@ -135,13 +137,14 @@ const updateMember = async (req, res) => {
 
     // Update image ONLY if new one uploaded
     if (req.file) {
-      member.image = `/uploads/team/${req.file.filename}`;
+      // file.path is the Cloudinary URL
+      member.image = req.file.path;
     }
 
     await member.save();
     res.redirect("/team");
   } catch (err) {
-    console.error("Update Member Error:", err);
+    console.error("Update Member Error:", err.message);
     res.redirect("/team");
   }
 };
@@ -158,10 +161,11 @@ const deleteTeamMember = async (req, res) => {
 
     res.redirect("/team");
   } catch (error) {
-    console.error("Delete Team Member Error:", error);
+    console.error("Delete Team Member Error:", error.message);
     res.redirect("/team");
   }
 };
+
 /* ===============================
    DELETE TEAM SECTION (ADMIN)
 ================================ */
@@ -177,11 +181,10 @@ const deleteTeamSection = async (req, res) => {
 
     res.redirect("/team");
   } catch (error) {
-    console.error("Delete Team Section Error:", error);
+    console.error("Delete Team Section Error:", error.message);
     res.redirect("/team");
   }
 };
-
 
 
 module.exports = {
@@ -192,7 +195,6 @@ module.exports = {
   updateSection,
   getEditMember,
   updateMember,
-
   deleteTeamMember,
   deleteTeamSection,
 };

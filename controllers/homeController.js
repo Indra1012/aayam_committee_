@@ -12,23 +12,34 @@ exports.getHome = async (req, res) => {
 
 
 exports.addImage = async (req, res) => {
-  const { section } = req.body;
+  try {
+    const { section } = req.body;
 
-  if (!req.file || !section) return res.redirect("/");
+    if (!req.file || !section) return res.redirect("/");
 
-  const count = await HomeGallery.countDocuments({ section });
-  if (count >= 4) return res.redirect("/");
+    const count = await HomeGallery.countDocuments({ section });
+    if (count >= 4) return res.redirect("/");
 
-  await HomeGallery.create({
-    image: `/uploads/home/${req.file.filename}`,
-    section,
-  });
+    await HomeGallery.create({
+      // file.path is the Cloudinary URL (works locally and on Render)
+      image: req.file.path,
+      section,
+    });
 
-  res.redirect("/");
+    res.redirect("/");
+  } catch (err) {
+    console.error("Add Image Error:", err.message);
+    res.status(500).send("Error uploading image");
+  }
 };
 
 
 exports.deleteImage = async (req, res) => {
-  await HomeGallery.findByIdAndDelete(req.params.id);
-  res.redirect("/");
+  try {
+    await HomeGallery.findByIdAndDelete(req.params.id);
+    res.redirect("/");
+  } catch (err) {
+    console.error("Delete Image Error:", err.message);
+    res.redirect("/");
+  }
 };

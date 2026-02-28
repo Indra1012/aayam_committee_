@@ -3,7 +3,7 @@ const router = express.Router();
 
 const eventController = require("../controllers/eventController");
 const { isAdmin } = require("../middlewares/authMiddleware");
-const uploadEvent = require("../middlewares/uploadEvent");
+const { uploadImage, uploadDoc } = require("../middlewares/uploadEvent"); // ← named imports
 const uploadRegistration = require("../middlewares/uploadRegistration");
 
 
@@ -11,14 +11,11 @@ const uploadRegistration = require("../middlewares/uploadRegistration");
    PUBLIC ROUTES
 ================================ */
 
-// Events listing page
 router.get("/events", eventController.getEventsPage);
 
-// Event detail page
 // NOTE: specific routes like /events/edit/:id must come BEFORE /events/:id
 router.get("/events/edit/:id", isAdmin, eventController.getEditEvent);
 
-// Event detail page
 router.get("/events/:id", eventController.getEventDetail);
 
 
@@ -42,14 +39,14 @@ router.post(
 router.post(
   "/events/add",
   isAdmin,
-  uploadEvent.single("bannerImage"),
+  uploadImage.single("bannerImage"),   // ← image
   eventController.addEvent
 );
 
 router.post(
   "/events/edit/:id",
   isAdmin,
-  uploadEvent.single("bannerImage"),
+  uploadImage.single("bannerImage"),   // ← image
   eventController.updateEvent
 );
 
@@ -64,7 +61,7 @@ router.post(
 router.post(
   "/events/:id/gallery",
   isAdmin,
-  uploadEvent.array("galleryImages", 15),
+  uploadImage.array("galleryImages", 15),  // ← image
   eventController.addGalleryImages
 );
 
@@ -95,7 +92,7 @@ router.post(
 router.post(
   "/events/:id/documents",
   isAdmin,
-  uploadEvent.single("document"),
+  uploadDoc.single("document"),        // ← document (pdf/doc/docx)
   eventController.addDocument
 );
 
@@ -113,14 +110,14 @@ router.post(
 router.post(
   "/events/:eventId/subevents/add",
   isAdmin,
-  uploadEvent.single("qrImage"),
+  uploadImage.single("qrImage"),       // ← image
   eventController.createSubEvent
 );
 
 router.post(
   "/subevents/:id/edit",
   isAdmin,
-  uploadEvent.single("qrImage"),
+  uploadImage.single("qrImage"),       // ← image
   eventController.updateSubEvent
 );
 
@@ -154,24 +151,19 @@ router.post(
    USER REGISTRATION
 ================================ */
 
-// NEW: Subevent selection page — user picks which sub-event to register for
 router.get(
   "/events/:eventId/register",
   eventController.getSubEventsPage
 );
 
-// Show registration form for a specific sub-event
 router.get("/register/:subEventId", eventController.showRegistrationForm);
 
-// Submit registration form
-// uploadRegistration is now a plain middleware (wraps multer .any())
 router.post(
   "/register/:subEventId",
   uploadRegistration,
   eventController.submitRegistration
 );
 
-// Registration success page
 router.get(
   "/register/:subEventId/success",
   eventController.registrationSuccess
@@ -182,42 +174,36 @@ router.get(
    ADMIN REGISTRATION MANAGEMENT
 ================================ */
 
-// View all registrations for a sub-event
 router.get(
   "/admin/subevents/:id/registrations",
   isAdmin,
   eventController.getRegistrationsForSubEvent
 );
 
-// Verify registration
 router.post(
   "/registrations/:id/verify",
   isAdmin,
   eventController.verifyRegistration
 );
 
-// Move back to pending
 router.post(
   "/registrations/:id/pending",
   isAdmin,
   eventController.pendingRegistration
 );
 
-// Reject registration
 router.post(
   "/registrations/:id/reject",
   isAdmin,
   eventController.rejectRegistration
 );
 
-// Delete registration
 router.post(
   "/registrations/:id/delete",
   isAdmin,
   eventController.deleteRegistration
 );
 
-// Export registrations as CSV
 router.get(
   "/admin/subevents/:id/registrations/export",
   isAdmin,
