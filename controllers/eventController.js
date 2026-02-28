@@ -31,7 +31,7 @@ exports.getEventsPage = async (req, res) => {
       pastEvents,
     });
   } catch (error) {
-    console.error("Events Page Error:", error);
+    console.error("Events Page Error:", error.message);
     res.redirect("/");
   }
 };
@@ -66,7 +66,7 @@ exports.getEventDetail = async (req, res) => {
       subEvents,
     });
   } catch (error) {
-    console.error("Event Detail Error:", error);
+    console.error("Event Detail Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -100,7 +100,7 @@ exports.getSubEventsPage = async (req, res) => {
 
     res.render("events/subevents", { event, subEvents });
   } catch (error) {
-    console.error("SubEvents Page Error:", error);
+    console.error("SubEvents Page Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -138,7 +138,7 @@ exports.addEvent = async (req, res) => {
 
     res.redirect("/events");
   } catch (error) {
-    console.error("Add Event Error:", error);
+    console.error("Add Event Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -156,7 +156,7 @@ exports.getEditEvent = async (req, res) => {
 
     res.render("events/edit", { event, subEvents });
   } catch (error) {
-    console.error("Get Edit Event Error:", error);
+    console.error("Get Edit Event Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -193,7 +193,7 @@ exports.updateEvent = async (req, res) => {
 
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
-    console.error("Update Event Error:", error);
+    console.error("Update Event Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -207,7 +207,7 @@ exports.deleteEvent = async (req, res) => {
     await Event.findByIdAndDelete(req.params.id);
     res.redirect("/events");
   } catch (error) {
-    console.error("Delete Event Error:", error);
+    console.error("Delete Event Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -224,7 +224,7 @@ exports.moveEventToPast = async (req, res) => {
 
     res.redirect("/events");
   } catch (error) {
-    console.error("Move Event Error:", error);
+    console.error("Move Event Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -250,7 +250,7 @@ exports.addReview = async (req, res) => {
 
     res.redirect(`/events/${eventId}`);
   } catch (error) {
-    console.error("Add Review Error:", error);
+    console.error("Add Review Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -265,7 +265,7 @@ exports.deleteReview = async (req, res) => {
     await Review.findByIdAndDelete(reviewId);
     res.redirect(`/events/${eventId}`);
   } catch (error) {
-    console.error("Delete Review Error:", error);
+    console.error("Delete Review Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -281,7 +281,7 @@ exports.deleteBannerImage = async (req, res) => {
     });
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
-    console.error("Delete Banner Error:", error);
+    console.error("Delete Banner Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -306,7 +306,7 @@ exports.addGalleryImages = async (req, res) => {
 
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
-    console.error("Add Gallery Error:", error);
+    console.error("Add Gallery Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -327,7 +327,7 @@ exports.deleteGalleryImage = async (req, res) => {
 
     res.redirect(`/events/${eventId}`);
   } catch (error) {
-    console.error("Delete Gallery Image Error:", error);
+    console.error("Delete Gallery Image Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -350,7 +350,7 @@ exports.addCoordinator = async (req, res) => {
 
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
-    console.error("Add Coordinator Error:", error);
+    console.error("Add Coordinator Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -371,7 +371,7 @@ exports.deleteCoordinator = async (req, res) => {
 
     res.redirect(`/events/${eventId}`);
   } catch (error) {
-    console.error("Delete Coordinator Error:", error);
+    console.error("Delete Coordinator Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -400,7 +400,7 @@ exports.addDocument = async (req, res) => {
 
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
-    console.error("Add Document Error:", error);
+    console.error("Add Document Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -421,7 +421,7 @@ exports.deleteDocument = async (req, res) => {
 
     res.redirect(`/events/${eventId}`);
   } catch (error) {
-    console.error("Delete Document Error:", error);
+    console.error("Delete Document Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -463,7 +463,7 @@ exports.createSubEvent = async (req, res) => {
 
     res.redirect(`/events/${eventId}`);
   } catch (error) {
-    console.error("Create SubEvent Error:", error);
+    console.error("Create SubEvent Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -492,7 +492,7 @@ exports.updateSubEvent = async (req, res) => {
     const updated = await SubEvent.findByIdAndUpdate(id, updateData, { new: true });
     res.redirect(`/events/edit/${updated.eventId}`);
   } catch (error) {
-    console.error("Update SubEvent Error:", error);
+    console.error("Update SubEvent Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -508,7 +508,7 @@ exports.deleteSubEvent = async (req, res) => {
     await Registration.deleteMany({ subEventId: id });
     res.redirect(eventId ? `/events/edit/${eventId}` : "/events");
   } catch (error) {
-    console.error("Delete SubEvent Error:", error);
+    console.error("Delete SubEvent Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -546,7 +546,7 @@ exports.addFormField = async (req, res) => {
 
     res.redirect(`/events/edit/${subEvent.eventId}`);
   } catch (error) {
-    console.error("Add Form Field Error:", error);
+    console.error("Add Form Field Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -579,7 +579,7 @@ exports.updateFormField = async (req, res) => {
 
     res.redirect(`/events/edit/${subEvent.eventId}`);
   } catch (error) {
-    console.error("Update Form Field Error:", error);
+    console.error("Update Form Field Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -601,7 +601,7 @@ exports.deleteFormField = async (req, res) => {
 
     res.redirect(`/events/edit/${subEvent.eventId}`);
   } catch (error) {
-    console.error("Delete Form Field Error:", error);
+    console.error("Delete Form Field Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -632,7 +632,7 @@ exports.showRegistrationForm = async (req, res) => {
 
     res.render("events/register", { subEvent });
   } catch (error) {
-    console.error("Show Registration Form Error:", error);
+    console.error("Show Registration Form Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -758,7 +758,7 @@ exports.submitRegistration = async (req, res) => {
 
     res.redirect(`/register/${subEventId}/success`);
   } catch (error) {
-    console.error("Submit Registration Error:", error);
+    console.error("Submit Registration Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -777,7 +777,7 @@ exports.registrationSuccess = async (req, res) => {
 
     res.render("events/register-success", { subEvent });
   } catch (error) {
-    console.error("Registration Success Error:", error);
+    console.error("Registration Success Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -801,7 +801,7 @@ exports.getRegistrationsForSubEvent = async (req, res) => {
 
     res.render("admin/registrations", { subEvent, registrations });
   } catch (error) {
-    console.error("Get Registrations Error:", error);
+    console.error("Get Registrations Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -817,7 +817,7 @@ exports.verifyRegistration = async (req, res) => {
     );
     res.redirect(`/admin/subevents/${reg.subEventId}/registrations`);
   } catch (error) {
-    console.error("Verify Registration Error:", error);
+    console.error("Verify Registration Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -833,7 +833,7 @@ exports.pendingRegistration = async (req, res) => {
     );
     res.redirect(`/admin/subevents/${reg.subEventId}/registrations`);
   } catch (error) {
-    console.error("Pending Registration Error:", error);
+    console.error("Pending Registration Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -849,7 +849,7 @@ exports.rejectRegistration = async (req, res) => {
     );
     res.redirect(`/admin/subevents/${reg.subEventId}/registrations`);
   } catch (error) {
-    console.error("Reject Registration Error:", error);
+    console.error("Reject Registration Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -867,7 +867,7 @@ exports.deleteRegistration = async (req, res) => {
         : "/events"
     );
   } catch (error) {
-    console.error("Delete Registration Error:", error);
+    console.error("Delete Registration Error:", error.message);
     res.redirect("/events");
   }
 };
@@ -938,7 +938,7 @@ exports.exportRegistrationsCSV = async (req, res) => {
     );
     res.send(csv);
   } catch (error) {
-    console.error("Export CSV Error:", error);
+    console.error("Export CSV Error:", error.message);
     res.redirect("/events");
   }
 };
