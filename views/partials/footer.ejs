@@ -11,39 +11,66 @@
           <img src="/images/aayam_img.jpg" alt="AAYAM" width="38" height="38" class="footer-logo">
           <div>
             <span class="footer-brand-name">AAYAM</span>
-            <span class="footer-brand-sub">UIT Students' Committee</span>
+            <span class="footer-brand-sub">Unitedworld Institute of Technology</span>
           </div>
         </a>
-        <p class="footer-tagline">Empowering Students. Enabling Events. Enhancing Campus Life.</p>
-        <p class="footer-institute">Unitedworld Institute of Technology</p>
+      </div>
+
+      <!-- ── Reach Us ── -->
+      <div class="footer-links-col">
+        <h5 class="footer-col-title">Reach Us</h5>
+        <ul class="footer-nav-list">
+          <li>
+            <a href="mailto:aayam@uit.ac.in" class="footer-nav-link footer-reach-link" aria-label="Email us">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+              aayam@uit.ac.in
+            </a>
+          </li>
+          <li>
+            <a href="https://instagram.com/aayam_uit" target="_blank" rel="noopener" class="footer-nav-link footer-reach-link footer-insta-link" aria-label="Instagram">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                <circle cx="12" cy="12" r="4"/>
+                <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none"/>
+              </svg>
+              @aayam_uit
+            </a>
+          </li>
+          <li>
+            <a href="/reachout" class="footer-nav-link">
+              <i class="bi bi-send-fill"></i> Contact Form
+            </a>
+          </li>
+        </ul>
       </div>
 
       <!-- ── Navigation ── -->
       <div class="footer-links-col">
         <h5 class="footer-col-title">Navigation</h5>
         <ul class="footer-nav-list">
-          <li><a href="/" class="footer-nav-link"><i class="bi bi-house"></i> Home</a></li>
-          <li><a href="/team" class="footer-nav-link"><i class="bi bi-people"></i> Team</a></li>
-          <li><a href="/events" class="footer-nav-link"><i class="bi bi-calendar-event"></i> Events</a></li>
-          <li><a href="/reachout" class="footer-nav-link"><i class="bi bi-envelope"></i> Reach Out</a></li>
+          <li><a href="/" class="footer-nav-link"><i class="bi bi-house-fill"></i> Home</a></li>
+          <li><a href="/team" class="footer-nav-link"><i class="bi bi-people-fill"></i> Team</a></li>
+          <li><a href="/events" class="footer-nav-link"><i class="bi bi-calendar-event-fill"></i> Events</a></li>
+          <li><a href="/reachout" class="footer-nav-link"><i class="bi bi-chat-fill"></i> Reach Out</a></li>
         </ul>
       </div>
 
       <!-- ── Contact ── -->
       <div class="footer-contact-col">
         <h5 class="footer-col-title">Contact</h5>
-
         <div class="footer-person">
           <div class="footer-person-avatar">SC</div>
           <div class="footer-person-info">
-            <span class="footer-contact-name">Mr. Sumantu D. Chhatrodiya</span>
+            <span class="footer-contact-name">Sumantu D. Chhatrodiya</span>
             <span class="footer-contact-role">Student Coordinator</span>
             <a href="tel:+91635432131" class="footer-phone">
               <i class="bi bi-telephone-fill"></i> 635432131
             </a>
           </div>
         </div>
-
         <div class="footer-person">
           <div class="footer-person-avatar">JS</div>
           <div class="footer-person-info">
@@ -54,16 +81,104 @@
             </a>
           </div>
         </div>
-
       </div>
 
     </div>
 
     <!-- ── Bottom bar ── -->
     <div class="footer-bottom">
-      <p class="footer-copy">© 2026 AAYAM – UIT Students' Committee. All rights reserved.</p>
-      <span class="footer-made">Official Students' Committee · UIT</span>
+      <p class="footer-copy">© 2026 AAYAM · UIT Students' Committee. All rights reserved.</p>
     </div>
 
   </div>
 </footer>
+
+<style>
+/* 4-column desktop, tighter vertical rhythm */
+.footer-grid {
+  grid-template-columns: 1.6fr 1.2fr 1fr 1.4fr !important;
+  padding-bottom: clamp(16px, 2vw, 24px) !important;
+  gap: clamp(14px, 2.5vw, 32px) !important;
+}
+
+.site-footer {
+  padding-top: clamp(22px, 3vw, 40px) !important;
+}
+
+.footer-col-title {
+  margin-bottom: 10px !important;
+}
+
+.footer-nav-list {
+  gap: 7px !important;
+}
+
+/* Reach Us links — plain text style matching nav links, no button look */
+.footer-reach-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 0.84rem !important;
+  color: var(--tx-muted) !important;
+  text-decoration: none !important;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  transition: color 0.22s ease, transform 0.22s ease !important;
+}
+.footer-reach-link svg { opacity: 0.7; flex-shrink: 0; }
+.footer-reach-link:hover {
+  color: var(--br) !important;
+  transform: translateX(3px) !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+.footer-insta-link:hover {
+  color: #c15050 !important;
+}
+body.dark-mode .footer-reach-link {
+  color: var(--dk-muted) !important;
+  background: none !important;
+}
+body.dark-mode .footer-reach-link:hover { color: var(--br-light) !important; }
+body.dark-mode .footer-insta-link:hover  { color: #e07070 !important; }
+
+/* Tighten person cards */
+.footer-person {
+  padding: 8px 10px !important;
+  margin-bottom: 6px !important;
+}
+.footer-person:last-child { margin-bottom: 0 !important; }
+
+/* Bottom bar centered */
+.footer-bottom {
+  justify-content: center !important;
+  padding: 12px 0 !important;
+}
+
+/* ── Tablet: 2×2 grid ── */
+@media (max-width: 991.98px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 16px 24px !important;
+    padding-bottom: 14px !important;
+  }
+  .site-footer { padding-top: 22px !important; }
+}
+
+/* ── Mobile: single column, very tight ── */
+@media (max-width: 480px) {
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding-bottom: 12px !important;
+  }
+  .site-footer { padding-top: 18px !important; }
+  .footer-col-title { margin-bottom: 7px !important; }
+  .footer-nav-list  { gap: 5px !important; }
+}
+</style>
