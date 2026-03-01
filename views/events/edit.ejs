@@ -18,7 +18,7 @@
       <div class="edit-section-icon">📋</div>
       <div>
         <div class="edit-section-title">Event Details</div>
-        <div class="edit-section-sub">Title, description, dates and banner</div>
+        <div class="edit-section-sub">Title, description, dates, registration link and banner</div>
       </div>
     </div>
 
@@ -53,6 +53,30 @@
           <label class="form-label-custom">End Date <span style="color:#c0392b;">*</span></label>
           <input type="date" name="endDate" class="form-control-custom" value="<%= event.endDate.toISOString().split('T')[0] %>" required>
         </div>
+      </div>
+
+      <!-- ── Registration Link ── -->
+      <div class="edit-field-group">
+        <label class="form-label-custom">
+          Registration Link
+          <span style="font-weight:400; color:var(--tx-muted); text-transform:none; letter-spacing:0;">(optional — Google Form or external URL)</span>
+        </label>
+        <input
+          type="url"
+          name="registrationLink"
+          class="form-control-custom"
+          value="<%= event.registrationLink || '' %>"
+          placeholder="https://forms.google.com/..."
+        >
+        <% if (event.registrationLink) { %>
+          <div style="margin-top:6px; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:0.75rem; color:#27ae60; font-weight:600;">✓ Link set:</span>
+            <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer"
+               style="font-size:0.75rem; color:var(--br); text-decoration:underline; word-break:break-all;">
+              <%= event.registrationLink %>
+            </a>
+          </div>
+        <% } %>
       </div>
 
       <div class="edit-field-group">
@@ -159,7 +183,6 @@
 
     <% subEvents.forEach(function(sub, si) { %>
 
-      <!-- Each subevent gets a clearly bordered card with colored top accent -->
       <div
         id="subevent-<%= sub._id %>"
         class="subevent-master-card"
@@ -173,7 +196,7 @@
             <div class="subevent-number"><%= si + 1 %></div>
             <div>
               <div class="subevent-name"><%= sub.title %></div>
-              <div style="font-size:0.75rem; color:var(--tx-muted); margin-top:2px;">
+              <div style="font-size:0.75rem; color:rgba(255,255,255,0.75); margin-top:2px;">
                 <%= sub.isGroupEvent ? '👥 Team Event' : '👤 Individual' %>
                 <% if (sub.maxParticipants) { %> · Max <%= sub.maxParticipants %><% } %>
                 <% if (sub.formFields && sub.formFields.length > 0) { %> · <%= sub.formFields.length %> form field<%= sub.formFields.length > 1 ? 's' : '' %><% } %>
@@ -307,7 +330,6 @@
           <% } %>
 
           <!-- Add new field form -->
-          <!-- anchor so page scrolls back here after submit -->
           <div id="add-field-<%= sub._id %>"></div>
           <div class="add-field-box">
             <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--br); margin-bottom:12px;">
@@ -315,7 +337,6 @@
             </div>
 
             <form action="/subevents/<%= sub._id %>/fields/add" method="POST">
-              <!-- hidden anchor so redirect goes back here -->
               <input type="hidden" name="_anchor" value="subevent-<%= sub._id %>">
 
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -416,7 +437,6 @@
     box-shadow: 0 4px 20px rgba(166,124,82,0.10);
   }
 
-  /* Title bar at top of each subevent */
   .subevent-title-bar {
     background: linear-gradient(135deg, var(--br), var(--br-deep));
     padding: 14px 20px;
@@ -444,10 +464,7 @@
     color: #fff;
   }
 
-  /* Subevent part sections */
-  .subevent-part {
-    padding: clamp(16px,2.5vw,24px);
-  }
+  .subevent-part { padding: clamp(16px,2.5vw,24px); }
   .subevent-part-label {
     font-size: 0.72rem;
     font-weight: 800;
@@ -543,13 +560,12 @@
   body.dark-mode .edit-section-card,
   body.dark-mode .subevent-master-card { background: var(--dk-surface); border-color: var(--border-d); }
   body.dark-mode .add-field-box { background: rgba(255,255,255,0.03); }
-  body.dark-mode .field-chip { background: var(--dk-bg); }
+  body.dark-mode .field-chip { background: var(--dk-base); }
   body.dark-mode .toggle-pill { background: var(--dk-surface); }
 </style>
 
 
 <script>
-  // Show/hide options box based on field type
   document.querySelectorAll('[id^="typeSelect-"]').forEach(function(select) {
     var subId = select.id.replace('typeSelect-', '');
     var box = document.getElementById('optionsBox-' + subId);
@@ -564,12 +580,9 @@
     }
 
     select.addEventListener('change', toggleOptions);
-    toggleOptions(); // run on load
+    toggleOptions();
   });
 
-  // ── Scroll anchor fix ──
-  // After "Save Field" submits, server redirects to /events/edit/:id
-  // We store the last-used subevent ID so we can scroll back to it
   document.querySelectorAll('.add-field-box form').forEach(function(form) {
     form.addEventListener('submit', function() {
       var anchor = form.querySelector('[name="_anchor"]');
@@ -579,7 +592,6 @@
     });
   });
 
-  // On page load, if we stored an anchor, scroll to it
   window.addEventListener('load', function() {
     var anchor = sessionStorage.getItem('editScrollAnchor');
     if (anchor) {

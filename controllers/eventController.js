@@ -116,6 +116,7 @@ exports.addEvent = async (req, res) => {
       about,
       startDate,
       endDate,
+      registrationLink,
     } = req.body;
 
     if (!title || !startDate || !endDate || !req.file) {
@@ -131,7 +132,7 @@ exports.addEvent = async (req, res) => {
       startDate,
       endDate,
       bannerImage: req.file.path,
-    });
+      registrationLink: registrationLink ? registrationLink.trim() : "",    });
 
     res.redirect("/events");
   } catch (error) {
@@ -171,6 +172,7 @@ exports.updateEvent = async (req, res) => {
       about,
       startDate,
       endDate,
+       registrationLink,
     } = req.body;
 
     const updateData = {
@@ -180,6 +182,7 @@ exports.updateEvent = async (req, res) => {
       about,
       startDate,
       endDate,
+      registrationLink: registrationLink ? registrationLink.trim() : "",
     };
 
     if (req.file) {

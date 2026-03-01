@@ -23,7 +23,7 @@
       </div>
     <% } %>
 
-    <!-- ── Event title & meta ── -->
+    <!-- Event title & meta -->
     <div data-aos="fade-up" data-aos-delay="60" style="margin-bottom:28px;">
 
       <% if (!event.bannerImage && isPast) { %>
@@ -53,7 +53,6 @@
         </div>
       <% } %>
 
-      <!-- Description -->
       <p style="
         font-size: clamp(1rem,1.6vw,1.12rem);
         color: var(--tx-mid);
@@ -80,98 +79,158 @@
     </div>
 
     <!-- ═══════════════════════════════════════
-         SUB-EVENTS / REGISTRATION SECTION
-         Shown for UPCOMING events + admin on PAST events
+         REGISTRATION SECTION
+         4 cases:
+         1. External link only (no sub-events) → big register button
+         2. Sub-events only (no external link) → list sub-events
+         3. Both external link + sub-events → banner link above sub-events
+         4. Neither + upcoming → "opening soon"
     ════════════════════════════════════════ -->
     <% var isAdmin = user && (user.role === 'admin' || user.role === 'superadmin'); %>
     <% var hasSubEvents = subEvents && subEvents.length > 0; %>
+    <% var hasExternalLink = event.registrationLink && event.registrationLink.trim() !== ''; %>
 
-    <% if (hasSubEvents && (!isPast || isAdmin)) { %>
+    <%
+      // Only show registration UI for upcoming events (or admin viewing past)
+      var showRegSection = !isPast || isAdmin;
+    %>
 
-      <div class="detail-section" data-aos="fade-up">
+    <% if (showRegSection) { %>
 
-        <h2 class="detail-section-title">
-          <% if (isPast) { %>
-            🗂 Sessions & Registrations
-          <% } else { %>
-            📝 Register for Sessions
-          <% } %>
-        </h2>
-
-        <div style="display:flex; flex-direction:column; gap:14px;">
-          <% subEvents.forEach(function(sub) { %>
-
-            <div style="
-              background: var(--cream-alt);
-              border: 1px solid var(--border-l);
-              border-radius: var(--r-md);
-              padding: 16px 18px;
-              transition: border-color 0.22s, box-shadow 0.22s;
-            " onmouseover="this.style.borderColor='var(--br)'; this.style.boxShadow='0 4px 16px rgba(166,124,82,0.10)'"
-               onmouseout="this.style.borderColor='var(--border-l)'; this.style.boxShadow='none'">
-
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%; gap:12px; flex-wrap:wrap;">
-                <div style="flex:1; min-width:0;">
-                  <div style="font-family:var(--font-display); font-weight:700; font-size:1rem; color:var(--tx); margin-bottom:4px;">
-                    <%= sub.title %>
-                  </div>
-                  <% if (sub.description) { %>
-                    <div style="font-size:0.83rem; color:var(--tx-muted); margin-bottom:6px;"><%= sub.description %></div>
-                  <% } %>
-                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(166,124,82,0.09); color:var(--br);">
-                      <%= sub.isGroupEvent ? '👥 Team' : '👤 Individual' %>
-                    </span>
-                    <% if (sub.maxParticipants) { %>
-                      <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(241,196,15,0.10); color:#b8860b;">
-                        Max <%= sub.maxParticipants %>
-                      </span>
-                    <% } %>
-                    <% if (sub.requirePaymentScreenshot) { %>
-                      <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(39,174,96,0.09); color:#27ae60;">
-                        💳 Payment required
-                      </span>
-                    <% } %>
-                  </div>
-                </div>
-
-                <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex-shrink:0;">
-                  <!-- Register button only for upcoming events -->
-                  <% if (!isPast) { %>
-                    <a href="/register/<%= sub._id %>" class="btn-register" style="white-space:nowrap;">
-                      Register <i class="bi bi-arrow-right"></i>
-                    </a>
-                  <% } %>
-
-                  <!-- Admin: View Registrations — shown for BOTH upcoming AND past -->
-                  <% if (isAdmin) { %>
-                    <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem; padding:5px 12px; white-space:nowrap;">
-                      <i class="bi bi-people"></i> View Registrations
-                    </a>
-                  <% } %>
-                </div>
-
+      <% if (hasExternalLink && !hasSubEvents) { %>
+        <!-- ── CASE 1: External link, no sub-events ── -->
+        <div class="detail-section" data-aos="fade-up">
+          <h2 class="detail-section-title">Registration</h2>
+          <div style="
+            background: linear-gradient(135deg, rgba(166,124,82,0.07), rgba(201,168,76,0.04));
+            border: 1.5px solid rgba(166,124,82,0.22);
+            border-radius: var(--r-lg);
+            padding: 22px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+          ">
+            <div>
+              <div style="font-family:var(--font-display); font-weight:700; font-size:1rem; color:var(--tx); margin-bottom:4px;">
+                <i class="bi bi-link-45deg" style="color:var(--br);"></i> Register via External Form
+              </div>
+              <div style="font-size:0.82rem; color:var(--tx-muted);">
+                Opens in a new tab — Google Form or external registration page
               </div>
             </div>
-
-          <% }); %>
-        </div>
-
-        <% if (!isPast && subEvents.length > 1) { %>
-          <div style="margin-top:18px;">
-            <a href="/events/<%= event._id %>/register" class="btn-register">
-              Browse All Sessions <i class="bi bi-arrow-right"></i>
+            <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer"
+               class="btn-register" style="white-space:nowrap; flex-shrink:0;">
+              Register Now <i class="bi bi-box-arrow-up-right"></i>
             </a>
           </div>
-        <% } %>
+        </div>
 
-      </div>
+      <% } else if (hasSubEvents) { %>
+        <!-- ── CASE 2 & 3: Sub-events (with or without external link) ── -->
+        <div class="detail-section" data-aos="fade-up">
+          <h2 class="detail-section-title">
+            <%= isPast ? 'Sessions & Registrations' : 'Register for Sessions' %>
+          </h2>
 
-    <% } else if (!isPast && !hasSubEvents) { %>
-      <p style="color:var(--tx-muted); font-size:0.93rem; margin:20px 0 30px; padding:14px 18px; background:rgba(166,124,82,0.05); border-radius:var(--r-md); border:1px solid var(--border-l);">
-        <i class="bi bi-clock"></i> Registrations will open soon.
-      </p>
+          <!-- If external link ALSO exists, show it as a compact banner above sub-events -->
+          <% if (!isPast && hasExternalLink) { %>
+            <div style="
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              padding: 11px 16px;
+              background: rgba(166,124,82,0.06);
+              border: 1px solid rgba(166,124,82,0.18);
+              border-radius: var(--r-md);
+              margin-bottom: 16px;
+              flex-wrap: wrap;
+            ">
+              <div style="flex:1; min-width:0; font-size:0.83rem; font-weight:600; color:var(--tx-mid);">
+                <i class="bi bi-link-45deg" style="color:var(--br);"></i>
+                External registration link available
+              </div>
+              <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer"
+                 class="btn-details" style="font-size:0.8rem; padding:6px 14px; white-space:nowrap; flex-shrink:0;">
+                Open Form <i class="bi bi-box-arrow-up-right"></i>
+              </a>
+            </div>
+          <% } %>
+
+          <!-- Sub-event list -->
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <% subEvents.forEach(function(sub) { %>
+              <div style="
+                background: var(--cream-alt);
+                border: 1px solid var(--border-l);
+                border-radius: var(--r-md);
+                padding: 16px 18px;
+                transition: border-color 0.22s, box-shadow 0.22s;
+              " onmouseover="this.style.borderColor='var(--br)';this.style.boxShadow='0 4px 16px rgba(166,124,82,0.10)'"
+                 onmouseout="this.style.borderColor='var(--border-l)';this.style.boxShadow='none'">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%; gap:12px; flex-wrap:wrap;">
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-family:var(--font-display); font-weight:700; font-size:1rem; color:var(--tx); margin-bottom:4px;">
+                      <%= sub.title %>
+                    </div>
+                    <% if (sub.description) { %>
+                      <div style="font-size:0.83rem; color:var(--tx-muted); margin-bottom:6px;"><%= sub.description %></div>
+                    <% } %>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                      <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(166,124,82,0.09); color:var(--br);">
+                        <%= sub.isGroupEvent ? '👥 Team' : '👤 Individual' %>
+                      </span>
+                      <% if (sub.maxParticipants) { %>
+                        <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(241,196,15,0.10); color:#b8860b;">
+                          Max <%= sub.maxParticipants %>
+                        </span>
+                      <% } %>
+                      <% if (sub.requirePaymentScreenshot) { %>
+                        <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(39,174,96,0.09); color:#27ae60;">
+                          💳 Payment required
+                        </span>
+                      <% } %>
+                    </div>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex-shrink:0;">
+                    <% if (!isPast) { %>
+                      <a href="/register/<%= sub._id %>" class="btn-register" style="white-space:nowrap;">
+                        Register <i class="bi bi-arrow-right"></i>
+                      </a>
+                    <% } %>
+                    <% if (isAdmin) { %>
+                      <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem; padding:5px 12px; white-space:nowrap;">
+                        <i class="bi bi-people"></i> View Registrations
+                      </a>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+
+          <% if (!isPast && subEvents.length > 1) { %>
+            <div style="margin-top:18px;">
+              <a href="/events/<%= event._id %>/register" class="btn-register">
+                Browse All Sessions <i class="bi bi-arrow-right"></i>
+              </a>
+            </div>
+          <% } %>
+
+        </div>
+
+      <% } else if (!isPast && !hasSubEvents && !hasExternalLink) { %>
+        <!-- ── CASE 4: Nothing set yet ── -->
+        <div data-aos="fade-up" style="margin: 0 0 30px;">
+          <p style="color:var(--tx-muted); font-size:0.93rem; padding:14px 18px; background:rgba(166,124,82,0.05); border-radius:var(--r-md); border:1px solid var(--border-l); margin:0;">
+            <i class="bi bi-clock"></i> Registrations will open soon.
+          </p>
+        </div>
+      <% } %>
+
     <% } %>
+    <!-- end registration section -->
 
     <!-- ═══════════════════════════════════════
          GALLERY

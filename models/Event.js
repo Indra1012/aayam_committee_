@@ -44,27 +44,33 @@ const eventSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Optional external registration link (e.g. Google Form)
+    registrationLink: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     // For Phase 4D / 4F (future)
     galleryImages: [String],
     conductedBy: [
       {
         name: String,
         email: String,
-      }
+      },
     ],
     contacts: [String],
     prizes: [String],
     documents: [
-  {
-    title: String,
-    file: String,
-    isPublic: {
-      type: Boolean,
-      default: false,
-    },
-  },
-],
-
+      {
+        title: String,
+        file: String,
+        isPublic: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -78,24 +78,23 @@ const updateSection = async (req, res) => {
   }
 };
 
-
 /* ===============================
    ADD TEAM MEMBER (ADMIN)
 ================================ */
 const addTeamMember = async (req, res) => {
   try {
-    const { name, sectionId } = req.body;
+    const { name, position, sectionId } = req.body;
 
     if (!name || !sectionId || !req.file) {
       console.log("Missing fields:", req.body);
       return res.redirect("/team");
     }
 
-    // file.path is the Cloudinary URL (works locally and on Render)
     const imagePath = req.file.path;
 
     await TeamMember.create({
       name: name.trim(),
+      position: position ? position.trim() : "",
       image: imagePath,
       section: sectionId,
     });
@@ -127,17 +126,16 @@ const getEditMember = async (req, res) => {
 ================================ */
 const updateMember = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, position } = req.body;
     const member = await TeamMember.findById(req.params.id);
 
     if (!member) return res.redirect("/team");
 
-    // Update name
     member.name = name.trim();
+    member.position = position ? position.trim() : "";
 
     // Update image ONLY if new one uploaded
     if (req.file) {
-      // file.path is the Cloudinary URL
       member.image = req.file.path;
     }
 
@@ -148,7 +146,6 @@ const updateMember = async (req, res) => {
     res.redirect("/team");
   }
 };
-
 
 /* ===============================
    DELETE TEAM MEMBER (ADMIN)
@@ -173,10 +170,7 @@ const deleteTeamSection = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Delete all members under this section
     await TeamMember.deleteMany({ section: id });
-
-    // Delete section
     await TeamSection.findByIdAndDelete(id);
 
     res.redirect("/team");
@@ -185,7 +179,6 @@ const deleteTeamSection = async (req, res) => {
     res.redirect("/team");
   }
 };
-
 
 module.exports = {
   getTeamPage,

@@ -1,39 +1,63 @@
-<section class="container my-5">
-  <h3 class="text-center mb-4">✏ Edit Team Member</h3>
+<!-- views/editMember.ejs -->
+<div class="container">
+  <div class="page-header" data-aos="fade-down">
+    <div class="section-label">Admin</div>
+    <h1 class="page-title">Edit Member</h1>
+    <p class="page-subtitle">Update this member's details</p>
+  </div>
 
-  <form
-    action="/team/member/edit/<%= member._id %>"
-    method="POST"
-    enctype="multipart/form-data"
-    class="mx-auto"
-    style="max-width: 400px;"
-  >
+  <div class="reachout-wrapper">
+    <div class="form-card" data-aos="fade-up">
+      <form action="/team/member/edit/<%= member._id %>" method="POST" enctype="multipart/form-data">
 
-    <!-- MEMBER NAME -->
-    <div class="mb-3">
-      <label class="form-label">Member Name</label>
-      <input
-        type="text"
-        name="name"
-        value="<%= member.name %>"
-        class="form-control"
-        required
-      />
+        <div class="form-group-custom">
+          <label class="form-label-custom">Full Name</label>
+          <input
+            type="text"
+            name="name"
+            value="<%= member.name %>"
+            class="form-control-custom"
+            placeholder="Member name"
+            required
+          >
+        </div>
+
+        <div class="form-group-custom">
+          <label class="form-label-custom">Position / Role</label>
+          <input
+            type="text"
+            name="position"
+            value="<%= member.position || '' %>"
+            class="form-control-custom"
+            placeholder="e.g. Head of Committee, Event Lead"
+          >
+        </div>
+
+        <div class="form-group-custom">
+          <label class="form-label-custom">Profile Photo</label>
+          <div style="margin-bottom:12px;">
+            <img
+              src="<%= member.image %>"
+              alt="Current photo"
+              style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid rgba(166,124,82,0.30);"
+            >
+            <p style="font-size:0.76rem;color:var(--tx-muted);margin-top:6px;">Current photo — upload a new one to replace</p>
+          </div>
+          <input
+            type="file"
+            name="image"
+            class="form-control-custom"
+            accept="image/*"
+            style="padding:8px;"
+          >
+        </div>
+
+        <button type="submit" class="form-submit-btn">Save Changes</button>
+      </form>
+
+      <div style="text-align:center;margin-top:16px;">
+        <a href="/team" class="btn-details">← Back to Team</a>
+      </div>
     </div>
-
-    <!-- MEMBER IMAGE (OPTIONAL) -->
-    <div class="mb-3">
-      <label class="form-label">Change Image (optional)</label>
-      <input
-        type="file"
-        name="image"
-        class="form-control"
-        accept="image/*"
-      />
-    </div>
-
-    <button type="submit" class="btn btn-dark w-100">
-      💾 Save Changes
-    </button>
-  </form>
-</section>
+  </div>
+</div>

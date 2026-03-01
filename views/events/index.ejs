@@ -38,7 +38,11 @@
             <input type="date" name="startDate" class="form-control mb-2" required>
             <label class="form-label fw-semibold" style="font-size:0.82rem;color:var(--br);">End Date</label>
             <input type="date" name="endDate" class="form-control mb-2" required>
-            <input type="file" name="bannerImage" class="form-control mb-3" accept="image/*" required>
+            <input type="file" name="bannerImage" class="form-control mb-2" accept="image/*" required>
+            <label class="form-label fw-semibold" style="font-size:0.82rem;color:var(--br);">
+              Registration Link <span style="font-weight:400;color:var(--tx-muted);">(optional — Google Form or external link)</span>
+            </label>
+            <input type="url" name="registrationLink" placeholder="https://forms.google.com/..." class="form-control mb-3">
             <button class="btn-register w-100">➕ Add Upcoming Event</button>
           </form>
         </details>
@@ -74,18 +78,26 @@
               </div>
             <% } %>
 
-            <!-- Action buttons — FIX: removed duplicate View Details, added Register -->
             <div class="event-card-actions">
               <a href="/events/<%= event._id %>" class="btn-details">
                 View Details <i class="bi bi-arrow-right"></i>
               </a>
-              <a href="/events/<%= event._id %>/register" class="btn-register">
-                Register <i class="bi bi-pencil-square"></i>
-              </a>
+              <% if (event.registrationLink) { %>
+                <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer" class="btn-register">
+                  Register <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+              <% } else { %>
+                <a href="/events/<%= event._id %>/register" class="btn-register">
+                  Register <i class="bi bi-pencil-square"></i>
+                </a>
+              <% } %>
             </div>
 
             <% if (user && (user.role === "admin" || user.role === "superadmin")) { %>
               <div class="d-flex gap-2 mt-3 flex-wrap">
+                <a href="/events/edit/<%= event._id %>" class="btn-details" style="font-size:0.78rem;padding:5px 12px;">
+                  ✏ Edit
+                </a>
                 <form action="/events/move-to-past/<%= event._id %>" method="POST" onsubmit="return confirm('Move to past?')">
                   <button class="btn-admin-warn">⏳ Move to Past</button>
                 </form>
@@ -120,7 +132,11 @@
             <input type="date" name="startDate" class="form-control mb-2" required>
             <label class="form-label fw-semibold" style="font-size:0.82rem;color:var(--br);">End Date</label>
             <input type="date" name="endDate" class="form-control mb-2" required>
-            <input type="file" name="bannerImage" class="form-control mb-3" accept="image/*" required>
+            <input type="file" name="bannerImage" class="form-control mb-2" accept="image/*" required>
+            <label class="form-label fw-semibold" style="font-size:0.82rem;color:var(--br);">
+              Registration Link <span style="font-weight:400;color:var(--tx-muted);">(optional)</span>
+            </label>
+            <input type="url" name="registrationLink" placeholder="https://forms.google.com/..." class="form-control mb-3">
             <button class="btn-register w-100">➕ Add Past Event</button>
           </form>
         </details>
@@ -162,7 +178,10 @@
               </a>
             </div>
             <% if (user && (user.role === "admin" || user.role === "superadmin")) { %>
-              <div class="mt-3">
+              <div class="d-flex gap-2 mt-3 flex-wrap">
+                <a href="/events/edit/<%= event._id %>" class="btn-details" style="font-size:0.78rem;padding:5px 12px;">
+                  ✏ Edit
+                </a>
                 <form action="/events/delete/<%= event._id %>" method="POST" onsubmit="return confirm('Delete this event?')">
                   <button class="btn-admin-danger">✕ Delete</button>
                 </form>
@@ -175,6 +194,7 @@
 
   </div>
 </div>
+
 <style>
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(40px); }
@@ -203,31 +223,24 @@
     pastSection.style.display = 'none';
 
     showPast.addEventListener('click', () => {
-      // Slide upcoming out, past in from right
       upcomingSection.style.display = 'none';
       upcomingSection.classList.remove('section-animate-left', 'section-animate-right');
-
       pastSection.style.display = 'block';
       pastSection.classList.remove('section-animate-left', 'section-animate-right');
-      // Force reflow so animation re-triggers
       void pastSection.offsetWidth;
       pastSection.classList.add('section-animate-right');
-
       showPast.classList.add('active');
       showUpcoming.classList.remove('active');
       AOS.refresh();
     });
 
     showUpcoming.addEventListener('click', () => {
-      // Slide past out, upcoming in from left
       pastSection.style.display = 'none';
       pastSection.classList.remove('section-animate-left', 'section-animate-right');
-
       upcomingSection.style.display = 'block';
       upcomingSection.classList.remove('section-animate-left', 'section-animate-right');
       void upcomingSection.offsetWidth;
       upcomingSection.classList.add('section-animate-left');
-
       showUpcoming.classList.add('active');
       showPast.classList.remove('active');
     });
