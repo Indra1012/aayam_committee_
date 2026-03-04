@@ -6,7 +6,7 @@
     <a class="nav-brand" href="/">
       <div class="brand-logos-group">
         <div class="brand-logo-wrap">
-          <img src="/images/karnavati_logo.png" alt="KUAND NACC" class="brand-logo brand-logo-rect" width="68" height="46" loading="eager" style="max-width:68px;height:46px;object-fit:contain;">
+          <img src="/images/karnavati_logo.png" alt="KUAND NACC" class="brand-logo brand-logo-rect" width="150" height="80" loading="eager" style="max-width:82px;height:56px;object-fit:contain;">
         </div>
         <div class="brand-logo-wrap">
           <img src="/images/uit_logo.png" alt="UIT" class="brand-logo brand-logo-rect" width="54" height="36" loading="eager">
@@ -132,10 +132,24 @@
 /* ══ Individual logo hover — isolate each wrap, kill group-level effects ══ */
 
 /* 1. Neutralise the group-level hover that was lighting up all logos at once */
+.brand-logo-wrap:first-child img {
+  width: 130px !important;
+  height: 80px !important;
+  max-width: unset !important;
+  max-height: unset !important;
+}
+
+/* ── Mobile: shrink karnavati logo so "AAYAM" text stays visible ── */
+@media (max-width: 768px) {
+  .brand-logo-wrap:first-child img {
+    width: 100px !important;
+    height: 80px !important;
+  }
+}
 .nav-brand:hover .brand-logo-square,
 .nav-brand:hover .brand-logo-rect {
   transform: none !important;
-  border-color: rgba(210,180,140,0.55) !important;
+  border-color: transparent !important;
   box-shadow: none !important;
 }
 .nav-brand:hover .brand-logo-ring { opacity: 0 !important; }
@@ -146,26 +160,29 @@
 .brand-logo-wrap img {
   transition: transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275),
               box-shadow 0.3s ease;
-  /* Always keep original subtle border — no brownish ring on hover */
-  border-color: rgba(210,180,140,0.55) !important;
+  border-color: transparent !important;
 }
 
 /* 3. Only the hovered wrap's image moves — others stay still */
 .brand-logo-wrap:hover .brand-logo-square,
 .brand-logo-wrap:hover .brand-logo-rect {
   transform: translateY(-4px) scale(1.1) !important;
-  box-shadow: 0 10px 22px rgba(166,124,82,0.22) !important;
-  border-color: rgba(210,180,140,0.55) !important; /* no colour change on border */
+  box-shadow: 0 10px 22px rgba(0,0,0,0.15) !important;
+  border-color: transparent !important;
+}
+
+/* ══ Remove brown/tan border from all logo images globally ══ */
+.brand-logo,
+.brand-logo-rect,
+.brand-logo-square {
+  border-color: transparent !important;
+  outline: none !important;
 }
 
 /* ══ Desktop theme toggle — thumb slide fix ══ */
-/* The external CSS sets translateX via .theme-dark class on the button,
-   but if theme.js adds dark-mode to <body> without adding theme-dark to the button,
-   the thumb stays put. We fix by directly watching body class. */
 #themeBtn .theme-thumb {
   transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
 }
-/* Ensure CSS cascade reflects current mode even before JS runs */
 body.dark-mode #themeBtn .theme-thumb  { transform: translateX(25px) !important; }
 body.light-mode #themeBtn .theme-thumb { transform: translateX(0px)  !important; }
 </style>
@@ -242,7 +259,6 @@ body.light-mode #themeBtn .theme-thumb { transform: translateX(0px)  !important;
     document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('theme-dark', dark));
 
     // Directly set the desktop thumb position via inline style
-    // This overrides any conflicting CSS cascade issues
     const desktopThumb = document.querySelector('#themeBtn .theme-thumb');
     if (desktopThumb) {
       desktopThumb.style.transform = dark ? 'translateX(25px)' : 'translateX(0px)';
