@@ -630,6 +630,27 @@ body.dark-mode .hs-hero { background: var(--dk-base); }
   display: inline-block;
 }
 
+@media (max-width: 768px) {
+  .university-name {
+    font-size: 0.90rem;
+    letter-spacing: 0.25em;
+  }
+}
+
+@media (max-width: 480px) {
+  .university-name {
+    font-size: 0.90rem;
+    letter-spacing: 0.25em;
+  }
+}
+
+@media (max-width: 360px) {
+  .university-name {
+    font-size: 0.90rem;
+    letter-spacing: 0.20em;
+  }
+}
+
 body.dark-mode .university-name {
   color: var(--dk-text);
   text-shadow: 0 0 30px rgba(255, 255, 255, 0.12);
