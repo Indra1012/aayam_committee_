@@ -205,7 +205,7 @@ body.dark-mode .glass-navbar {
   display: block;
 }
 
-/* Rect logos (kuand nacc & uit) — same height as AAYAM, proportional width */
+/* Rect logos */
 .brand-logo-rect {
   height: 46px;
   width: auto;
@@ -235,7 +235,6 @@ body.dark-mode .glass-navbar {
   pointer-events: none;
 }
 
-/* Hover: all logos scale, rings appear */
 .nav-brand:hover .brand-logo-square,
 .nav-brand:hover .brand-logo-rect {
   transform: scale(1.06);
@@ -439,7 +438,7 @@ body.dark-mode .drop-item:hover { background: rgba(210,180,140,0.10); color: var
 .theme-btn.theme-dark .sun-icon  { opacity: 0; transform: scale(0.5); }
 .theme-btn.theme-dark .moon-icon { opacity: 1; transform: scale(1); }
 
-/* ── Hamburger — mobile cluster has hamburger ONLY (no theme toggle) ── */
+/* ── Hamburger ── */
 .mobile-cluster {
   display: none;
   align-items: center;
@@ -550,7 +549,7 @@ body.dark-mode .admin-btn { background: rgba(210,180,140,0.09); color: var(--br-
 .logout-btn { background: rgba(192,57,43,0.07); color: #c0392b !important; border: 1.5px solid rgba(192,57,43,0.16); }
 .logout-btn:hover { background: rgba(192,57,43,0.12); }
 
-/* ── Drawer theme row (below Reach Out in mobile drawer) ── */
+/* ── Drawer theme row ── */
 .drawer-theme-item { margin-top: 4px; }
 
 .drawer-theme-row {
@@ -613,9 +612,31 @@ body.dark-mode .drawer-theme-row .drawer-icon {
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   background: var(--cream);
-  padding: clamp(80px,12vh,140px) 0 clamp(60px,8vh,100px);
+  /* ── REDUCED top padding to close navbar gap ── */
+  padding: clamp(30px,4vh,60px) 0 clamp(60px,8vh,100px);
 }
 body.dark-mode .hs-hero { background: var(--dk-base); }
+
+/* ── University label above hero badge ── */
+.university-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--br-deep);
+  font-family: var(--font-display);
+  text-shadow: 0 0 40px rgba(93, 64, 55, 0.18);
+  position: relative;
+  display: inline-block;
+}
+
+body.dark-mode .university-name {
+  color: var(--dk-text);
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.12);
+}
+body.dark-mode .university-name::after {
+  background: linear-gradient(90deg, var(--br-light), var(--gold));
+}
 
 .hero-orb { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(70px); animation: orbFloat 12s ease-in-out infinite; will-change: transform; }
 .hero-orb-1 { width: clamp(280px,44vw,580px); height: clamp(280px,44vw,580px); background: radial-gradient(circle, rgba(166,124,82,0.20) 0%, transparent 70%); top: -10%; right: -14%; }
@@ -644,7 +665,6 @@ body.dark-mode .hs-hero { background: var(--dk-base); }
 .title-line-sm { display: block; font-family: var(--font-body); font-size: clamp(0.9rem,2vw,1.5rem); font-weight: 500; letter-spacing: 4px; text-transform: uppercase; color: var(--tx-muted); }
 .title-main { display: block; font-family: var(--font-display); font-size: clamp(3.6rem,11vw,9.5rem); font-weight: 600; font-style: normal; line-height: 0.88; }
 
-/* ── TITLE HIGHLIGHT — single solid color underline ── */
 .title-highlight {
   position: relative;
   display: inline-block;
@@ -1063,10 +1083,6 @@ body.dark-mode .reachout-message { color: var(--dk-muted); }
 /* ════════════════════════════════════════
    ── FOOTER ──
 ════════════════════════════════════════ */
-/* ════════════════════════════════════════
-   FOOTER — COMPLETE STYLES
-════════════════════════════════════════ */
-
 .site-footer {
   position: relative;
   background: var(--cream-alt);
@@ -1084,7 +1100,6 @@ body.dark-mode .site-footer { background: var(--dk-surface); border-top-color: v
   pointer-events: none;
 }
 
-/* ── Grid ── */
 .footer-grid {
   display: grid;
   grid-template-columns: 1.5fr 0.8fr 1.4fr;
@@ -1093,7 +1108,6 @@ body.dark-mode .site-footer { background: var(--dk-surface); border-top-color: v
   align-items: start;
 }
 
-/* ── Brand ── */
 .footer-brand {
   display: flex; align-items: center; gap: 10px;
   text-decoration: none; margin-bottom: 12px;
@@ -1119,7 +1133,6 @@ body.dark-mode .site-footer { background: var(--dk-surface); border-top-color: v
 body.dark-mode .footer-brand-name { color: var(--br-light); }
 body.dark-mode .footer-brand-sub  { color: var(--dk-muted); }
 
-/* ── Social icons ── */
 .footer-socials {
   display: flex;
   align-items: center;
@@ -1172,7 +1185,6 @@ body.dark-mode .footer-social-insta:hover {
   color: #e07070;
 }
 
-/* ── Col titles ── */
 .footer-col-title {
   font-family: var(--font-display);
   font-size: 0.92rem; font-weight: 700;
@@ -1180,7 +1192,6 @@ body.dark-mode .footer-social-insta:hover {
 }
 body.dark-mode .footer-col-title { color: var(--dk-text); }
 
-/* ── Nav list ── */
 .footer-nav-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
 .footer-nav-link {
   display: inline-flex; align-items: center; gap: 7px;
@@ -1193,7 +1204,6 @@ body.dark-mode .footer-col-title { color: var(--dk-text); }
 body.dark-mode .footer-nav-link { color: var(--dk-muted); }
 body.dark-mode .footer-nav-link:hover { color: var(--br-light); }
 
-/* ── Contact person cards ── */
 .footer-person {
   display: flex; align-items: flex-start; gap: 10px;
   padding: 10px 12px;
@@ -1235,7 +1245,6 @@ body.dark-mode .footer-contact-role { color: var(--dk-muted); }
 body.dark-mode .footer-phone { color: var(--br-light); }
 body.dark-mode .footer-phone:hover { color: #fff; }
 
-/* ── Bottom bar ── */
 .footer-bottom {
   border-top: 1px solid var(--border-l);
   padding: 14px 0;
@@ -1248,13 +1257,6 @@ body.dark-mode .footer-bottom { border-top-color: var(--border-d); }
 .footer-copy { font-size: 0.78rem; color: var(--tx-muted); margin: 0; }
 body.dark-mode .footer-copy { color: var(--dk-muted); }
 
-/* ── Responsive ── */
-@media (max-width: 991.98px) {
-  .footer-grid { grid-template-columns: 1fr; gap: 22px; }
-}
-@media (min-width: 992px) {
-  .footer-grid { grid-template-columns: 1.5fr 0.8fr 1.4fr; }
-}
 /* ════════════════════════════════════════
    ── GLOBAL FORM OVERRIDES ──
 ════════════════════════════════════════ */
@@ -1281,6 +1283,7 @@ body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { backgrou
 }
 
 @media (max-width: 767px) {
+  .hs-hero { padding-top: clamp(20px,3vh,40px); }
   .hero-stats { max-width: 340px; padding: 14px 12px; }
   .stat-number { font-size: clamp(1.2rem, 5vw, 1.6rem); }
   .stat-label { font-size: 0.6rem; letter-spacing: 0; }
@@ -1296,7 +1299,6 @@ body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { backgrou
 @media (max-width: 576px) {
   :root { --nav-h: 68px; --nav-h-sm: 58px; }
   .nav-container { padding: 0 12px; gap: 6px; }
-  /* Brand logos at 576px */
   .brand-logo-square { width: 38px !important; height: 38px !important; border-radius: 10px !important; }
   .brand-logo-rect   { height: 38px !important; max-width: 56px !important; border-radius: 9px !important; }
   .brand-logos-group { gap: 4px; }
@@ -1306,6 +1308,7 @@ body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { backgrou
   .hs-gallery-grid { grid-template-columns: repeat(2,1fr); }
   .title-highlight { padding-bottom: 0.04em; }
   .title-highlight::after { height: 3px; }
+  .university-name { font-size: 0.62rem; letter-spacing: 0.18em; }
 }
 
 @media (max-width: 360px) {
