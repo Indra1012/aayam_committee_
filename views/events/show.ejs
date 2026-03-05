@@ -5,7 +5,7 @@
     <!-- Banner -->
     <% if (event.bannerImage) { %>
       <div class="event-detail-banner" data-aos="fade-down" style="position:relative;overflow:hidden;border-radius:var(--r-lg);margin-bottom:32px;">
-        <img src="<%= event.bannerImage %>" alt="<%= event.title %>" style="width:100%;max-height:420px;object-fit:cover;display:block;">
+        <img src="<%= imgUrl(event.bannerImage) %>" alt="<%= event.title %>" style="width:100%;max-height:420px;object-fit:cover;display:block;">
         <% if (isPast) { %>
           <div style="position:absolute;top:16px;right:16px;">
             <span class="badge-completed" style="font-size:0.8rem;padding:6px 14px;">Completed</span>
@@ -172,7 +172,7 @@
                 <!-- Image box -->
                 <div class="gallery-img-box">
                   <img
-                    src="<%= img.url %>"
+                    src="<%= imgUrl(img.url) %>"
                     alt="<%= img.speakerName || ('Gallery image ' + (i+1)) %>"
                     class="gallery-img-actual"
                     loading="lazy"

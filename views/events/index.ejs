@@ -66,11 +66,10 @@
           <a href="/events/<%= event._id %>" class="ev-img-link">
             <% if (event.bannerImage) { %>
               <img
-                src="<%= event.bannerImage %>"
+                src="<%= imgUrl(event.bannerImage) %>"
                 class="ev-img"
                 alt="<%= event.title %>"
                 loading="lazy"
-                onerror="this.style.display='none';this.parentElement.classList.add('ev-img-fallback');"
               >
             <% } else { %>
               <div class="ev-img-placeholder"><i class="bi bi-calendar-event"></i></div>
@@ -178,11 +177,10 @@
           <a href="/events/<%= event._id %>" class="ev-img-link">
             <% if (event.bannerImage) { %>
               <img
-                src="<%= event.bannerImage %>"
+                src="<%= imgUrl(event.bannerImage) %>"
                 class="ev-img ev-img-past"
                 alt="<%= event.title %>"
                 loading="lazy"
-                onerror="this.style.display='none';this.parentElement.classList.add('ev-img-fallback');"
               >
             <% } else { %>
               <div class="ev-img-placeholder ev-img-past"><i class="bi bi-calendar-check"></i></div>
