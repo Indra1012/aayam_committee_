@@ -8,9 +8,11 @@ const galleryItemSchema = new mongoose.Schema({
 
 const eventSchema = new mongoose.Schema(
   {
+    // ── Visibility: true = fully public, false = private (admin only) ──
+    // DEFAULT IS TRUE — every new event is public unless admin explicitly changes it
     isPublic: {
       type: Boolean,
-      default: true, // true = fully visible, false = poster + coming soon
+      default: true,
     },
 
     type: {
@@ -31,7 +33,6 @@ const eventSchema = new mongoose.Schema(
 
     registrationLink: { type: String, default: "", trim: true },
 
-    // Enhanced gallery — each item has url + speaker/detail
     galleryImages: [galleryItemSchema],
 
     conductedBy: [{ name: String, email: String }],
