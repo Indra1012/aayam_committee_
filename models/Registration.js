@@ -2,15 +2,8 @@ const mongoose = require("mongoose");
 
 const responseSchema = new mongoose.Schema(
   {
-    fieldId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true, // references SubEvent.formFields._id
-    },
-    value: {
-      type: mongoose.Schema.Types.Mixed, 
-      // Can store text, array (checkbox), file path, etc.
-      required: true,
-    },
+    fieldId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    value: { type: mongoose.Schema.Types.Mixed, required: true },
   },
   { _id: false }
 );
@@ -23,20 +16,19 @@ const registrationSchema = new mongoose.Schema(
       required: true,
     },
 
-    // 🔥 dynamic form answers
+    // ── Built-in participant fields (always collected) ──
+    participantName:  { type: String, default: "" },
+    participantEmail: { type: String, default: "" },
+    participantPhone: { type: String, default: "" },
+
+    // ── Dynamic form answers ──
     responses: [responseSchema],
 
-    // optional team members (only if enabled)
-    teamMembers: {
-      type: [String],
-      default: [],
-    },
+    // ── Team members (optional) ──
+    teamMembers: { type: [String], default: [] },
 
-    // optional payment screenshot
-    paymentScreenshot: {
-      type: String,
-      default: null,
-    },
+    // ── Payment screenshot ──
+    paymentScreenshot: { type: String, default: null },
 
     status: {
       type: String,

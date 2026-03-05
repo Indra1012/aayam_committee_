@@ -1,5 +1,5 @@
 <!-- views/events/edit.ejs -->
-<div class="container" style="max-width: 860px; padding-bottom: 80px;">
+<div class="container" style="max-width:900px; padding-bottom:100px;">
 
   <!-- Page header -->
   <div class="page-header" style="text-align:left; padding-top:20px;" data-aos="fade-down">
@@ -18,11 +18,32 @@
       <div class="edit-section-icon">📋</div>
       <div>
         <div class="edit-section-title">Event Details</div>
-        <div class="edit-section-sub">Title, description, dates, registration link and banner</div>
+        <div class="edit-section-sub">Title, description, dates, visibility and banner</div>
       </div>
     </div>
 
     <form action="/events/edit/<%= event._id %>" method="POST" enctype="multipart/form-data">
+
+      <!-- ── Visibility toggle ── -->
+      <div class="edit-field-group">
+        <label class="form-label-custom">Event Visibility</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <label class="visibility-radio">
+            <input type="radio" name="isPublic" value="true" <%= event.isPublic !== false ? 'checked' : '' %>>
+            <span class="vis-pill vis-public">
+              <i class="bi bi-globe2"></i> Public
+              <small>Full details visible to everyone</small>
+            </span>
+          </label>
+          <label class="visibility-radio">
+            <input type="radio" name="isPublic" value="false" <%= event.isPublic === false ? 'checked' : '' %>>
+            <span class="vis-pill vis-private">
+              <i class="bi bi-lock-fill"></i> Private
+              <small>Poster + Coming Soon only</small>
+            </span>
+          </label>
+        </div>
+      </div>
 
       <div class="edit-field-group">
         <label class="form-label-custom">Event Title <span style="color:#c0392b;">*</span></label>
@@ -34,14 +55,44 @@
         <textarea name="shortDescription" class="form-control-custom" rows="2" required><%= event.shortDescription %></textarea>
       </div>
 
+      <!-- ── Rich text description ── -->
       <div class="edit-field-group">
-        <label class="form-label-custom">Full Description <span style="color:#c0392b;">*</span></label>
-        <textarea name="description" class="form-control-custom" rows="4" required><%= event.description %></textarea>
+        <label class="form-label-custom">
+          Full Description <span style="color:#c0392b;">*</span>
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.75rem;color:var(--tx-muted);margin-left:6px;">(supports bullet points, bold, headings)</span>
+        </label>
+        <div class="richtext-toolbar">
+          <button type="button" onclick="fmt('bold')" title="Bold"><b>B</b></button>
+          <button type="button" onclick="fmt('italic')" title="Italic"><i>I</i></button>
+          <button type="button" onclick="fmt('underline')" title="Underline"><u>U</u></button>
+          <span class="tb-sep"></span>
+          <button type="button" onclick="fmt('insertUnorderedList')" title="Bullet list">☰</button>
+          <button type="button" onclick="fmt('insertOrderedList')"   title="Numbered list">①</button>
+          <span class="tb-sep"></span>
+          <button type="button" onclick="fmtBlock('h3')" title="Heading">H3</button>
+          <button type="button" onclick="fmtBlock('p')"  title="Paragraph">¶</button>
+        </div>
+        <div
+          id="descriptionEditor"
+          class="richtext-editor"
+          contenteditable="true"
+        ><%- event.description %></div>
+        <input type="hidden" name="description" id="descriptionHidden">
       </div>
 
+      <!-- ── About (rich text) ── -->
       <div class="edit-field-group">
-        <label class="form-label-custom">About</label>
-        <textarea name="about" class="form-control-custom" rows="3"><%= event.about %></textarea>
+        <label class="form-label-custom">About
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.75rem;color:var(--tx-muted);margin-left:6px;">(optional — also supports formatting)</span>
+        </label>
+        <div class="richtext-toolbar">
+          <button type="button" onclick="fmt2('bold')"><b>B</b></button>
+          <button type="button" onclick="fmt2('italic')"><i>I</i></button>
+          <button type="button" onclick="fmt2('insertUnorderedList')">☰</button>
+          <button type="button" onclick="fmt2('insertOrderedList')">①</button>
+        </div>
+        <div id="aboutEditor" class="richtext-editor" contenteditable="true"><%- event.about || '' %></div>
+        <input type="hidden" name="about" id="aboutHidden">
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
@@ -55,26 +106,16 @@
         </div>
       </div>
 
-      <!-- ── Registration Link ── -->
       <div class="edit-field-group">
         <label class="form-label-custom">
           Registration Link
-          <span style="font-weight:400; color:var(--tx-muted); text-transform:none; letter-spacing:0;">(optional — Google Form or external URL)</span>
+          <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span>
         </label>
-        <input
-          type="url"
-          name="registrationLink"
-          class="form-control-custom"
-          value="<%= event.registrationLink || '' %>"
-          placeholder="https://forms.google.com/..."
-        >
+        <input type="url" name="registrationLink" class="form-control-custom"
+          value="<%= event.registrationLink || '' %>" placeholder="https://forms.google.com/...">
         <% if (event.registrationLink) { %>
-          <div style="margin-top:6px; display:flex; align-items:center; gap:8px;">
-            <span style="font-size:0.75rem; color:#27ae60; font-weight:600;">✓ Link set:</span>
-            <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer"
-               style="font-size:0.75rem; color:var(--br); text-decoration:underline; word-break:break-all;">
-              <%= event.registrationLink %>
-            </a>
+          <div style="margin-top:6px;font-size:0.75rem;color:#27ae60;font-weight:600;">
+            ✓ <a href="<%= event.registrationLink %>" target="_blank" style="color:var(--br);"><%= event.registrationLink %></a>
           </div>
         <% } %>
       </div>
@@ -83,15 +124,15 @@
         <label class="form-label-custom">Replace Banner Image</label>
         <% if (event.bannerImage) { %>
           <div style="margin-bottom:10px;">
-            <img src="<%= event.bannerImage %>" style="max-height:120px; border-radius:var(--r-md); border:1px solid var(--border-l);">
-            <div style="font-size:0.75rem; color:var(--tx-muted); margin-top:4px;">Current banner</div>
+            <img src="<%= event.bannerImage %>" style="max-height:120px;border-radius:var(--r-md);border:1px solid var(--border-l);">
+            <div style="font-size:0.75rem;color:var(--tx-muted);margin-top:4px;">Current banner</div>
           </div>
         <% } %>
         <input type="file" name="bannerImage" class="form-control-custom" accept="image/*">
       </div>
 
-      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
-        <button type="submit" class="btn-register">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+        <button type="submit" class="btn-register" id="saveEventBtn" onclick="syncEditors()">
           <i class="bi bi-floppy"></i> Save Event Details
         </button>
         <a href="/events/<%= event._id %>" class="btn-details">Cancel</a>
@@ -104,18 +145,18 @@
   <!-- ═══════════════════════════════
        SECTION 2 — ADD NEW SUBEVENT
   ════════════════════════════════ -->
-  <div class="edit-section-card" data-aos="fade-up" style="border-left: 4px solid var(--br);">
+  <div class="edit-section-card" data-aos="fade-up" style="border-left:4px solid var(--br);">
     <div class="edit-section-header">
       <div class="edit-section-icon" style="background:rgba(166,124,82,0.15);">➕</div>
       <div>
         <div class="edit-section-title">Create New Sub-Event</div>
-        <div class="edit-section-sub">Add a session, workshop or category for this event</div>
+        <div class="edit-section-sub">Add a session, workshop or category</div>
       </div>
     </div>
 
     <form action="/events/<%= event._id %>/subevents/add" method="POST" enctype="multipart/form-data">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
         <div class="edit-field-group" style="grid-column:1/-1;">
           <label class="form-label-custom">Sub-Event Title <span style="color:#c0392b;">*</span></label>
           <input type="text" name="title" class="form-control-custom" placeholder="e.g. AI Workshop, Paper Presentation" required>
@@ -123,12 +164,39 @@
 
         <div class="edit-field-group" style="grid-column:1/-1;">
           <label class="form-label-custom">Description</label>
-          <textarea name="description" class="form-control-custom" rows="2" placeholder="Brief description of this session"></textarea>
+          <textarea name="description" class="form-control-custom" rows="2"></textarea>
+        </div>
+
+        <!-- Day / Date / Time row -->
+        <div class="edit-field-group">
+          <label class="form-label-custom">Day Number</label>
+          <input type="number" name="dayNumber" class="form-control-custom" min="1" placeholder="e.g. 1, 2, 3">
+        </div>
+
+        <div class="edit-field-group">
+          <label class="form-label-custom">Event Date</label>
+          <input type="date" name="eventDate" class="form-control-custom">
+        </div>
+
+        <div class="edit-field-group">
+          <label class="form-label-custom">Start Time</label>
+          <select name="startTime" class="form-control-custom">
+            <option value="">— Select —</option>
+            <%- generateTimeOptions('') %>
+          </select>
+        </div>
+
+        <div class="edit-field-group">
+          <label class="form-label-custom">End Time</label>
+          <select name="endTime" class="form-control-custom">
+            <option value="">— Select —</option>
+            <%- generateTimeOptions('') %>
+          </select>
         </div>
 
         <div class="edit-field-group">
           <label class="form-label-custom">Max Participants</label>
-          <input type="number" name="maxParticipants" class="form-control-custom" placeholder="Leave empty = unlimited">
+          <input type="number" name="maxParticipants" class="form-control-custom" placeholder="Unlimited">
         </div>
 
         <div class="edit-field-group">
@@ -149,16 +217,20 @@
           <input type="number" name="maxTeamSize" class="form-control-custom" value="1" min="1">
         </div>
 
-        <div class="edit-field-group" style="grid-column:1/-1;">
-          <label class="form-label-custom">QR Code Image (for payment)</label>
+        <div class="edit-field-group">
+          <label class="form-label-custom">QR Code Image <span style="font-weight:400;color:var(--tx-muted);font-size:0.75rem;">(for payment)</span></label>
           <input type="file" name="qrImage" class="form-control-custom" accept="image/*">
+        </div>
+
+        <div class="edit-field-group">
+          <label class="form-label-custom">Sub-Event Poster <span style="font-weight:400;color:var(--tx-muted);font-size:0.75rem;">(if no QR needed)</span></label>
+          <input type="file" name="posterImage" class="form-control-custom" accept="image/*">
         </div>
       </div>
 
       <button type="submit" class="btn-register" style="margin-top:6px;">
         <i class="bi bi-plus-circle"></i> Create Sub-Event
       </button>
-
     </form>
   </div>
 
@@ -176,47 +248,39 @@
   <% if (subEvents && subEvents.length > 0) { %>
     <div data-aos="fade-up" style="margin-bottom:8px;">
       <div class="section-label">Existing Sub-Events</div>
-      <h2 class="page-title" style="font-size:1.4rem; margin:0;">
+      <h2 class="page-title" style="font-size:1.4rem;margin:0;">
         <%= subEvents.length %> Session<%= subEvents.length > 1 ? 's' : '' %> Created
       </h2>
     </div>
 
     <% subEvents.forEach(function(sub, si) { %>
+      <div id="subevent-<%= sub._id %>" class="subevent-master-card" data-aos="fade-up" data-aos-delay="<%= si * 60 %>">
 
-      <div
-        id="subevent-<%= sub._id %>"
-        class="subevent-master-card"
-        data-aos="fade-up"
-        data-aos-delay="<%= si * 60 %>"
-      >
-
-        <!-- Subevent card title bar -->
+        <!-- Title bar -->
         <div class="subevent-title-bar">
-          <div style="display:flex; align-items:center; gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
             <div class="subevent-number"><%= si + 1 %></div>
             <div>
               <div class="subevent-name"><%= sub.title %></div>
-              <div style="font-size:0.75rem; color:rgba(255,255,255,0.75); margin-top:2px;">
-                <%= sub.isGroupEvent ? '👥 Team Event' : '👤 Individual' %>
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.75);margin-top:2px;">
+                <%= sub.isGroupEvent ? '👥 Team' : '👤 Individual' %>
+                <% if (sub.dayNumber) { %> · Day <%= sub.dayNumber %><% } %>
+                <% if (sub.startTime) { %> · <%= sub.startTime %><% if (sub.endTime) { %> – <%= sub.endTime %><% } %><% } %>
                 <% if (sub.maxParticipants) { %> · Max <%= sub.maxParticipants %><% } %>
-                <% if (sub.formFields && sub.formFields.length > 0) { %> · <%= sub.formFields.length %> form field<%= sub.formFields.length > 1 ? 's' : '' %><% } %>
               </div>
             </div>
           </div>
-          <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem; padding:5px 12px; flex-shrink:0;">
+          <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem;padding:5px 12px;flex-shrink:0;">
             <i class="bi bi-people"></i> Registrations
           </a>
         </div>
 
-        <!-- ── Part A: Edit Sub-Event Settings ── -->
+        <!-- ── Part A: Settings ── -->
         <div class="subevent-part">
-          <div class="subevent-part-label">
-            <i class="bi bi-gear"></i> Settings
-          </div>
+          <div class="subevent-part-label"><i class="bi bi-gear"></i> Settings</div>
 
           <form action="/subevents/<%= sub._id %>/edit" method="POST" enctype="multipart/form-data">
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
 
               <div class="edit-field-group" style="grid-column:1/-1;">
                 <label class="form-label-custom">Title</label>
@@ -228,9 +292,39 @@
                 <textarea name="description" class="form-control-custom" rows="2"><%= sub.description || '' %></textarea>
               </div>
 
+              <!-- Day / Date / Time -->
+              <div class="edit-field-group">
+                <label class="form-label-custom">Day Number</label>
+                <input type="number" name="dayNumber" class="form-control-custom" min="1"
+                  value="<%= sub.dayNumber || '' %>" placeholder="e.g. 1">
+              </div>
+
+              <div class="edit-field-group">
+                <label class="form-label-custom">Event Date</label>
+                <input type="date" name="eventDate" class="form-control-custom"
+                  value="<%= sub.eventDate ? new Date(sub.eventDate).toISOString().split('T')[0] : '' %>">
+              </div>
+
+              <div class="edit-field-group">
+                <label class="form-label-custom">Start Time</label>
+                <select name="startTime" class="form-control-custom">
+                  <option value="">— Select —</option>
+                  <%- generateTimeOptions(sub.startTime || '') %>
+                </select>
+              </div>
+
+              <div class="edit-field-group">
+                <label class="form-label-custom">End Time</label>
+                <select name="endTime" class="form-control-custom">
+                  <option value="">— Select —</option>
+                  <%- generateTimeOptions(sub.endTime || '') %>
+                </select>
+              </div>
+
               <div class="edit-field-group">
                 <label class="form-label-custom">Max Participants</label>
-                <input type="number" name="maxParticipants" class="form-control-custom" value="<%= sub.maxParticipants || '' %>" placeholder="Unlimited">
+                <input type="number" name="maxParticipants" class="form-control-custom"
+                  value="<%= sub.maxParticipants || '' %>" placeholder="Unlimited">
               </div>
 
               <div class="edit-field-group">
@@ -250,11 +344,10 @@
                 <label class="form-label-custom">Max Team Size</label>
                 <input type="number" name="maxTeamSize" class="form-control-custom" value="<%= sub.maxTeamSize || 1 %>" min="1">
               </div>
-
             </div>
 
             <!-- Toggles -->
-            <div style="display:flex; flex-wrap:wrap; gap:12px; margin:14px 0;">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;margin:14px 0;">
               <label class="toggle-pill">
                 <input type="checkbox" name="enableTeamMembers" <%= sub.enableTeamMembers ? 'checked' : '' %>>
                 <span class="toggle-track"></span>
@@ -269,56 +362,75 @@
 
             <!-- QR Image -->
             <div class="edit-field-group">
-              <label class="form-label-custom">QR Code Image</label>
+              <label class="form-label-custom">QR Code Image <span style="font-weight:400;color:var(--tx-muted);font-size:0.75rem;">(for payment)</span></label>
               <% if (sub.qrImage) { %>
-                <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
-                  <img src="<%= sub.qrImage %>" style="width:48px; height:48px; object-fit:contain; border-radius:var(--r-sm); border:1px solid var(--border-l);">
-                  <span style="font-size:0.78rem; color:#27ae60; font-weight:600;">✓ QR uploaded</span>
+                <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+                  <img src="<%= sub.qrImage %>" style="width:56px;height:56px;object-fit:contain;border-radius:var(--r-sm);border:1px solid var(--border-l);">
+                  <span style="font-size:0.78rem;color:#27ae60;font-weight:600;">✓ QR uploaded</span>
                 </div>
               <% } %>
               <input type="file" name="qrImage" class="form-control-custom" accept="image/*">
             </div>
 
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button type="submit" class="btn-register" style="padding:8px 18px; font-size:0.85rem;">
-                <i class="bi bi-floppy"></i> Save Settings
-              </button>
-              <form action="/subevents/<%= sub._id %>/delete" method="POST" onsubmit="return confirm('Delete this sub-event and all its registrations?')" style="margin:0;">
-                <button type="submit" class="btn-admin-danger" style="font-size:0.85rem;">
-                  <i class="bi bi-trash3"></i> Delete Sub-Event
-                </button>
-              </form>
+            <!-- Poster Image -->
+            <div class="edit-field-group">
+              <label class="form-label-custom">Sub-Event Poster <span style="font-weight:400;color:var(--tx-muted);font-size:0.75rem;">(shown when no QR)</span></label>
+              <% if (sub.posterImage) { %>
+                <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+                  <img src="<%= sub.posterImage %>" style="max-height:70px;border-radius:var(--r-sm);border:1px solid var(--border-l);">
+                  <span style="font-size:0.78rem;color:#27ae60;font-weight:600;">✓ Poster uploaded</span>
+                </div>
+              <% } %>
+              <input type="file" name="posterImage" class="form-control-custom" accept="image/*">
             </div>
 
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.88rem;">
+                <i class="bi bi-floppy"></i> Save Settings
+              </button>
+            </div>
+          </form>
+
+          <!-- Delete (separate form to avoid accidental submit) -->
+          <form action="/subevents/<%= sub._id %>/delete" method="POST"
+            onsubmit="return confirm('Delete this sub-event and all its registrations?')"
+            style="margin-top:10px;">
+            <button type="submit" class="btn-admin-danger" style="font-size:0.85rem;">
+              <i class="bi bi-trash3"></i> Delete Sub-Event
+            </button>
           </form>
         </div>
 
 
         <!-- ── Part B: Form Builder ── -->
         <div class="subevent-part" style="border-top:1px dashed var(--border-l);">
-          <div class="subevent-part-label">
-            <i class="bi bi-card-list"></i> Registration Form Fields
+          <div class="subevent-part-label"><i class="bi bi-card-list"></i> Registration Form Fields</div>
+
+          <!-- Built-in fields notice -->
+          <div style="padding:10px 14px;background:rgba(39,174,96,0.07);border:1px solid rgba(39,174,96,0.20);border-radius:var(--r-md);margin-bottom:14px;font-size:0.82rem;color:#27ae60;font-weight:600;">
+            ✓ Built-in fields always included: <strong>Participant Name</strong>, <strong>Email</strong>, <strong>Phone Number</strong>
           </div>
 
-          <!-- Existing fields -->
+          <!-- Existing custom fields -->
           <% if (sub.formFields && sub.formFields.length > 0) { %>
-            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
-              <% sub.formFields.slice().sort(function(a,b){ return a.order - b.order; }).forEach(function(field) { %>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+              <% sub.formFields.slice().sort(function(a,b){ return a.order-b.order; }).forEach(function(field) { %>
                 <div class="field-chip">
-                  <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+                  <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
                     <span class="field-type-badge field-type-<%= field.type %>"><%= field.type %></span>
                     <div style="min-width:0;">
-                      <div style="font-weight:600; font-size:0.88rem; color:var(--tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                      <div style="font-weight:600;font-size:0.88rem;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                         <%= field.label %>
-                        <% if (field.required) { %><span style="color:#c0392b; margin-left:3px;">*</span><% } %>
+                        <% if (field.required) { %><span style="color:#c0392b;margin-left:3px;">*</span><% } %>
                       </div>
                       <% if (field.options && field.options.length > 0) { %>
-                        <div style="font-size:0.72rem; color:var(--tx-muted);">Options: <%= field.options.join(' · ') %></div>
+                        <div style="font-size:0.72rem;color:var(--tx-muted);">Options: <%= field.options.join(' · ') %></div>
                       <% } %>
                     </div>
                   </div>
                   <form action="/subevents/<%= sub._id %>/fields/<%= field._id %>/delete" method="POST" style="margin:0;">
-                    <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--tx-muted);padding:4px 6px;border-radius:var(--r-sm);transition:color 0.2s;" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='var(--tx-muted)'">
+                    <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--tx-muted);padding:4px 6px;border-radius:var(--r-sm);transition:color 0.2s;"
+                      onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='var(--tx-muted)'">
                       <i class="bi bi-x-lg"></i>
                     </button>
                   </form>
@@ -326,26 +438,21 @@
               <% }) %>
             </div>
           <% } else { %>
-            <p style="font-size:0.85rem; color:var(--tx-muted); font-style:italic; margin-bottom:14px;">No fields yet — add your first field below.</p>
+            <p style="font-size:0.85rem;color:var(--tx-muted);font-style:italic;margin-bottom:14px;">No extra fields yet — add below.</p>
           <% } %>
 
-          <!-- Add new field form -->
-          <div id="add-field-<%= sub._id %>"></div>
+          <!-- Add field form -->
           <div class="add-field-box">
-            <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--br); margin-bottom:12px;">
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--br);margin-bottom:12px;">
               <i class="bi bi-plus-circle"></i> Add New Field
             </div>
-
             <form action="/subevents/<%= sub._id %>/fields/add" method="POST">
               <input type="hidden" name="_anchor" value="subevent-<%= sub._id %>">
-
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                 <div class="edit-field-group" style="grid-column:1/-1;">
                   <label class="form-label-custom">Field Label <span style="color:#c0392b;">*</span></label>
-                  <input type="text" name="label" class="form-control-custom" placeholder="e.g. Full Name, College, Branch" required>
+                  <input type="text" name="label" class="form-control-custom" placeholder="e.g. College Name, Branch" required>
                 </div>
-
                 <div class="edit-field-group">
                   <label class="form-label-custom">Field Type <span style="color:#c0392b;">*</span></label>
                   <select name="type" class="form-control-custom" id="typeSelect-<%= sub._id %>" required>
@@ -356,39 +463,30 @@
                     <option value="file">File Upload</option>
                   </select>
                 </div>
-
                 <div class="edit-field-group">
                   <label class="form-label-custom">Placeholder</label>
                   <input type="text" name="placeholder" class="form-control-custom" placeholder="Optional hint text">
                 </div>
-
-                <div class="edit-field-group" id="optionsBox-<%= sub._id %>" style="display:none; grid-column:1/-1;">
+                <div class="edit-field-group" id="optionsBox-<%= sub._id %>" style="display:none;grid-column:1/-1;">
                   <label class="form-label-custom">Options <span style="color:#c0392b;">*</span></label>
                   <input type="text" name="options" class="form-control-custom" placeholder="Option1, Option2, Option3">
-                  <div style="font-size:0.72rem; color:var(--tx-muted); margin-top:4px;">Separate options with commas</div>
+                  <div style="font-size:0.72rem;color:var(--tx-muted);margin-top:4px;">Separate options with commas</div>
                 </div>
-
               </div>
-
               <label class="toggle-pill" style="margin:10px 0 14px;">
                 <input type="checkbox" name="required">
                 <span class="toggle-track"></span>
                 Required field
               </label>
-
-              <button type="submit" class="btn-register" style="padding:9px 20px; font-size:0.85rem;">
+              <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.85rem;">
                 <i class="bi bi-floppy"></i> Save Field
               </button>
-
             </form>
           </div>
-
         </div>
         <!-- end Part B -->
 
-      </div>
-      <!-- end subevent-master-card -->
-
+      </div><!-- end subevent-master-card -->
     <% }); %>
   <% } %>
 
@@ -396,212 +494,187 @@
 
 
 <style>
-  /* ── Section cards ── */
-  .edit-section-card {
-    background: var(--cream-alt);
-    border: 1px solid var(--border-l);
-    border-radius: var(--r-lg);
-    padding: clamp(20px,3vw,32px);
-    margin-bottom: 24px;
-  }
-  .edit-section-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 22px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-l);
-  }
-  .edit-section-icon {
-    width: 44px; height: 44px;
-    border-radius: var(--r-md);
-    background: rgba(166,124,82,0.10);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.3rem;
-    flex-shrink: 0;
-  }
-  .edit-section-title { font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--tx); }
-  .edit-section-sub   { font-size:0.78rem; color:var(--tx-muted); margin-top:2px; }
+/* ── Section cards ── */
+.edit-section-card {
+  background: var(--cream-alt);
+  border: 1px solid var(--border-l);
+  border-radius: var(--r-lg);
+  padding: clamp(20px,3vw,32px);
+  margin-bottom: 24px;
+}
+.edit-section-header {
+  display:flex; align-items:center; gap:14px;
+  margin-bottom:22px; padding-bottom:16px; border-bottom:1px solid var(--border-l);
+}
+.edit-section-icon { width:44px;height:44px;border-radius:var(--r-md);background:rgba(166,124,82,0.10);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0; }
+.edit-section-title { font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--tx); }
+.edit-section-sub   { font-size:0.78rem;color:var(--tx-muted);margin-top:2px; }
+.edit-field-group { margin-bottom:14px; }
+.edit-field-group:last-child { margin-bottom:0; }
 
-  /* ── Field group ── */
-  .edit-field-group { margin-bottom: 14px; }
-  .edit-field-group:last-child { margin-bottom: 0; }
+/* ── Visibility radio ── */
+.visibility-radio { cursor:pointer; display:block; }
+.visibility-radio input[type="radio"] { display:none; }
+.vis-pill {
+  display:flex; flex-direction:column;
+  padding:12px 20px; border-radius:var(--r-md); min-width:160px;
+  border:2px solid var(--border-l); background:var(--cream);
+  transition:all 0.24s ease; cursor:pointer;
+}
+.vis-pill i { font-size:1.1rem; margin-bottom:4px; }
+.vis-pill small { font-size:0.72rem; color:var(--tx-muted); font-weight:400; margin-top:2px; }
+.visibility-radio input:checked + .vis-public {
+  border-color:#27ae60; background:rgba(39,174,96,0.08);
+  color:#1a7a3e;
+}
+.visibility-radio input:checked + .vis-public small { color:#27ae60; }
+.visibility-radio input:checked + .vis-private {
+  border-color:#c0392b; background:rgba(192,57,43,0.07);
+  color:#c0392b;
+}
+.visibility-radio input:checked + .vis-private small { color:#c0392b; }
+body.dark-mode .vis-pill { background:var(--dk-surface); }
 
-  /* ── Sub-event master card ── */
-  .subevent-master-card {
-    background: var(--cream-alt);
-    border: 2px solid var(--br);
-    border-radius: var(--r-lg);
-    overflow: hidden;
-    margin-bottom: 28px;
-    box-shadow: 0 4px 20px rgba(166,124,82,0.10);
-  }
+/* ── Rich text editor ── */
+.richtext-toolbar {
+  display:flex; flex-wrap:wrap; gap:4px;
+  padding:6px 10px;
+  background:rgba(166,124,82,0.06);
+  border:1.5px solid var(--border-l);
+  border-bottom:none;
+  border-radius:var(--r-sm) var(--r-sm) 0 0;
+}
+.richtext-toolbar button {
+  padding:4px 10px; font-size:0.82rem;
+  border:1px solid var(--border-l);
+  border-radius:4px; background:var(--cream);
+  color:var(--tx-mid); cursor:pointer;
+  transition:all 0.18s ease; font-family:var(--font-body);
+}
+.richtext-toolbar button:hover { background:rgba(166,124,82,0.12); border-color:var(--br); color:var(--br); }
+.tb-sep { width:1px; background:var(--border-l); margin:2px 4px; }
+.richtext-editor {
+  min-height:120px; padding:12px 14px;
+  border:1.5px solid var(--border-l);
+  border-radius:0 0 var(--r-sm) var(--r-sm);
+  background:var(--cream); color:var(--tx);
+  font-family:var(--font-body); font-size:0.95rem;
+  line-height:1.75; outline:none;
+}
+.richtext-editor:focus { border-color:var(--br); box-shadow:0 0 0 3px rgba(166,124,82,0.14); }
+.richtext-editor ul, .richtext-editor ol { padding-left:20px; }
+body.dark-mode .richtext-editor { background:var(--dk-elevate); color:var(--dk-text); border-color:var(--border-d); }
+body.dark-mode .richtext-toolbar { background:rgba(210,180,140,0.06); border-color:var(--border-d); }
+body.dark-mode .richtext-toolbar button { background:var(--dk-surface); color:var(--dk-muted); border-color:var(--border-d); }
 
-  .subevent-title-bar {
-    background: linear-gradient(135deg, var(--br), var(--br-deep));
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .subevent-number {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.25);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff;
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: 0.95rem;
-    flex-shrink: 0;
-  }
-  .subevent-name {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1.05rem;
-    color: #fff;
-  }
+/* ── Sub-event master card ── */
+.subevent-master-card { background:var(--cream-alt);border:2px solid var(--br);border-radius:var(--r-lg);overflow:hidden;margin-bottom:28px;box-shadow:0 4px 20px rgba(166,124,82,0.10); }
+.subevent-title-bar { background:linear-gradient(135deg,var(--br),var(--br-deep));padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap; }
+.subevent-number { width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:800;font-size:0.95rem;flex-shrink:0; }
+.subevent-name { font-family:var(--font-display);font-weight:700;font-size:1.05rem;color:#fff; }
+.subevent-part { padding:clamp(16px,2.5vw,24px); }
+.subevent-part-label { font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--br);margin-bottom:14px;display:flex;align-items:center;gap:6px; }
 
-  .subevent-part { padding: clamp(16px,2.5vw,24px); }
-  .subevent-part-label {
-    font-size: 0.72rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--br);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+/* ── Field chips ── */
+.field-chip { display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--cream);border:1px solid var(--border-l);border-radius:var(--r-md);transition:border-color 0.2s; }
+.field-chip:hover { border-color:var(--br); }
+.field-type-badge { padding:2px 8px;border-radius:var(--r-sm);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;flex-shrink:0; }
+.field-type-text     { background:rgba(102,126,234,0.12);color:#4a5bbf; }
+.field-type-textarea { background:rgba(102,126,234,0.12);color:#4a5bbf; }
+.field-type-dropdown { background:rgba(166,124,82,0.12);color:var(--br); }
+.field-type-checkbox { background:rgba(39,174,96,0.12); color:#27ae60; }
+.field-type-file     { background:rgba(192,57,43,0.10); color:#c0392b; }
+.add-field-box { background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.30);border-radius:var(--r-md);padding:18px; }
 
-  /* ── Field chip ── */
-  .field-chip {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    background: var(--cream);
-    border: 1px solid var(--border-l);
-    border-radius: var(--r-md);
-    transition: border-color 0.2s;
-  }
-  .field-chip:hover { border-color: var(--br); }
+/* ── Toggle pill ── */
+.toggle-pill { display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;font-weight:500;color:var(--tx-mid);padding:6px 12px;border-radius:var(--r-full);border:1px solid var(--border-l);background:var(--cream);user-select:none;transition:border-color 0.2s,background 0.2s; }
+.toggle-pill:has(input:checked) { border-color:var(--br);background:rgba(166,124,82,0.07);color:var(--br); }
+.toggle-pill input { display:none; }
+.toggle-track { width:28px;height:16px;border-radius:8px;background:var(--border-l);position:relative;flex-shrink:0;transition:background 0.2s; }
+.toggle-track::after { content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+.toggle-pill:has(input:checked) .toggle-track { background:var(--br); }
+.toggle-pill:has(input:checked) .toggle-track::after { transform:translateX(12px); }
 
-  .field-type-badge {
-    padding: 2px 8px;
-    border-radius: var(--r-sm);
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    flex-shrink: 0;
-  }
-  .field-type-text      { background:rgba(102,126,234,0.12); color:#4a5bbf; }
-  .field-type-textarea  { background:rgba(102,126,234,0.12); color:#4a5bbf; }
-  .field-type-dropdown  { background:rgba(166,124,82,0.12); color:var(--br); }
-  .field-type-checkbox  { background:rgba(39,174,96,0.12);  color:#27ae60; }
-  .field-type-file      { background:rgba(192,57,43,0.10);  color:#c0392b; }
-
-  /* ── Add field box ── */
-  .add-field-box {
-    background: rgba(166,124,82,0.04);
-    border: 1.5px dashed rgba(166,124,82,0.30);
-    border-radius: var(--r-md);
-    padding: 18px;
-  }
-
-  /* ── Toggle pill ── */
-  .toggle-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--tx-mid);
-    padding: 6px 12px;
-    border-radius: var(--r-full);
-    border: 1px solid var(--border-l);
-    background: var(--cream);
-    user-select: none;
-    transition: border-color 0.2s, background 0.2s;
-  }
-  .toggle-pill:has(input:checked) {
-    border-color: var(--br);
-    background: rgba(166,124,82,0.07);
-    color: var(--br);
-  }
-  .toggle-pill input { display: none; }
-  .toggle-track {
-    width: 28px; height: 16px;
-    border-radius: 8px;
-    background: var(--border-l);
-    position: relative;
-    flex-shrink: 0;
-    transition: background 0.2s;
-  }
-  .toggle-track::after {
-    content: '';
-    position: absolute;
-    width: 12px; height: 12px;
-    border-radius: 50%;
-    background: #fff;
-    top: 2px; left: 2px;
-    transition: transform 0.2s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  }
-  .toggle-pill:has(input:checked) .toggle-track { background: var(--br); }
-  .toggle-pill:has(input:checked) .toggle-track::after { transform: translateX(12px); }
-
-  /* dark mode */
-  body.dark-mode .edit-section-card,
-  body.dark-mode .subevent-master-card { background: var(--dk-surface); border-color: var(--border-d); }
-  body.dark-mode .add-field-box { background: rgba(255,255,255,0.03); }
-  body.dark-mode .field-chip { background: var(--dk-base); }
-  body.dark-mode .toggle-pill { background: var(--dk-surface); }
+/* dark mode */
+body.dark-mode .edit-section-card,
+body.dark-mode .subevent-master-card { background:var(--dk-surface);border-color:var(--border-d); }
+body.dark-mode .add-field-box { background:rgba(255,255,255,0.03); }
+body.dark-mode .field-chip { background:var(--dk-base); }
+body.dark-mode .toggle-pill { background:var(--dk-surface); }
 </style>
 
 
 <script>
-  document.querySelectorAll('[id^="typeSelect-"]').forEach(function(select) {
-    var subId = select.id.replace('typeSelect-', '');
-    var box = document.getElementById('optionsBox-' + subId);
+/* ── Rich text helpers ── */
+var descEditor  = document.getElementById('descriptionEditor');
+var aboutEditor = document.getElementById('aboutEditor');
 
-    function toggleOptions() {
-      if (select.value === 'dropdown' || select.value === 'checkbox') {
-        box.style.display = 'block';
-        box.style.gridColumn = '1/-1';
-      } else {
-        box.style.display = 'none';
-      }
-    }
+function fmt(cmd)  { descEditor.focus();  document.execCommand(cmd, false, null); }
+function fmt2(cmd) { aboutEditor.focus(); document.execCommand(cmd, false, null); }
+function fmtBlock(tag) { descEditor.focus(); document.execCommand('formatBlock', false, tag); }
 
-    select.addEventListener('change', toggleOptions);
-    toggleOptions();
-  });
+function syncEditors() {
+  document.getElementById('descriptionHidden').value = descEditor.innerHTML;
+  document.getElementById('aboutHidden').value       = aboutEditor.innerHTML;
+}
 
-  document.querySelectorAll('.add-field-box form').forEach(function(form) {
-    form.addEventListener('submit', function() {
-      var anchor = form.querySelector('[name="_anchor"]');
-      if (anchor) {
-        sessionStorage.setItem('editScrollAnchor', anchor.value);
-      }
-    });
-  });
-
-  window.addEventListener('load', function() {
-    var anchor = sessionStorage.getItem('editScrollAnchor');
-    if (anchor) {
-      sessionStorage.removeItem('editScrollAnchor');
-      var el = document.getElementById(anchor);
-      if (el) {
-        setTimeout(function() {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
-      }
+// Also sync on any form submit inside this page
+document.querySelectorAll('form').forEach(function(f) {
+  f.addEventListener('submit', function() {
+    if (f.contains(descEditor)) {
+      document.getElementById('descriptionHidden').value = descEditor.innerHTML;
+      document.getElementById('aboutHidden').value       = aboutEditor.innerHTML;
     }
   });
+});
+
+/* ── Dynamic field type → show options box ── */
+document.querySelectorAll('[id^="typeSelect-"]').forEach(function(select) {
+  var subId = select.id.replace('typeSelect-', '');
+  var box   = document.getElementById('optionsBox-' + subId);
+  function toggleOptions() {
+    var show = select.value === 'dropdown' || select.value === 'checkbox';
+    box.style.display = show ? 'block' : 'none';
+    if (show) box.style.gridColumn = '1/-1';
+  }
+  select.addEventListener('change', toggleOptions);
+  toggleOptions();
+});
+
+/* ── Scroll anchor restoration after field add ── */
+document.querySelectorAll('.add-field-box form').forEach(function(form) {
+  form.addEventListener('submit', function() {
+    var anchor = form.querySelector('[name="_anchor"]');
+    if (anchor) sessionStorage.setItem('editScrollAnchor', anchor.value);
+  });
+});
+window.addEventListener('load', function() {
+  var anchor = sessionStorage.getItem('editScrollAnchor');
+  if (anchor) {
+    sessionStorage.removeItem('editScrollAnchor');
+    var el = document.getElementById(anchor);
+    if (el) setTimeout(function(){ el.scrollIntoView({behavior:'smooth',block:'start'}); }, 300);
+  }
+});
 </script>
+
+<%
+/* Helper: generate time <option> list 12h AM/PM every 30 min */
+function generateTimeOptions(selected) {
+  var out = '';
+  var slots = [];
+  for (var h = 0; h < 24; h++) {
+    for (var m = 0; m < 60; m += 30) {
+      var suffix = h < 12 ? 'AM' : 'PM';
+      var h12    = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      var label  = (h12 < 10 ? '0' : '') + h12 + ':' + (m === 0 ? '00' : '30') + ' ' + suffix;
+      slots.push(label);
+    }
+  }
+  slots.forEach(function(s) {
+    var sel = (s === selected) ? ' selected' : '';
+    out += '<option value="' + s + '"' + sel + '>' + s + '</option>';
+  });
+  return out;
+}
+%>

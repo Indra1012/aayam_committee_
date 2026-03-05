@@ -4,211 +4,188 @@
 
     <!-- Banner -->
     <% if (event.bannerImage) { %>
-      <div class="event-detail-banner" data-aos="fade-down" style="position:relative; overflow:hidden; border-radius:var(--r-lg); margin-bottom:32px;">
-        <img src="<%= event.bannerImage %>" alt="<%= event.title %>" style="width:100%; max-height:420px; object-fit:cover; display:block;">
+      <div class="event-detail-banner" data-aos="fade-down" style="position:relative;overflow:hidden;border-radius:var(--r-lg);margin-bottom:32px;">
+        <img src="<%= event.bannerImage %>" alt="<%= event.title %>" style="width:100%;max-height:420px;object-fit:cover;display:block;">
         <% if (isPast) { %>
-          <div style="position:absolute; top:16px; right:16px;">
-            <span class="badge-completed" style="font-size:0.8rem; padding:6px 14px;">Completed</span>
+          <div style="position:absolute;top:16px;right:16px;">
+            <span class="badge-completed" style="font-size:0.8rem;padding:6px 14px;">Completed</span>
+          </div>
+        <% } %>
+        <%# Admin-only private badge on banner — public users never see this %>
+        <% if (!event.isPublic && user && (user.role === 'admin' || user.role === 'superadmin')) { %>
+          <div style="position:absolute;top:16px;left:16px;">
+            <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:var(--r-full);background:rgba(0,0,0,0.65);color:#ffd700;font-size:0.72rem;font-weight:700;letter-spacing:1px;border:1px solid rgba(255,215,0,0.35);backdrop-filter:blur(6px);">
+              🔒 Private — Admin View
+            </span>
           </div>
         <% } %>
       </div>
     <% } %>
 
-    <!-- Admin edit button -->
+    <!-- Admin action bar -->
     <% if (user && (user.role === 'admin' || user.role === 'superadmin')) { %>
-      <div class="mb-3" data-aos="fade-up">
+      <div class="mb-3 d-flex gap-2 flex-wrap" data-aos="fade-up">
         <a href="/events/edit/<%= event._id %>" class="btn-details">
           <i class="bi bi-pencil-square"></i> Edit Event
         </a>
+        <form action="/events/toggle-visibility/<%= event._id %>" method="POST" style="margin:0;">
+          <button class="<%= event.isPublic ? 'btn-admin-warn' : 'btn-register' %>" style="font-size:0.82rem;">
+            <%= event.isPublic ? '🔒 Make Private' : '🌐 Make Public' %>
+          </button>
+        </form>
       </div>
     <% } %>
 
-    <!-- Event title & meta -->
+    <!-- Title & meta -->
     <div data-aos="fade-up" data-aos-delay="60" style="margin-bottom:28px;">
-
       <% if (!event.bannerImage && isPast) { %>
-        <span class="badge-completed" style="margin-bottom:10px; display:inline-block;">Completed</span>
+        <span class="badge-completed" style="margin-bottom:10px;display:inline-block;">Completed</span>
       <% } %>
 
-      <h1 style="
-        font-family: var(--font-display);
-        font-size: clamp(2rem,5vw,3.2rem);
-        font-weight: 900;
-        color: var(--tx);
-        line-height: 1.12;
-        margin-bottom: 14px;
-        letter-spacing: -0.5px;
-      "><%= event.title %></h1>
+      <h1 style="font-family:var(--font-display);font-size:clamp(2rem,5vw,3.2rem);font-weight:900;color:var(--tx);line-height:1.12;margin-bottom:14px;letter-spacing:-0.5px;">
+        <%= event.title %>
+      </h1>
 
       <% if (event.startDate && event.endDate) { %>
-        <div style="display:inline-flex; align-items:center; gap:8px; padding:7px 16px; background:rgba(166,124,82,0.08); border:1px solid rgba(166,124,82,0.2); border-radius:var(--r-full); margin-bottom:20px;">
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 16px;background:rgba(166,124,82,0.08);border:1px solid rgba(166,124,82,0.2);border-radius:var(--r-full);margin-bottom:20px;">
           <i class="bi bi-calendar3" style="color:var(--br);"></i>
-          <span style="font-size:0.88rem; font-weight:600; color:var(--tx-mid);">
+          <span style="font-size:0.88rem;font-weight:600;color:var(--tx-mid);">
             <% if (new Date(event.startDate).toDateString() === new Date(event.endDate).toDateString()) { %>
               <%= new Date(event.startDate).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) %>
             <% } else { %>
-              <%= new Date(event.startDate).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) %> → <%= new Date(event.endDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) %>
+              <%= new Date(event.startDate).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) %> →
+              <%= new Date(event.endDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) %>
             <% } %>
           </span>
         </div>
       <% } %>
 
-      <p style="
-        font-size: clamp(1rem,1.6vw,1.12rem);
-        color: var(--tx-mid);
-        line-height: 1.9;
-        margin-bottom: 18px;
-        max-width: 780px;
-      "><%= event.description %></p>
+      <div class="event-description-body" data-aos="fade-up">
+        <%- event.description %>
+      </div>
 
       <% if (event.about) { %>
-        <div style="
-          background: rgba(166,124,82,0.05);
-          border-left: 3px solid var(--br);
-          border-radius: 0 var(--r-md) var(--r-md) 0;
-          padding: 16px 20px;
-          margin-bottom: 20px;
-          max-width: 780px;
-        " data-aos="fade-up">
-          <p style="font-size:clamp(0.93rem,1.4vw,1.03rem); color:var(--tx-mid); line-height:1.85; margin:0;">
-            <%= event.about %>
-          </p>
+        <div style="background:rgba(166,124,82,0.05);border-left:3px solid var(--br);border-radius:0 var(--r-md) var(--r-md) 0;padding:16px 20px;margin-top:18px;max-width:780px;" data-aos="fade-up">
+          <div class="event-description-body"><%- event.about %></div>
         </div>
       <% } %>
-
     </div>
 
-    <!-- ═══════════════════════════════════════
-         REGISTRATION SECTION
-         4 cases:
-         1. External link only (no sub-events) → big register button
-         2. Sub-events only (no external link) → list sub-events
-         3. Both external link + sub-events → banner link above sub-events
-         4. Neither + upcoming → "opening soon"
-    ════════════════════════════════════════ -->
-    <% var isAdmin = user && (user.role === 'admin' || user.role === 'superadmin'); %>
-    <% var hasSubEvents = subEvents && subEvents.length > 0; %>
-    <% var hasExternalLink = event.registrationLink && event.registrationLink.trim() !== ''; %>
-
     <%
-      // Only show registration UI for upcoming events (or admin viewing past)
+      var isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
+      var hasSubEvents = subEvents && subEvents.length > 0;
+      var hasExternalLink = event.registrationLink && event.registrationLink.trim() !== '';
       var showRegSection = !isPast || isAdmin;
     %>
 
+    <!-- ═══ REGISTRATION SECTION ═══ -->
     <% if (showRegSection) { %>
 
       <% if (hasExternalLink && !hasSubEvents) { %>
-        <!-- ── CASE 1: External link, no sub-events ── -->
         <div class="detail-section" data-aos="fade-up">
           <h2 class="detail-section-title">Registration</h2>
-          <div style="
-            background: linear-gradient(135deg, rgba(166,124,82,0.07), rgba(201,168,76,0.04));
-            border: 1.5px solid rgba(166,124,82,0.22);
-            border-radius: var(--r-lg);
-            padding: 22px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-          ">
+          <div style="background:linear-gradient(135deg,rgba(166,124,82,0.07),rgba(201,168,76,0.04));border:1.5px solid rgba(166,124,82,0.22);border-radius:var(--r-lg);padding:22px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
             <div>
-              <div style="font-family:var(--font-display); font-weight:700; font-size:1rem; color:var(--tx); margin-bottom:4px;">
+              <div style="font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--tx);margin-bottom:4px;">
                 <i class="bi bi-link-45deg" style="color:var(--br);"></i> Register via External Form
               </div>
-              <div style="font-size:0.82rem; color:var(--tx-muted);">
-                Opens in a new tab — Google Form or external registration page
-              </div>
+              <div style="font-size:0.82rem;color:var(--tx-muted);">Opens in a new tab</div>
             </div>
-            <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer"
-               class="btn-register" style="white-space:nowrap; flex-shrink:0;">
+            <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer" class="btn-register" style="white-space:nowrap;flex-shrink:0;">
               Register Now <i class="bi bi-box-arrow-up-right"></i>
             </a>
           </div>
         </div>
 
       <% } else if (hasSubEvents) { %>
-        <!-- ── CASE 2 & 3: Sub-events (with or without external link) ── -->
         <div class="detail-section" data-aos="fade-up">
           <h2 class="detail-section-title">
             <%= isPast ? 'Sessions & Registrations' : 'Register for Sessions' %>
           </h2>
 
-          <!-- If external link ALSO exists, show it as a compact banner above sub-events -->
           <% if (!isPast && hasExternalLink) { %>
-            <div style="
-              display: flex;
-              align-items: center;
-              gap: 12px;
-              padding: 11px 16px;
-              background: rgba(166,124,82,0.06);
-              border: 1px solid rgba(166,124,82,0.18);
-              border-radius: var(--r-md);
-              margin-bottom: 16px;
-              flex-wrap: wrap;
-            ">
-              <div style="flex:1; min-width:0; font-size:0.83rem; font-weight:600; color:var(--tx-mid);">
-                <i class="bi bi-link-45deg" style="color:var(--br);"></i>
-                External registration link available
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;background:rgba(166,124,82,0.06);border:1px solid rgba(166,124,82,0.18);border-radius:var(--r-md);margin-bottom:16px;flex-wrap:wrap;">
+              <div style="flex:1;font-size:0.83rem;font-weight:600;color:var(--tx-mid);">
+                <i class="bi bi-link-45deg" style="color:var(--br);"></i> External registration also available
               </div>
-              <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer"
-                 class="btn-details" style="font-size:0.8rem; padding:6px 14px; white-space:nowrap; flex-shrink:0;">
+              <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer" class="btn-details" style="font-size:0.8rem;padding:6px 14px;white-space:nowrap;flex-shrink:0;">
                 Open Form <i class="bi bi-box-arrow-up-right"></i>
               </a>
             </div>
           <% } %>
 
-          <!-- Sub-event list -->
-          <div style="display:flex; flex-direction:column; gap:14px;">
-            <% subEvents.forEach(function(sub) { %>
-              <div style="
-                background: var(--cream-alt);
-                border: 1px solid var(--border-l);
-                border-radius: var(--r-md);
-                padding: 16px 18px;
-                transition: border-color 0.22s, box-shadow 0.22s;
-              " onmouseover="this.style.borderColor='var(--br)';this.style.boxShadow='0 4px 16px rgba(166,124,82,0.10)'"
-                 onmouseout="this.style.borderColor='var(--border-l)';this.style.boxShadow='none'">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%; gap:12px; flex-wrap:wrap;">
-                  <div style="flex:1; min-width:0;">
-                    <div style="font-family:var(--font-display); font-weight:700; font-size:1rem; color:var(--tx); margin-bottom:4px;">
-                      <%= sub.title %>
-                    </div>
-                    <% if (sub.description) { %>
-                      <div style="font-size:0.83rem; color:var(--tx-muted); margin-bottom:6px;"><%= sub.description %></div>
-                    <% } %>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                      <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(166,124,82,0.09); color:var(--br);">
-                        <%= sub.isGroupEvent ? '👥 Team' : '👤 Individual' %>
-                      </span>
-                      <% if (sub.maxParticipants) { %>
-                        <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(241,196,15,0.10); color:#b8860b;">
-                          Max <%= sub.maxParticipants %>
-                        </span>
-                      <% } %>
-                      <% if (sub.requirePaymentScreenshot) { %>
-                        <span style="font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:var(--r-sm); background:rgba(39,174,96,0.09); color:#27ae60;">
-                          💳 Payment required
-                        </span>
-                      <% } %>
-                    </div>
-                  </div>
-                  <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex-shrink:0;">
-                    <% if (!isPast) { %>
-                      <a href="/register/<%= sub._id %>" class="btn-register" style="white-space:nowrap;">
-                        Register <i class="bi bi-arrow-right"></i>
-                      </a>
-                    <% } %>
-                    <% if (isAdmin) { %>
-                      <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem; padding:5px 12px; white-space:nowrap;">
-                        <i class="bi bi-people"></i> View Registrations
-                      </a>
+          <!-- Day-grouped sub-events -->
+          <% if (groupedSubEvents && groupedSubEvents.length > 0) { %>
+            <% groupedSubEvents.forEach(function(group) { %>
+              <% if (group.day > 0) { %>
+                <div style="display:flex;align-items:center;gap:12px;margin:22px 0 12px;" data-aos="fade-up">
+                  <div style="padding:4px 16px;background:linear-gradient(135deg,var(--br),var(--br-deep));color:#fff;border-radius:var(--r-full);font-size:0.78rem;font-weight:700;letter-spacing:1px;white-space:nowrap;">
+                    DAY <%= group.day %>
+                    <% var firstSub = group.subEvents[0]; %>
+                    <% if (firstSub && firstSub.eventDate) { %>
+                      &nbsp;·&nbsp;<%= new Date(firstSub.eventDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) %>
                     <% } %>
                   </div>
+                  <div style="flex:1;height:1px;background:var(--border-l);"></div>
                 </div>
+              <% } %>
+
+              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:8px;">
+                <% group.subEvents.forEach(function(sub) { %>
+                  <div class="subevent-row-card">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                      <div style="flex:1;min-width:0;">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+                          <div style="font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--tx);">
+                            <%= sub.title %>
+                          </div>
+                          <% if (sub.startTime || sub.endTime) { %>
+                            <span class="time-chip">
+                              <i class="bi bi-clock"></i>
+                              <%= sub.startTime %><% if (sub.endTime) { %> – <%= sub.endTime %><% } %>
+                            </span>
+                          <% } %>
+                        </div>
+                        <% if (sub.description) { %>
+                          <div style="font-size:0.83rem;color:var(--tx-muted);margin-bottom:8px;"><%= sub.description %></div>
+                        <% } %>
+                        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+                          <span class="meta-chip">
+                            <%= sub.isGroupEvent ? '👥 Team' : '👤 Individual' %>
+                          </span>
+                          <% if (sub.maxParticipants) { %>
+                            <span class="meta-chip meta-chip-gold">Max <%= sub.maxParticipants %></span>
+                          <% } %>
+                          <% if (sub.requirePaymentScreenshot) { %>
+                            <span class="meta-chip meta-chip-green">💳 Payment required</span>
+                          <% } %>
+                        </div>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">
+                        <% if (!isPast) { %>
+                          <a href="/register/<%= sub._id %>" class="btn-register" style="white-space:nowrap;">
+                            Register <i class="bi bi-arrow-right"></i>
+                          </a>
+                        <% } %>
+                        <% if (isAdmin) { %>
+                          <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem;padding:5px 12px;white-space:nowrap;">
+                            <i class="bi bi-people"></i> Registrations
+                          </a>
+                        <% } %>
+                      </div>
+                    </div>
+
+                    <% if (sub.posterImage && !sub.qrImage) { %>
+                      <div style="margin-top:12px;border-top:1px solid var(--border-l);padding-top:12px;">
+                        <img src="<%= sub.posterImage %>" alt="<%= sub.title %> Poster"
+                          style="max-height:200px;border-radius:var(--r-md);border:1px solid var(--border-l);">
+                      </div>
+                    <% } %>
+                  </div>
+                <% }); %>
               </div>
             <% }); %>
-          </div>
+          <% } %>
 
           <% if (!isPast && subEvents.length > 1) { %>
             <div style="margin-top:18px;">
@@ -217,57 +194,86 @@
               </a>
             </div>
           <% } %>
-
         </div>
 
-      <% } else if (!isPast && !hasSubEvents && !hasExternalLink) { %>
-        <!-- ── CASE 4: Nothing set yet ── -->
-        <div data-aos="fade-up" style="margin: 0 0 30px;">
-          <p style="color:var(--tx-muted); font-size:0.93rem; padding:14px 18px; background:rgba(166,124,82,0.05); border-radius:var(--r-md); border:1px solid var(--border-l); margin:0;">
+      <% } else if (!isPast) { %>
+        <div data-aos="fade-up" style="margin:0 0 30px;">
+          <p style="color:var(--tx-muted);font-size:0.93rem;padding:14px 18px;background:rgba(166,124,82,0.05);border-radius:var(--r-md);border:1px solid var(--border-l);margin:0;">
             <i class="bi bi-clock"></i> Registrations will open soon.
           </p>
         </div>
       <% } %>
-
     <% } %>
-    <!-- end registration section -->
 
-    <!-- ═══════════════════════════════════════
-         GALLERY
-    ════════════════════════════════════════ -->
+    <!-- ═══ GALLERY ═══ -->
     <div class="detail-section" data-aos="fade-up">
       <h2 class="detail-section-title">Event Gallery</h2>
+
       <% if (event.galleryImages && event.galleryImages.length > 0) { %>
-        <div class="gallery-grid-sm">
+        <%# NEW: masonry-style grid with caption BELOW each image %>
+        <div class="gallery-grid-captioned">
           <% event.galleryImages.forEach(function(img, i) { %>
-            <div class="gallery-img-wrap" data-aos="zoom-in" data-aos-delay="<%= i * 50 %>">
-              <img src="<%= img %>" alt="Event Image" style="width:100%;height:100%;object-fit:cover;">
-              <% if (isAdmin) { %>
-                <form action="/events/<%= event._id %>/gallery/<%= i %>/delete" method="POST" class="gallery-delete-form" onsubmit="return confirm('Remove this image?')">
-                  <button class="gallery-delete-btn"><i class="bi bi-x-lg"></i></button>
-                </form>
+            <div class="gallery-item-captioned" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 50, 300) %>">
+
+              <!-- Image wrapper -->
+              <div class="gallery-img-outer">
+                <img
+                  src="<%= img.url %>"
+                  alt="<%= img.speakerName || 'Event Image' %>"
+                  class="gallery-img-full"
+                  loading="lazy"
+                >
+                <% if (isAdmin) { %>
+                  <form action="/events/<%= event._id %>/gallery/<%= img._id %>/delete" method="POST"
+                    class="gallery-delete-form" onsubmit="return confirm('Remove this image?')">
+                    <button class="gallery-delete-btn"><i class="bi bi-x-lg"></i></button>
+                  </form>
+                <% } %>
+              </div>
+
+              <!-- Caption BELOW image (not overlaid) -->
+              <% if (img.speakerName || img.detail) { %>
+                <div class="gallery-caption">
+                  <% if (img.speakerName) { %>
+                    <div class="gallery-caption-name"><%= img.speakerName %></div>
+                  <% } %>
+                  <% if (img.detail) { %>
+                    <div class="gallery-caption-detail"><%= img.detail %></div>
+                  <% } %>
+                </div>
               <% } %>
+
             </div>
           <% }); %>
         </div>
+
       <% } else { %>
         <div class="gallery-empty">
           <div class="gallery-empty-icon">🖼</div>
           <p>No gallery images yet.</p>
         </div>
       <% } %>
+
       <% if (isAdmin) { %>
         <form action="/events/<%= event._id %>/gallery" method="POST" enctype="multipart/form-data" class="admin-add-form mt-4">
-          <label class="form-label-custom">Upload Gallery Images</label>
-          <input type="file" name="galleryImages" multiple accept="image/*" class="form-control mb-2" required>
+          <div class="section-label" style="margin-bottom:12px;">Upload Gallery Images</div>
+          <div class="gallery-upload-grid">
+            <div>
+              <label class="form-label-custom">Speaker / Sub-event Name</label>
+              <input type="text" name="speakerName" class="form-control" placeholder="e.g. Dr. Raj Mehta, Workshop A">
+            </div>
+            <div>
+              <label class="form-label-custom">Detail (time / day / topic)</label>
+              <input type="text" name="detail" class="form-control" placeholder="e.g. Day 1 · 10:00 AM · AI Session">
+            </div>
+          </div>
+          <input type="file" name="galleryImages" multiple accept="image/*" class="form-control mb-3 mt-3" required>
           <button class="btn-register">➕ Upload Images</button>
         </form>
       <% } %>
     </div>
 
-    <!-- ═══════════════════════════════════════
-         CONDUCTED BY
-    ════════════════════════════════════════ -->
+    <!-- ═══ CONDUCTED BY ═══ -->
     <div class="detail-section" data-aos="fade-up">
       <h2 class="detail-section-title">Conducted By</h2>
       <% if (event.conductedBy && event.conductedBy.length > 0) { %>
@@ -298,9 +304,7 @@
       <% } %>
     </div>
 
-    <!-- ═══════════════════════════════════════
-         DOCUMENTS
-    ════════════════════════════════════════ -->
+    <!-- ═══ DOCUMENTS ═══ -->
     <div class="detail-section" data-aos="fade-up">
       <h2 class="detail-section-title">Event Documents</h2>
       <% if (event.documents && event.documents.length > 0) { %>
@@ -344,9 +348,7 @@
       <% } %>
     </div>
 
-    <!-- ═══════════════════════════════════════
-         REVIEWS (PAST EVENTS ONLY)
-    ════════════════════════════════════════ -->
+    <!-- ═══ REVIEWS ═══ -->
     <% if (isPast) { %>
       <div class="detail-section" data-aos="fade-up">
         <h2 class="detail-section-title">⭐ Event Reviews</h2>
@@ -376,3 +378,176 @@
 
   </div>
 </div>
+
+<style>
+/* ── Rich-text description ── */
+.event-description-body {
+  font-size: clamp(0.95rem, 1.5vw, 1.08rem);
+  color: var(--tx-mid);
+  line-height: 1.9;
+  max-width: 780px;
+}
+.event-description-body p  { margin-bottom: 14px; }
+.event-description-body ul,
+.event-description-body ol { padding-left: 22px; margin-bottom: 14px; }
+.event-description-body li { margin-bottom: 6px; }
+.event-description-body h3,
+.event-description-body h4 { font-family: var(--font-display); color: var(--tx); margin: 18px 0 8px; font-weight: 700; }
+.event-description-body strong { color: var(--tx); }
+body.dark-mode .event-description-body { color: var(--dk-muted); }
+body.dark-mode .event-description-body strong { color: var(--dk-text); }
+
+/* ── Sub-event row card ── */
+.subevent-row-card {
+  background: var(--cream-alt);
+  border: 1px solid var(--border-l);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  transition: border-color 0.22s, box-shadow 0.22s;
+}
+.subevent-row-card:hover {
+  border-color: var(--br);
+  box-shadow: 0 4px 16px rgba(166,124,82,0.10);
+}
+body.dark-mode .subevent-row-card { background: var(--dk-surface); border-color: var(--border-d); }
+
+/* ── Chips ── */
+.time-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: var(--r-sm);
+  background: rgba(201,168,76,0.12);
+  color: #8a6914;
+  border: 1px solid rgba(201,168,76,0.24);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.meta-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  background: rgba(166,124,82,0.09);
+  color: var(--br);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.meta-chip-gold { background: rgba(241,196,15,0.10); color: #b8860b; }
+.meta-chip-green { background: rgba(39,174,96,0.09); color: #27ae60; }
+
+/* ══════════════════════════════════════
+   GALLERY — captions BELOW images
+══════════════════════════════════════ */
+.gallery-grid-captioned {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 8px;
+}
+
+.gallery-item-captioned {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--cream-alt);
+  border: 1px solid var(--border-l);
+  transition: box-shadow 0.24s ease, transform 0.24s ease;
+}
+.gallery-item-captioned:hover {
+  box-shadow: 0 8px 28px rgba(166,124,82,0.14);
+  transform: translateY(-2px);
+}
+
+.gallery-img-outer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: rgba(166,124,82,0.06);
+}
+.gallery-img-full {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.gallery-item-captioned:hover .gallery-img-full {
+  transform: scale(1.04);
+}
+
+/* Caption below the image */
+.gallery-caption {
+  padding: 10px 12px 12px;
+  background: var(--cream-alt);
+  border-top: 1px solid var(--border-l);
+}
+.gallery-caption-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--tx);
+  line-height: 1.35;
+  margin-bottom: 2px;
+}
+.gallery-caption-detail {
+  font-size: 0.75rem;
+  color: var(--tx-muted);
+  line-height: 1.4;
+}
+body.dark-mode .gallery-caption { background: var(--dk-surface); border-color: var(--border-d); }
+body.dark-mode .gallery-caption-name { color: var(--dk-text); }
+body.dark-mode .gallery-item-captioned { background: var(--dk-surface); border-color: var(--border-d); }
+
+/* Delete button on gallery image */
+.gallery-delete-form {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  margin: 0;
+}
+.gallery-delete-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  border: none;
+  color: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  backdrop-filter: blur(4px);
+}
+.gallery-delete-btn:hover { background: #c0392b; }
+
+/* Admin upload grid */
+.gallery-upload-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .gallery-grid-captioned {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .gallery-caption-name { font-size: 0.78rem; }
+  .gallery-caption-detail { font-size: 0.7rem; }
+  .gallery-upload-grid { grid-template-columns: 1fr; }
+  .subevent-row-card { padding: 12px 14px; }
+}
+
+@media (max-width: 380px) {
+  .gallery-grid-captioned {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

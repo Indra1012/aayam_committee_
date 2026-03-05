@@ -1,0 +1,130 @@
+<!-- views/events/private.ejs -->
+<div class="container">
+  <div style="max-width:680px; margin:0 auto; padding: clamp(60px,8vw,100px) 0; text-align:center;">
+
+    <!-- Banner / Poster -->
+    <% if (event.bannerImage) { %>
+      <div data-aos="fade-down" style="
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        margin-bottom: 36px;
+        box-shadow: var(--sh-lg);
+        position: relative;
+      ">
+        <img src="<%= event.bannerImage %>" alt="<%= event.title %>"
+          style="width:100%; max-height:440px; object-fit:cover; display:block; filter:brightness(0.92);">
+        <div style="
+          position:absolute; inset:0;
+          background:linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.55));
+        "></div>
+        <!-- Private badge -->
+        <div style="position:absolute; top:16px; right:16px;">
+          <span style="
+            display:inline-flex; align-items:center; gap:6px;
+            padding:5px 14px;
+            border-radius:var(--r-full);
+            background:rgba(18,14,11,0.75);
+            border:1px solid rgba(166,124,82,0.4);
+            font-size:0.72rem; font-weight:700; letter-spacing:1.5px;
+            color:var(--br-light); text-transform:uppercase;
+            backdrop-filter:blur(8px);
+          ">
+            🔒 Private
+          </span>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Title -->
+    <div data-aos="fade-up">
+      <div class="section-label" style="margin-bottom:10px;">Event Preview</div>
+      <h1 style="
+        font-family: var(--font-display);
+        font-size: clamp(1.8rem,5vw,2.8rem);
+        font-weight: 900;
+        color: var(--tx);
+        margin-bottom: 14px;
+        letter-spacing: -0.5px;
+      "><%= event.title %></h1>
+
+      <% if (event.shortDescription) { %>
+        <p style="
+          font-size: clamp(0.95rem,1.5vw,1.08rem);
+          color: var(--tx-muted);
+          line-height: 1.8;
+          margin-bottom: 28px;
+          max-width: 520px;
+          margin-left: auto;
+          margin-right: auto;
+        "><%= event.shortDescription %></p>
+      <% } %>
+    </div>
+
+    <!-- Coming Soon card -->
+    <div data-aos="fade-up" data-aos-delay="120" style="
+      background: var(--cream-alt);
+      border: 1px solid var(--border-l);
+      border-radius: var(--r-xl);
+      padding: clamp(28px,4vw,44px);
+      margin-bottom: 32px;
+      position: relative;
+      overflow: hidden;
+    ">
+      <!-- Shimmer top bar -->
+      <div style="
+        position:absolute; top:0; left:0; right:0; height:3px;
+        background: linear-gradient(90deg, var(--br-deep), var(--br), var(--gold), var(--br-light), var(--br));
+        background-size:200% 100%;
+        animation: bandShimmer 4s linear infinite;
+      "></div>
+
+      <div style="font-size:3rem; margin-bottom:16px;">🚀</div>
+
+      <h2 style="
+        font-family: var(--font-display);
+        font-size: clamp(1.3rem,3vw,1.9rem);
+        font-weight: 700;
+        color: var(--tx);
+        margin-bottom: 12px;
+      ">Coming Soon</h2>
+
+      <p style="
+        font-size: clamp(0.88rem,1.4vw,1rem);
+        color: var(--tx-muted);
+        line-height: 1.8;
+        margin-bottom: 22px;
+        max-width: 400px;
+        margin-left:auto; margin-right:auto;
+      ">
+        This event hasn't been made public yet. Stay tuned — full details, registration, and more will be revealed soon!
+      </p>
+
+      <% if (event.startDate) { %>
+        <div style="
+          display:inline-flex; align-items:center; gap:8px;
+          padding:8px 20px;
+          background: rgba(166,124,82,0.09);
+          border: 1px solid rgba(166,124,82,0.22);
+          border-radius: var(--r-full);
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--tx-mid);
+        ">
+          <i class="bi bi-calendar3" style="color:var(--br);"></i>
+          <%= new Date(event.startDate).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) %>
+          <% if (event.endDate && new Date(event.endDate).toDateString() !== new Date(event.startDate).toDateString()) { %>
+            → <%= new Date(event.endDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) %>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Back button -->
+    <div data-aos="fade-up" data-aos-delay="200">
+      <a href="/events" class="btn-details">
+        <i class="bi bi-arrow-left"></i> Back to Events
+      </a>
+    </div>
+
+  </div>
+</div>

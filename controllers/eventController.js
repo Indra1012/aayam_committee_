@@ -5,6 +5,12 @@ const SubEvent = require("../models/SubEvent");
 const Registration = require("../models/Registration");
 const { uploadDocToCloud } = require("../middlewares/uploadEvent");
 
+/* ── helpers ── */
+function parseTime12(str) {
+  // normalise "9:00 AM" → "09:00 AM"
+  if (!str) return "";
+  return str.trim();
+}
 
 /* ===============================
    EVENTS LIST PAGE
@@ -12,116 +18,106 @@ const { uploadDocToCloud } = require("../middlewares/uploadEvent");
 exports.getEventsPage = async (req, res) => {
   try {
     const today = new Date();
-
-    // AUTO MOVE UPCOMING → PAST
     await Event.updateMany(
       { type: "upcoming", endDate: { $lt: today } },
       { $set: { type: "past" } }
     );
 
-    const upcomingEvents = await Event.find({ type: "upcoming" })
-      .sort({ startDate: 1 })
-      .lean();
+    const upcomingEvents = await Event.find({ type: "upcoming" }).sort({ startDate: 1 }).lean();
+    const pastEvents     = await Event.find({ type: "past" }).sort({ startDate: -1 }).lean();
 
-    const pastEvents = await Event.find({ type: "past" })
-      .sort({ startDate: -1 })
-      .lean();
-
-    res.render("events/index", {
-      upcomingEvents,
-      pastEvents,
-    });
+    res.render("events/index", { upcomingEvents, pastEvents });
   } catch (error) {
     console.error("Events Page Error:", error.message);
     res.redirect("/");
   }
 };
 
-
 /* ===============================
    EVENT DETAIL PAGE
 ================================ */
 exports.getEventDetail = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.redirect("/events");
-    }
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.redirect("/events");
 
     const event = await Event.findById(req.params.id).lean();
     if (!event) return res.redirect("/events");
 
     const isPast = event.type === "past";
+    const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "superadmin");
+
+    // Private events: only admin can see full detail
+    if (!event.isPublic && !isAdmin) {
+      return res.render("events/private", { event });
+    }
 
     const reviews = isPast
-      ? await Review.find({ event: event._id })
-          .sort({ createdAt: -1 })
-          .lean()
+      ? await Review.find({ event: event._id }).sort({ createdAt: -1 }).lean()
       : [];
 
-    const subEvents = await SubEvent.find({ eventId: event._id }).lean();
+    const subEvents = await SubEvent.find({ eventId: event._id }).sort({ dayNumber: 1, startTime: 1 }).lean();
 
-    res.render("events/show", {
-      event,
-      isPast,
-      reviews,
-      subEvents,
-    });
+    // Group sub-events by day
+    const dayMap = {};
+    for (const sub of subEvents) {
+      const key = sub.dayNumber || 0;
+      if (!dayMap[key]) dayMap[key] = [];
+      dayMap[key].push(sub);
+    }
+    const groupedSubEvents = Object.keys(dayMap)
+      .sort((a, b) => Number(a) - Number(b))
+      .map(k => ({ day: Number(k), subEvents: dayMap[k] }));
+
+    res.render("events/show", { event, isPast, reviews, subEvents, groupedSubEvents });
   } catch (error) {
     console.error("Event Detail Error:", error.message);
     res.redirect("/events");
   }
 };
 
-
 /* ===============================
    SUBEVENT SELECTION PAGE
 ================================ */
 exports.getSubEventsPage = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.eventId)) {
-      return res.redirect("/events");
-    }
+    if (!mongoose.Types.ObjectId.isValid(req.params.eventId)) return res.redirect("/events");
 
     const event = await Event.findById(req.params.eventId).lean();
     if (!event) return res.redirect("/events");
-
     if (event.type === "past") return res.redirect(`/events/${event._id}`);
 
-    const subEvents = await SubEvent.find({ eventId: event._id }).lean();
+    const subEvents = await SubEvent.find({ eventId: event._id }).sort({ dayNumber: 1, startTime: 1 }).lean();
 
     for (let sub of subEvents) {
-      sub.registrationCount = await Registration.countDocuments({
-        subEventId: sub._id,
-      });
+      sub.registrationCount = await Registration.countDocuments({ subEventId: sub._id });
     }
 
-    res.render("events/subevents", { event, subEvents });
+    // Group by day
+    const dayMap = {};
+    for (const sub of subEvents) {
+      const key = sub.dayNumber || 0;
+      if (!dayMap[key]) dayMap[key] = [];
+      dayMap[key].push(sub);
+    }
+    const groupedSubEvents = Object.keys(dayMap)
+      .sort((a, b) => Number(a) - Number(b))
+      .map(k => ({ day: Number(k), subEvents: dayMap[k] }));
+
+    res.render("events/subevents", { event, subEvents, groupedSubEvents });
   } catch (error) {
     console.error("SubEvents Page Error:", error.message);
     res.redirect("/events");
   }
 };
 
-
 /* ===============================
    ADD EVENT (ADMIN)
 ================================ */
 exports.addEvent = async (req, res) => {
   try {
-    const {
-      type,
-      title,
-      shortDescription,
-      description,
-      about,
-      startDate,
-      endDate,
-      registrationLink,
-    } = req.body;
+    const { type, title, shortDescription, description, about, startDate, endDate, registrationLink, isPublic } = req.body;
 
-    if (!title || !startDate || !endDate || !req.file) {
-      return res.redirect("/events");
-    }
+    if (!title || !startDate || !endDate || !req.file) return res.redirect("/events");
 
     await Event.create({
       type,
@@ -132,7 +128,9 @@ exports.addEvent = async (req, res) => {
       startDate,
       endDate,
       bannerImage: req.file.path,
-      registrationLink: registrationLink ? registrationLink.trim() : "",    });
+      registrationLink: registrationLink ? registrationLink.trim() : "",
+      isPublic: isPublic === "true",
+    });
 
     res.redirect("/events");
   } catch (error) {
@@ -140,7 +138,6 @@ exports.addEvent = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* ===============================
    EDIT EVENT PAGE (ADMIN)
@@ -150,7 +147,7 @@ exports.getEditEvent = async (req, res) => {
     const event = await Event.findById(req.params.id).lean();
     if (!event) return res.redirect("/events");
 
-    const subEvents = await SubEvent.find({ eventId: event._id }).lean();
+    const subEvents = await SubEvent.find({ eventId: event._id }).sort({ dayNumber: 1, startTime: 1 }).lean();
 
     res.render("events/edit", { event, subEvents });
   } catch (error) {
@@ -159,21 +156,12 @@ exports.getEditEvent = async (req, res) => {
   }
 };
 
-
 /* ===============================
    UPDATE EVENT (ADMIN)
 ================================ */
 exports.updateEvent = async (req, res) => {
   try {
-    const {
-      title,
-      shortDescription,
-      description,
-      about,
-      startDate,
-      endDate,
-       registrationLink,
-    } = req.body;
+    const { title, shortDescription, description, about, startDate, endDate, registrationLink, isPublic } = req.body;
 
     const updateData = {
       title,
@@ -183,14 +171,12 @@ exports.updateEvent = async (req, res) => {
       startDate,
       endDate,
       registrationLink: registrationLink ? registrationLink.trim() : "",
+      isPublic: isPublic === "true",
     };
 
-    if (req.file) {
-      updateData.bannerImage = req.file.path;
-    }
+    if (req.file) updateData.bannerImage = req.file.path;
 
     await Event.findByIdAndUpdate(req.params.id, updateData);
-
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
     console.error("Update Event Error:", error.message);
@@ -198,6 +184,21 @@ exports.updateEvent = async (req, res) => {
   }
 };
 
+/* ===============================
+   TOGGLE EVENT PUBLIC/PRIVATE (ADMIN)
+================================ */
+exports.toggleEventVisibility = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.redirect("/events");
+    event.isPublic = !event.isPublic;
+    await event.save();
+    res.redirect(`/events/edit/${req.params.id}`);
+  } catch (error) {
+    console.error("Toggle Visibility Error:", error.message);
+    res.redirect("/events");
+  }
+};
 
 /* ===============================
    DELETE EVENT (ADMIN)
@@ -212,16 +213,12 @@ exports.deleteEvent = async (req, res) => {
   }
 };
 
-
 /* ===============================
    MANUAL MOVE TO PAST (ADMIN)
 ================================ */
 exports.moveEventToPast = async (req, res) => {
   try {
-    await Event.findByIdAndUpdate(req.params.id, {
-      type: "past",
-    });
-
+    await Event.findByIdAndUpdate(req.params.id, { type: "past" });
     res.redirect("/events");
   } catch (error) {
     console.error("Move Event Error:", error.message);
@@ -229,32 +226,21 @@ exports.moveEventToPast = async (req, res) => {
   }
 };
 
-
 /* ===============================
-   ADD REVIEW (PUBLIC – PAST EVENTS)
+   ADD REVIEW (PUBLIC)
 ================================ */
 exports.addReview = async (req, res) => {
   try {
     const { name, message } = req.body;
     const eventId = req.params.id;
-
-    if (!name || !message) {
-      return res.redirect(`/events/${eventId}`);
-    }
-
-    await Review.create({
-      event: eventId,
-      name,
-      message,
-    });
-
+    if (!name || !message) return res.redirect(`/events/${eventId}`);
+    await Review.create({ event: eventId, name, message });
     res.redirect(`/events/${eventId}`);
   } catch (error) {
     console.error("Add Review Error:", error.message);
     res.redirect("/events");
   }
 };
-
 
 /* ===============================
    DELETE REVIEW (ADMIN)
@@ -270,15 +256,12 @@ exports.deleteReview = async (req, res) => {
   }
 };
 
-
 /* ===============================
    DELETE BANNER IMAGE
 ================================ */
 exports.deleteBannerImage = async (req, res) => {
   try {
-    await Event.findByIdAndUpdate(req.params.id, {
-      bannerImage: null,
-    });
+    await Event.findByIdAndUpdate(req.params.id, { bannerImage: null });
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
     console.error("Delete Banner Error:", error.message);
@@ -286,17 +269,20 @@ exports.deleteBannerImage = async (req, res) => {
   }
 };
 
-
 /* ===============================
-   ADD GALLERY IMAGES (ADMIN)
+   ADD GALLERY IMAGE (with speaker + detail)
 ================================ */
 exports.addGalleryImages = async (req, res) => {
   try {
-    if (!req.files || req.files.length === 0) {
-      return res.redirect(`/events/${req.params.id}`);
-    }
+    if (!req.files || req.files.length === 0) return res.redirect(`/events/${req.params.id}`);
 
-    const images = req.files.map((file) => file.path);
+    const { speakerName, detail } = req.body;
+
+    const images = req.files.map((file, i) => ({
+      url: file.path,
+      speakerName: Array.isArray(speakerName) ? (speakerName[i] || "") : (speakerName || ""),
+      detail: Array.isArray(detail) ? (detail[i] || "") : (detail || ""),
+    }));
 
     await Event.findByIdAndUpdate(req.params.id, {
       $push: { galleryImages: { $each: images } },
@@ -309,19 +295,36 @@ exports.addGalleryImages = async (req, res) => {
   }
 };
 
+/* ===============================
+   UPDATE GALLERY IMAGE META (admin)
+================================ */
+exports.updateGalleryImageMeta = async (req, res) => {
+  try {
+    const { eventId, imageId } = req.params;
+    const { speakerName, detail } = req.body;
+
+    await Event.findOneAndUpdate(
+      { _id: eventId, "galleryImages._id": imageId },
+      { $set: { "galleryImages.$.speakerName": speakerName || "", "galleryImages.$.detail": detail || "" } }
+    );
+
+    res.redirect(`/events/${eventId}`);
+  } catch (error) {
+    console.error("Update Gallery Meta Error:", error.message);
+    res.redirect("/events");
+  }
+};
 
 /* ===============================
-   DELETE SINGLE GALLERY IMAGE (ADMIN)
+   DELETE SINGLE GALLERY IMAGE
 ================================ */
 exports.deleteGalleryImage = async (req, res) => {
   try {
-    const { eventId, index } = req.params;
+    const { eventId, imageId } = req.params;
 
-    const event = await Event.findById(eventId);
-    if (!event) return res.redirect("/events");
-
-    event.galleryImages.splice(index, 1);
-    await event.save();
+    await Event.findByIdAndUpdate(eventId, {
+      $pull: { galleryImages: { _id: imageId } },
+    });
 
     res.redirect(`/events/${eventId}`);
   } catch (error) {
@@ -330,22 +333,14 @@ exports.deleteGalleryImage = async (req, res) => {
   }
 };
 
-
 /* ===============================
    ADD COORDINATOR
 ================================ */
 exports.addCoordinator = async (req, res) => {
   try {
     const { name, email } = req.body;
-
-    if (!name || !email) {
-      return res.redirect(`/events/${req.params.id}`);
-    }
-
-    await Event.findByIdAndUpdate(req.params.id, {
-      $push: { conductedBy: { name, email } },
-    });
-
+    if (!name || !email) return res.redirect(`/events/${req.params.id}`);
+    await Event.findByIdAndUpdate(req.params.id, { $push: { conductedBy: { name, email } } });
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
     console.error("Add Coordinator Error:", error.message);
@@ -353,20 +348,16 @@ exports.addCoordinator = async (req, res) => {
   }
 };
 
-
 /* ===============================
    DELETE COORDINATOR
 ================================ */
 exports.deleteCoordinator = async (req, res) => {
   try {
     const { eventId, index } = req.params;
-
     const event = await Event.findById(eventId);
     if (!event) return res.redirect("/events");
-
     event.conductedBy.splice(index, 1);
     await event.save();
-
     res.redirect(`/events/${eventId}`);
   } catch (error) {
     console.error("Delete Coordinator Error:", error.message);
@@ -374,29 +365,18 @@ exports.deleteCoordinator = async (req, res) => {
   }
 };
 
-
 /* ===============================
    ADD DOCUMENT
 ================================ */
 exports.addDocument = async (req, res) => {
   try {
     const { title, isPublic } = req.body;
+    if (!req.file || !title) return res.redirect(`/events/${req.params.id}`);
 
-    if (!req.file || !title) {
-      return res.redirect(`/events/${req.params.id}`);
-    }
-
-    // Upload buffer manually to Cloudinary with resource_type:"raw"
     const fileUrl = await uploadDocToCloud(req.file.buffer, req.file.originalname);
 
     await Event.findByIdAndUpdate(req.params.id, {
-      $push: {
-        documents: {
-          title,
-          file: fileUrl,
-          isPublic: isPublic === "on",
-        },
-      },
+      $push: { documents: { title, file: fileUrl, isPublic: isPublic === "on" } },
     });
 
     res.redirect(`/events/${req.params.id}`);
@@ -406,27 +386,22 @@ exports.addDocument = async (req, res) => {
   }
 };
 
-
 /* ===============================
    DELETE DOCUMENT
 ================================ */
 exports.deleteDocument = async (req, res) => {
   try {
     const { eventId, index } = req.params;
-
     const event = await Event.findById(eventId);
     if (!event) return res.redirect("/events");
-
     event.documents.splice(index, 1);
     await event.save();
-
     res.redirect(`/events/${eventId}`);
   } catch (error) {
     console.error("Delete Document Error:", error.message);
     res.redirect("/events");
   }
 };
-
 
 /* =================================
    SUBEVENT CRUD (ADMIN)
@@ -437,16 +412,14 @@ exports.createSubEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
     const {
-      title,
-      description,
-      maxParticipants,
-      isGroupEvent,
-      minTeamSize,
-      maxTeamSize,
+      title, description, maxParticipants,
+      isGroupEvent, minTeamSize, maxTeamSize,
+      dayNumber, eventDate, startTime, endTime,
     } = req.body;
 
-    // file.path is the Cloudinary URL (works locally and on Render)
-    const qrImage = req.file ? req.file.path : null;
+    const files = req.files || {};
+    const qrImage     = files.qrImage     ? files.qrImage[0].path     : null;
+    const posterImage = files.posterImage ? files.posterImage[0].path : null;
 
     await SubEvent.create({
       title,
@@ -456,9 +429,14 @@ exports.createSubEvent = async (req, res) => {
       isGroupEvent: isGroupEvent === "true",
       minTeamSize: minTeamSize || 1,
       maxTeamSize: maxTeamSize || 1,
+      dayNumber: dayNumber ? parseInt(dayNumber) : null,
+      eventDate: eventDate || null,
+      startTime: startTime || "",
+      endTime: endTime || "",
+      qrImage,
+      posterImage,
       enableTeamMembers: false,
       requirePaymentScreenshot: false,
-      qrImage,
     });
 
     res.redirect(`/events/${eventId}`);
@@ -468,11 +446,11 @@ exports.createSubEvent = async (req, res) => {
   }
 };
 
-
 // Update SubEvent
 exports.updateSubEvent = async (req, res) => {
   try {
     const { id } = req.params;
+    const files = req.files || {};
 
     const updateData = {
       title: req.body.title,
@@ -483,12 +461,14 @@ exports.updateSubEvent = async (req, res) => {
       maxTeamSize: req.body.maxTeamSize || 1,
       enableTeamMembers: req.body.enableTeamMembers === "on",
       requirePaymentScreenshot: req.body.requirePaymentScreenshot === "on",
+      dayNumber: req.body.dayNumber ? parseInt(req.body.dayNumber) : null,
+      eventDate: req.body.eventDate || null,
+      startTime: req.body.startTime || "",
+      endTime: req.body.endTime || "",
     };
 
-    if (req.file) {
-      // file.path is the Cloudinary URL
-      updateData.qrImage = req.file.path;
-    }
+    if (files.qrImage)     updateData.qrImage     = files.qrImage[0].path;
+    if (files.posterImage) updateData.posterImage = files.posterImage[0].path;
 
     const updated = await SubEvent.findByIdAndUpdate(id, updateData, { new: true });
     res.redirect(`/events/edit/${updated.eventId}`);
@@ -497,7 +477,6 @@ exports.updateSubEvent = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 // Delete SubEvent
 exports.deleteSubEvent = async (req, res) => {
@@ -514,12 +493,10 @@ exports.deleteSubEvent = async (req, res) => {
   }
 };
 
-
 /* =================================
-   FORM BUILDER (DYNAMIC FIELDS)
+   FORM BUILDER
 ================================= */
 
-// Add new custom field to SubEvent
 exports.addFormField = async (req, res) => {
   try {
     const { id } = req.params;
@@ -535,16 +512,13 @@ exports.addFormField = async (req, res) => {
       placeholder: placeholder || "",
       options:
         type === "dropdown" || type === "checkbox"
-          ? options
-            ? options.split(",").map((opt) => opt.trim())
-            : []
+          ? options ? options.split(",").map(o => o.trim()) : []
           : [],
       order: subEvent.formFields.length,
     };
 
     subEvent.formFields.push(newField);
     await subEvent.save();
-
     res.redirect(`/events/edit/${subEvent.eventId}`);
   } catch (error) {
     console.error("Add Form Field Error:", error.message);
@@ -552,8 +526,6 @@ exports.addFormField = async (req, res) => {
   }
 };
 
-
-// Update existing form field
 exports.updateFormField = async (req, res) => {
   try {
     const { id, fieldId } = req.params;
@@ -571,13 +543,10 @@ exports.updateFormField = async (req, res) => {
     field.placeholder = placeholder || "";
     field.options =
       type === "dropdown" || type === "checkbox"
-        ? options
-          ? options.split(",").map((opt) => opt.trim())
-          : []
+        ? options ? options.split(",").map(o => o.trim()) : []
         : [];
 
     await subEvent.save();
-
     res.redirect(`/events/edit/${subEvent.eventId}`);
   } catch (error) {
     console.error("Update Form Field Error:", error.message);
@@ -585,21 +554,17 @@ exports.updateFormField = async (req, res) => {
   }
 };
 
-
-// Delete custom field
 exports.deleteFormField = async (req, res) => {
   try {
     const { id, fieldId } = req.params;
-
     const subEvent = await SubEvent.findById(id);
     if (!subEvent) return res.redirect("/events");
 
     subEvent.formFields = subEvent.formFields.filter(
-      (field) => field._id.toString() !== fieldId
+      f => f._id.toString() !== fieldId
     );
 
     await subEvent.save();
-
     res.redirect(`/events/edit/${subEvent.eventId}`);
   } catch (error) {
     console.error("Delete Form Field Error:", error.message);
@@ -607,20 +572,14 @@ exports.deleteFormField = async (req, res) => {
   }
 };
 
-
 /* =================================
    USER REGISTRATION
 ================================= */
 
-// Show Registration Form
 exports.showRegistrationForm = async (req, res) => {
   try {
     const { subEventId } = req.params;
-
-    const subEvent = await SubEvent.findById(subEventId)
-      .populate("eventId")
-      .lean();
-
+    const subEvent = await SubEvent.findById(subEventId).populate("eventId").lean();
     if (!subEvent) return res.redirect("/events");
 
     if (subEvent.eventId && subEvent.eventId.type === "past") {
@@ -630,25 +589,20 @@ exports.showRegistrationForm = async (req, res) => {
     const registrationCount = await Registration.countDocuments({ subEventId });
     subEvent.registrationCount = registrationCount;
 
-    res.render("events/register", { subEvent });
+    res.render("events/register", { subEvent, query: req.query });
   } catch (error) {
     console.error("Show Registration Form Error:", error.message);
     res.redirect("/events");
   }
 };
 
-
-// =============================================
-// SUBMIT REGISTRATION
-// =============================================
 exports.submitRegistration = async (req, res) => {
   try {
     const { subEventId } = req.params;
-
     const subEvent = await SubEvent.findById(subEventId).lean();
     if (!subEvent) return res.redirect("/events");
 
-    // ── Check capacity ──
+    // Capacity check
     if (subEvent.maxParticipants) {
       const count = await Registration.countDocuments({ subEventId });
       if (count >= subEvent.maxParticipants) {
@@ -656,101 +610,80 @@ exports.submitRegistration = async (req, res) => {
       }
     }
 
-    // ── Build a map of uploaded files by field name ──
-    // req.files is an array from multer .any()
-    // Each file.path is now the Cloudinary URL
-    const uploadedFiles = {};
-    if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
-        uploadedFiles[file.fieldname] = file;
-      });
+    // Built-in fields validation
+    const participantName  = (req.body.participantName  || "").trim();
+    const participantEmail = (req.body.participantEmail || "").trim();
+    const participantPhone = (req.body.participantPhone || "").trim();
+
+    if (!participantName || !participantEmail || !participantPhone) {
+      return res.redirect(`/register/${subEventId}?error=required`);
     }
 
-    // ── Parse dynamic form responses ──
-    const responses = [];
+    // Files map
+    const uploadedFiles = {};
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => { uploadedFiles[file.fieldname] = file; });
+    }
 
+    // Dynamic responses
+    const responses = [];
     if (req.body.responses) {
       for (const [fieldId, value] of Object.entries(req.body.responses)) {
         if (!mongoose.Types.ObjectId.isValid(fieldId)) continue;
-
         const fileKey = `responses[${fieldId}]`;
         const uploadedFile = uploadedFiles[fileKey];
-
         responses.push({
           fieldId: new mongoose.Types.ObjectId(fieldId),
-          // Use file.path (Cloudinary URL) instead of building a local path
-          value: uploadedFile
-            ? uploadedFile.path
-            : Array.isArray(value) ? value : value,
+          value: uploadedFile ? uploadedFile.path : (Array.isArray(value) ? value : value),
         });
       }
     }
 
-    // Also catch file fields that weren't in req.body.responses
     if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
+      req.files.forEach(file => {
         if (file.fieldname === "paymentScreenshot") return;
-
         const match = file.fieldname.match(/^responses\[(.+)\]$/);
         if (!match) return;
-
         const fieldId = match[1];
         if (!mongoose.Types.ObjectId.isValid(fieldId)) return;
-
-        const alreadyAdded = responses.find(
-          (r) => r.fieldId.toString() === fieldId
-        );
+        const alreadyAdded = responses.find(r => r.fieldId.toString() === fieldId);
         if (!alreadyAdded) {
-          responses.push({
-            fieldId: new mongoose.Types.ObjectId(fieldId),
-            // Use file.path (Cloudinary URL)
-            value: file.path,
-          });
+          responses.push({ fieldId: new mongoose.Types.ObjectId(fieldId), value: file.path });
         }
       });
     }
 
-    // ── Validate required fields ──
+    // Required field validation
     for (const field of subEvent.formFields) {
       if (!field.required) continue;
-
-      const found = responses.find(
-        (r) => r.fieldId.toString() === field._id.toString()
-      );
-
-      if (
-        !found ||
-        found.value === null ||
-        found.value === undefined ||
-        found.value === "" ||
-        (Array.isArray(found.value) && found.value.length === 0)
-      ) {
+      const found = responses.find(r => r.fieldId.toString() === field._id.toString());
+      if (!found || found.value === null || found.value === undefined || found.value === "" ||
+          (Array.isArray(found.value) && found.value.length === 0)) {
         return res.redirect(`/register/${subEventId}?error=required`);
       }
     }
 
-    // ── Parse team members ──
+    // Team members
     let teamMembers = [];
     if (subEvent.enableTeamMembers && req.body.teamMembers) {
       teamMembers = Array.isArray(req.body.teamMembers)
-        ? req.body.teamMembers.filter((m) => m.trim() !== "")
-        : [req.body.teamMembers].filter((m) => m.trim() !== "");
+        ? req.body.teamMembers.filter(m => m.trim() !== "")
+        : [req.body.teamMembers].filter(m => m.trim() !== "");
     }
 
-    // ── Payment screenshot ──
-    // Use file.path (Cloudinary URL) instead of building a local path
+    // Payment screenshot
     let paymentScreenshot = null;
     if (subEvent.requirePaymentScreenshot) {
       const screenshotFile = uploadedFiles["paymentScreenshot"];
-      if (!screenshotFile) {
-        return res.redirect(`/register/${subEventId}?error=payment`);
-      }
+      if (!screenshotFile) return res.redirect(`/register/${subEventId}?error=payment`);
       paymentScreenshot = screenshotFile.path;
     }
 
-    // ── Save registration ──
     await Registration.create({
       subEventId,
+      participantName,
+      participantEmail,
+      participantPhone,
       responses,
       teamMembers,
       paymentScreenshot,
@@ -764,18 +697,11 @@ exports.submitRegistration = async (req, res) => {
   }
 };
 
-
-// Registration Success Page
 exports.registrationSuccess = async (req, res) => {
   try {
     const { subEventId } = req.params;
-
-    const subEvent = await SubEvent.findById(subEventId)
-      .populate("eventId")
-      .lean();
-
+    const subEvent = await SubEvent.findById(subEventId).populate("eventId").lean();
     if (!subEvent) return res.redirect("/events");
-
     res.render("events/register-success", { subEvent });
   } catch (error) {
     console.error("Registration Success Error:", error.message);
@@ -783,16 +709,13 @@ exports.registrationSuccess = async (req, res) => {
   }
 };
 
-
 /* =================================
    ADMIN REGISTRATION MANAGEMENT
 ================================= */
 
-// List registrations of a subevent
 exports.getRegistrationsForSubEvent = async (req, res) => {
   try {
     const { id } = req.params;
-
     const subEvent = await SubEvent.findById(id).lean();
     if (!subEvent) return res.redirect("/events");
 
@@ -807,15 +730,9 @@ exports.getRegistrationsForSubEvent = async (req, res) => {
   }
 };
 
-
-// Verify registration
 exports.verifyRegistration = async (req, res) => {
   try {
-    const reg = await Registration.findByIdAndUpdate(
-      req.params.id,
-      { status: "verified" },
-      { new: true }
-    );
+    const reg = await Registration.findByIdAndUpdate(req.params.id, { status: "verified" }, { new: true });
     res.redirect(`/admin/subevents/${reg.subEventId}/registrations`);
   } catch (error) {
     console.error("Verify Registration Error:", error.message);
@@ -823,15 +740,9 @@ exports.verifyRegistration = async (req, res) => {
   }
 };
 
-
-// Move registration back to pending
 exports.pendingRegistration = async (req, res) => {
   try {
-    const reg = await Registration.findByIdAndUpdate(
-      req.params.id,
-      { status: "pending" },
-      { new: true }
-    );
+    const reg = await Registration.findByIdAndUpdate(req.params.id, { status: "pending" }, { new: true });
     res.redirect(`/admin/subevents/${reg.subEventId}/registrations`);
   } catch (error) {
     console.error("Pending Registration Error:", error.message);
@@ -839,15 +750,9 @@ exports.pendingRegistration = async (req, res) => {
   }
 };
 
-
-// Reject registration
 exports.rejectRegistration = async (req, res) => {
   try {
-    const reg = await Registration.findByIdAndUpdate(
-      req.params.id,
-      { status: "rejected" },
-      { new: true }
-    );
+    const reg = await Registration.findByIdAndUpdate(req.params.id, { status: "rejected" }, { new: true });
     res.redirect(`/admin/subevents/${reg.subEventId}/registrations`);
   } catch (error) {
     console.error("Reject Registration Error:", error.message);
@@ -855,30 +760,24 @@ exports.rejectRegistration = async (req, res) => {
   }
 };
 
-
-// Delete registration (admin)
 exports.deleteRegistration = async (req, res) => {
   try {
     const reg = await Registration.findById(req.params.id).lean();
     const subEventId = reg ? reg.subEventId : null;
     await Registration.findByIdAndDelete(req.params.id);
-    res.redirect(
-      subEventId
-        ? `/admin/subevents/${subEventId}/registrations`
-        : "/events"
-    );
+    res.redirect(subEventId ? `/admin/subevents/${subEventId}/registrations` : "/events");
   } catch (error) {
     console.error("Delete Registration Error:", error.message);
     res.redirect("/events");
   }
 };
 
-
-// Export registrations as CSV
+/* ===============================
+   EXPORT REGISTRATIONS CSV
+================================ */
 exports.exportRegistrationsCSV = async (req, res) => {
   try {
     const { id } = req.params;
-
     const subEvent = await SubEvent.findById(id).lean();
     if (!subEvent) return res.redirect("/events");
 
@@ -886,29 +785,33 @@ exports.exportRegistrationsCSV = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
+    // Dynamic field headers
     const fieldHeaders = subEvent.formFields
       .sort((a, b) => a.order - b.order)
-      .map((f) => `"${f.label}"`);
+      .map(f => `"${f.label}"`);
 
     const headers = [
-      "#",
+      '"#"',
+      '"Name"',
+      '"Email"',
+      '"Phone"',
       ...fieldHeaders,
       ...(subEvent.enableTeamMembers ? ['"Team Members"'] : []),
       '"Status"',
+      '"Day"',
+      '"Date"',
+      '"Start Time"',
+      '"End Time"',
       '"Registered At"',
     ].join(",");
 
     const rows = registrations.map((reg, i) => {
       const fieldValues = subEvent.formFields
         .sort((a, b) => a.order - b.order)
-        .map((field) => {
-          const resp = reg.responses.find(
-            (r) => r.fieldId.toString() === field._id.toString()
-          );
+        .map(field => {
+          const resp = reg.responses.find(r => r.fieldId.toString() === field._id.toString());
           if (!resp) return '""';
-          const val = Array.isArray(resp.value)
-            ? resp.value.join("; ")
-            : resp.value;
+          const val = Array.isArray(resp.value) ? resp.value.join("; ") : resp.value;
           return `"${String(val).replace(/"/g, '""')}"`;
         });
 
@@ -918,15 +821,21 @@ exports.exportRegistrationsCSV = async (req, res) => {
 
       return [
         i + 1,
+        `"${(reg.participantName  || "").replace(/"/g, '""')}"`,
+        `"${(reg.participantEmail || "").replace(/"/g, '""')}"`,
+        `"${(reg.participantPhone || "").replace(/"/g, '""')}"`,
         ...fieldValues,
         ...teamCol,
         `"${reg.status}"`,
+        `"${subEvent.dayNumber || ""}"`,
+        `"${subEvent.eventDate ? new Date(subEvent.eventDate).toLocaleDateString("en-IN") : ""}"`,
+        `"${subEvent.startTime || ""}"`,
+        `"${subEvent.endTime || ""}"`,
         `"${new Date(reg.createdAt).toLocaleString()}"`,
       ].join(",");
     });
 
     const csv = [headers, ...rows].join("\n");
-
     const filename = `${subEvent.title.replace(/\s+/g, "_")}_registrations.csv`;
 
     res.setHeader("Content-Type", "text/csv");
@@ -938,10 +847,6 @@ exports.exportRegistrationsCSV = async (req, res) => {
   }
 };
 
-
-/* =================================
-   HELPER
-================================= */
 exports.getSubEventsByEvent = async (eventId) => {
   return await SubEvent.find({ eventId }).lean();
 };
