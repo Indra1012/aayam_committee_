@@ -59,77 +59,80 @@
         </div>
       <% } %>
 
-      <% upcomingEvents.forEach(function(event, i) { %>
-        <div class="event-card ev-card-uniform" data-aos="fade-up" data-aos-delay="<%= i * 70 %>">
+      <% if (upcomingEvents && upcomingEvents.length > 0) { %>
+        <% upcomingEvents.forEach(function(event, i) { %>
+          <div class="event-card ev-card-uniform" data-aos="fade-up" data-aos-delay="<%= i * 70 %>">
 
-          <!-- Banner image -->
-          <a href="/events/<%= event._id %>" class="ev-img-link">
-            <% if (event.bannerImage) { %>
-              <img
-                src="<%= imgUrl(event.bannerImage) %>"
-                class="ev-img"
-                alt="<%= event.title %>"
-                loading="lazy"
-              >
-            <% } else { %>
-              <div class="ev-img-placeholder"><i class="bi bi-calendar-event"></i></div>
-            <% } %>
-          </a>
-
-          <div class="ev-body">
-            <!-- Title row -->
-            <div class="ev-title-row">
-              <a href="/events/<%= event._id %>" style="text-decoration:none;flex:1;min-width:0;">
-                <h3 class="ev-title"><%= event.title %></h3>
-              </a>
-              <% if (!event.isPublic && user && (user.role === "admin" || user.role === "superadmin")) { %>
-                <span class="ev-private-badge">🔒 Private</span>
+            <!-- Banner image -->
+            <a href="/events/<%= event._id %>" class="ev-img-link">
+              <% if (event.bannerImage) { %>
+                <img
+                  src="<%= event.bannerImage %>"
+                  class="ev-img"
+                  alt="<%= event.title %>"
+                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                >
+                <div class="ev-img-placeholder" style="display:none;"><i class="bi bi-calendar-event"></i></div>
+              <% } else { %>
+                <div class="ev-img-placeholder"><i class="bi bi-calendar-event"></i></div>
               <% } %>
-            </div>
+            </a>
 
-            <p class="ev-desc"><%= event.shortDescription %></p>
-
-            <% if (event.startDate && event.endDate) { %>
-              <div class="ev-date">
-                <i class="bi bi-calendar3"></i>
-                <% if (new Date(event.startDate).toDateString() === new Date(event.endDate).toDateString()) { %>
-                  <%= new Date(event.startDate).toDateString() %>
-                <% } else { %>
-                  <%= new Date(event.startDate).toDateString() %> → <%= new Date(event.endDate).toDateString() %>
+            <div class="ev-body">
+              <!-- Title row -->
+              <div class="ev-title-row">
+                <a href="/events/<%= event._id %>" style="text-decoration:none;flex:1;min-width:0;">
+                  <h3 class="ev-title"><%= event.title %></h3>
+                </a>
+                <% if (!event.isPublic && user && (user.role === "admin" || user.role === "superadmin")) { %>
+                  <span class="ev-private-badge">🔒 Private</span>
                 <% } %>
               </div>
-            <% } %>
 
-            <div class="ev-actions">
-              <a href="/events/<%= event._id %>" class="btn-details">View Details <i class="bi bi-arrow-right"></i></a>
-              <% if (event.isPublic) { %>
-                <% if (event.registrationLink) { %>
-                  <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer" class="btn-register">Register <i class="bi bi-box-arrow-up-right"></i></a>
-                <% } else { %>
-                  <a href="/events/<%= event._id %>/register" class="btn-register">Register <i class="bi bi-pencil-square"></i></a>
+              <p class="ev-desc"><%= event.shortDescription %></p>
+
+              <% if (event.startDate && event.endDate) { %>
+                <div class="ev-date">
+                  <i class="bi bi-calendar3"></i>
+                  <% if (new Date(event.startDate).toDateString() === new Date(event.endDate).toDateString()) { %>
+                    <%= new Date(event.startDate).toDateString() %>
+                  <% } else { %>
+                    <%= new Date(event.startDate).toDateString() %> → <%= new Date(event.endDate).toDateString() %>
+                  <% } %>
+                </div>
+              <% } %>
+
+              <div class="ev-actions">
+                <a href="/events/<%= event._id %>" class="btn-details">View Details <i class="bi bi-arrow-right"></i></a>
+                <% if (event.isPublic) { %>
+                  <% if (event.registrationLink) { %>
+                    <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer" class="btn-register">Register <i class="bi bi-box-arrow-up-right"></i></a>
+                  <% } else { %>
+                    <a href="/events/<%= event._id %>/register" class="btn-register">Register <i class="bi bi-pencil-square"></i></a>
+                  <% } %>
                 <% } %>
+              </div>
+
+              <% if (user && (user.role === "admin" || user.role === "superadmin")) { %>
+                <div class="ev-admin-row">
+                  <a href="/events/edit/<%= event._id %>" class="btn-details" style="font-size:0.75rem;padding:4px 10px;">✏ Edit</a>
+                  <form action="/events/toggle-visibility/<%= event._id %>" method="POST" style="margin:0;">
+                    <button type="submit" class="<%= event.isPublic ? 'btn-admin-warn' : 'btn-register' %>" style="font-size:0.75rem;padding:4px 10px;">
+                      <%= event.isPublic ? '🔒 Make Private' : '🌐 Make Public' %>
+                    </button>
+                  </form>
+                  <form action="/events/move-to-past/<%= event._id %>" method="POST" onsubmit="return confirm('Move to past?')" style="margin:0;">
+                    <button type="submit" class="btn-admin-warn" style="font-size:0.75rem;padding:4px 10px;">⏳ Move to Past</button>
+                  </form>
+                  <form action="/events/delete/<%= event._id %>" method="POST" onsubmit="return confirm('Delete this event?')" style="margin:0;">
+                    <button type="submit" class="btn-admin-danger" style="font-size:0.75rem;padding:4px 10px;">✕ Delete</button>
+                  </form>
+                </div>
               <% } %>
             </div>
-
-            <% if (user && (user.role === "admin" || user.role === "superadmin")) { %>
-              <div class="ev-admin-row">
-                <a href="/events/edit/<%= event._id %>" class="btn-details" style="font-size:0.75rem;padding:4px 10px;">✏ Edit</a>
-                <form action="/events/toggle-visibility/<%= event._id %>" method="POST" style="margin:0;">
-                  <button type="submit" class="<%= event.isPublic ? 'btn-admin-warn' : 'btn-register' %>" style="font-size:0.75rem;padding:4px 10px;">
-                    <%= event.isPublic ? '🔒 Make Private' : '🌐 Make Public' %>
-                  </button>
-                </form>
-                <form action="/events/move-to-past/<%= event._id %>" method="POST" onsubmit="return confirm('Move to past?')" style="margin:0;">
-                  <button type="submit" class="btn-admin-warn" style="font-size:0.75rem;padding:4px 10px;">⏳ Move to Past</button>
-                </form>
-                <form action="/events/delete/<%= event._id %>" method="POST" onsubmit="return confirm('Delete this event?')" style="margin:0;">
-                  <button type="submit" class="btn-admin-danger" style="font-size:0.75rem;padding:4px 10px;">✕ Delete</button>
-                </form>
-              </div>
-            <% } %>
           </div>
-        </div>
-      <% }); %>
+        <% }); %>
+      <% } %>
     </div>
 
     <!-- ── PAST EVENTS ── -->
@@ -171,57 +174,58 @@
         </div>
       <% } %>
 
-      <% pastEvents.forEach(function(event, i) { %>
-        <div class="event-card ev-card-uniform" data-aos="fade-up" data-aos-delay="<%= i * 70 %>">
+      <% if (pastEvents && pastEvents.length > 0) { %>
+        <% pastEvents.forEach(function(event, i) { %>
+          <div class="event-card ev-card-uniform" data-aos="fade-up" data-aos-delay="<%= i * 70 %>">
 
-          <a href="/events/<%= event._id %>" class="ev-img-link">
-            <% if (event.bannerImage) { %>
-              <img
-                src="<%= imgUrl(event.bannerImage) %>"
-                class="ev-img ev-img-past"
-                alt="<%= event.title %>"
-                loading="lazy"
-              >
-            <% } else { %>
-              <div class="ev-img-placeholder ev-img-past"><i class="bi bi-calendar-check"></i></div>
-            <% } %>
-          </a>
+            <a href="/events/<%= event._id %>" class="ev-img-link">
+              <% if (event.bannerImage) { %>
+                <img
+                  src="<%= event.bannerImage %>"
+                  class="ev-img ev-img-past"
+                  alt="<%= event.title %>"
+                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                >
+                <div class="ev-img-placeholder ev-img-past" style="display:none;"><i class="bi bi-calendar-check"></i></div>
+              <% } else { %>
+                <div class="ev-img-placeholder ev-img-past"><i class="bi bi-calendar-check"></i></div>
+              <% } %>
+            </a>
 
-          <div class="ev-body">
-            <div class="ev-title-row">
-              <a href="/events/<%= event._id %>" style="text-decoration:none;flex:1;min-width:0;">
-                <h3 class="ev-title"><%= event.title %></h3>
-              </a>
-              <span class="badge-completed flex-shrink-0">Completed</span>
-            </div>
-
-            <p class="ev-desc"><%= event.shortDescription %></p>
-
-            <% if (event.startDate && event.endDate) { %>
-              <div class="ev-date">
-                <i class="bi bi-calendar3"></i>
-                <%= new Date(event.startDate).toDateString() %>
-                <% if (new Date(event.startDate).toDateString() !== new Date(event.endDate).toDateString()) { %>
-                  → <%= new Date(event.endDate).toDateString() %>
-                <% } %>
+            <div class="ev-body">
+              <div class="ev-title-row">
+                <a href="/events/<%= event._id %>" style="text-decoration:none;flex:1;min-width:0;">
+                  <h3 class="ev-title"><%= event.title %></h3>
+                </a>
+                <span class="badge-completed flex-shrink-0">Completed</span>
               </div>
-            <% } %>
 
-            <div class="ev-actions">
-              <a href="/events/<%= event._id %>" class="btn-details">View Details <i class="bi bi-arrow-right"></i></a>
-            </div>
+              <% if (event.startDate && event.endDate) { %>
+                <div class="ev-date">
+                  <i class="bi bi-calendar3"></i>
+                  <%= new Date(event.startDate).toDateString() %>
+                  <% if (new Date(event.startDate).toDateString() !== new Date(event.endDate).toDateString()) { %>
+                    → <%= new Date(event.endDate).toDateString() %>
+                  <% } %>
+                </div>
+              <% } %>
 
-            <% if (user && (user.role === "admin" || user.role === "superadmin")) { %>
-              <div class="ev-admin-row">
-                <a href="/events/edit/<%= event._id %>" class="btn-details" style="font-size:0.75rem;padding:4px 10px;">✏ Edit</a>
-                <form action="/events/delete/<%= event._id %>" method="POST" onsubmit="return confirm('Delete this event?')" style="margin:0;">
-                  <button type="submit" class="btn-admin-danger" style="font-size:0.75rem;padding:4px 10px;">✕ Delete</button>
-                </form>
+              <div class="ev-actions">
+                <a href="/events/<%= event._id %>" class="btn-details">View Details <i class="bi bi-arrow-right"></i></a>
               </div>
-            <% } %>
+
+              <% if (user && (user.role === "admin" || user.role === "superadmin")) { %>
+                <div class="ev-admin-row">
+                  <a href="/events/edit/<%= event._id %>" class="btn-details" style="font-size:0.75rem;padding:4px 10px;">✏ Edit</a>
+                  <form action="/events/delete/<%= event._id %>" method="POST" onsubmit="return confirm('Delete this event?')" style="margin:0;">
+                    <button type="submit" class="btn-admin-danger" style="font-size:0.75rem;padding:4px 10px;">✕ Delete</button>
+                  </form>
+                </div>
+              <% } %>
+            </div>
           </div>
-        </div>
-      <% }); %>
+        <% }); %>
+      <% } %>
     </div>
 
   </div>
@@ -229,7 +233,7 @@
 
 <style>
 /* ══════════════════════════════════════
-   UNIFORM EVENT CARDS
+   UNIFORM EVENT CARDS — both columns
 ══════════════════════════════════════ */
 .ev-card-uniform {
   display: flex;
@@ -246,24 +250,21 @@
   transform: translateY(-2px);
 }
 
-/* Image link wrapper — fixed aspect ratio */
+/* Image link wrapper — padding-bottom trick for reliable ratio */
 .ev-img-link {
   display: block;
   text-decoration: none;
   width: 100%;
-  aspect-ratio: 16 / 7;
+  position: relative;
+  padding-bottom: 43.75%; /* 16:7 ratio */
   overflow: hidden;
   background: rgba(166,124,82,0.06);
   flex-shrink: 0;
-  position: relative;
 }
-.ev-img-link.ev-img-fallback {
-  background: rgba(166,124,82,0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+
 .ev-img {
+  position: absolute;
+  top: 0; left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -275,6 +276,8 @@
 
 /* Placeholder when no image */
 .ev-img-placeholder {
+  position: absolute;
+  top: 0; left: 0;
   width: 100%;
   height: 100%;
   display: flex;
@@ -343,7 +346,7 @@
   border-top: 1px dashed var(--border-l);
 }
 
-/* Private badge — admin only */
+/* Admin-only private badge */
 .ev-private-badge {
   padding: 2px 8px;
   border-radius: var(--r-full);
@@ -356,19 +359,11 @@
   flex-shrink: 0;
 }
 
-/* Section utilities */
-.gallery-empty { text-align:center;padding:40px 20px;background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-lg);margin-bottom:20px; }
-.gallery-empty-icon { font-size:2.5rem;margin-bottom:10px;opacity:0.5; }
-.gallery-empty p { color:var(--tx-muted);font-size:0.92rem;margin:0; }
-
-.admin-add-form { background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-md);padding:18px 20px; }
-
 body.dark-mode .ev-card-uniform { background: var(--dk-surface); border-color: var(--border-d); }
-body.dark-mode .ev-title { color: var(--dk-text); }
 
 /* Responsive */
 @media (max-width: 576px) {
-  .ev-img-link { aspect-ratio: 16 / 8; }
+  .ev-img-link { padding-bottom: 50%; }
   .ev-admin-row { gap: 4px; }
   .ev-actions { gap: 6px; }
 }
@@ -381,29 +376,33 @@ body.dark-mode .ev-title { color: var(--dk-text); }
 
 <script>
 (function(){
-  var showUpcoming    = document.getElementById('showUpcoming');
-  var showPast        = document.getElementById('showPast');
+  var showUpcomingBtn = document.getElementById('showUpcoming');
+  var showPastBtn     = document.getElementById('showPast');
   var upcomingSection = document.getElementById('upcomingSection');
   var pastSection     = document.getElementById('pastSection');
 
-  if (showUpcoming && showPast && window.innerWidth < 992) {
+  if (showUpcomingBtn && showPastBtn && window.innerWidth < 992) {
     pastSection.style.display = 'none';
-    showPast.addEventListener('click', function() {
+
+    showPastBtn.addEventListener('click', function() {
       upcomingSection.style.display = 'none';
       pastSection.style.display = 'block';
       pastSection.classList.remove('section-animate-left','section-animate-right');
       void pastSection.offsetWidth;
       pastSection.classList.add('section-animate-right');
-      showPast.classList.add('active'); showUpcoming.classList.remove('active');
+      showPastBtn.classList.add('active');
+      showUpcomingBtn.classList.remove('active');
       if (typeof AOS !== 'undefined') AOS.refresh();
     });
-    showUpcoming.addEventListener('click', function() {
+
+    showUpcomingBtn.addEventListener('click', function() {
       pastSection.style.display = 'none';
       upcomingSection.style.display = 'block';
       upcomingSection.classList.remove('section-animate-left','section-animate-right');
       void upcomingSection.offsetWidth;
       upcomingSection.classList.add('section-animate-left');
-      showUpcoming.classList.add('active'); showPast.classList.remove('active');
+      showUpcomingBtn.classList.add('active');
+      showPastBtn.classList.remove('active');
     });
   }
 })();

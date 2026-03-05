@@ -5,6 +5,26 @@ const SubEvent = require("../models/SubEvent");
 const Registration = require("../models/Registration");
 const { uploadDocToCloud } = require("../middlewares/uploadEvent");
 
+/* ── helpers ── */
+function parseTime12(str) {
+  if (!str) return "";
+  return str.trim();
+}
+
+/* ── Helper: fix image URL (handle old local paths) ──
+   Old images were stored as local paths like:
+   "uploads/events/filename.jpg" or "/uploads/events/filename.jpg"
+   These no longer work. We return the path as-is since Cloudinary
+   URLs will work fine. Old local paths will trigger onerror in frontend.
+*/
+function fixImageUrl(url) {
+  if (!url) return null;
+  // Already a full URL (Cloudinary or other CDN)
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  // Local path — prepend / so it at least tries to resolve from server root
+  if (!url.startsWith("/")) return "/" + url;
+  return url;
+}
 
 /* ===============================
    EVENTS LIST PAGE
@@ -20,13 +40,16 @@ exports.getEventsPage = async (req, res) => {
     const upcomingEvents = await Event.find({ type: "upcoming" }).sort({ startDate: 1 }).lean();
     const pastEvents     = await Event.find({ type: "past" }).sort({ startDate: -1 }).lean();
 
+    // Fix image URLs for both lists
+    upcomingEvents.forEach(e => { e.bannerImage = fixImageUrl(e.bannerImage); });
+    pastEvents.forEach(e => { e.bannerImage = fixImageUrl(e.bannerImage); });
+
     res.render("events/index", { upcomingEvents, pastEvents });
   } catch (error) {
     console.error("Events Page Error:", error.message);
     res.redirect("/");
   }
 };
-
 
 /* ===============================
    EVENT DETAIL PAGE
@@ -38,7 +61,18 @@ exports.getEventDetail = async (req, res) => {
     const event = await Event.findById(req.params.id).lean();
     if (!event) return res.redirect("/events");
 
-    const isPast  = event.type === "past";
+    // Fix banner image URL
+    event.bannerImage = fixImageUrl(event.bannerImage);
+
+    // Fix gallery image URLs
+    if (event.galleryImages && event.galleryImages.length > 0) {
+      event.galleryImages = event.galleryImages.map(img => ({
+        ...img,
+        url: fixImageUrl(img.url),
+      }));
+    }
+
+    const isPast = event.type === "past";
     const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "superadmin");
 
     // Private events: only admin can see full detail
@@ -70,7 +104,6 @@ exports.getEventDetail = async (req, res) => {
   }
 };
 
-
 /* ===============================
    SUBEVENT SELECTION PAGE
 ================================ */
@@ -86,6 +119,9 @@ exports.getSubEventsPage = async (req, res) => {
 
     for (let sub of subEvents) {
       sub.registrationCount = await Registration.countDocuments({ subEventId: sub._id });
+      // Fix subevent images
+      if (sub.qrImage) sub.qrImage = fixImageUrl(sub.qrImage);
+      if (sub.posterImage) sub.posterImage = fixImageUrl(sub.posterImage);
     }
 
     // Group by day
@@ -105,7 +141,6 @@ exports.getSubEventsPage = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* ===============================
    ADD EVENT (ADMIN)
@@ -136,7 +171,6 @@ exports.addEvent = async (req, res) => {
   }
 };
 
-
 /* ===============================
    EDIT EVENT PAGE (ADMIN)
 ================================ */
@@ -145,7 +179,14 @@ exports.getEditEvent = async (req, res) => {
     const event = await Event.findById(req.params.id).lean();
     if (!event) return res.redirect("/events");
 
+    event.bannerImage = fixImageUrl(event.bannerImage);
+
     const subEvents = await SubEvent.find({ eventId: event._id }).sort({ dayNumber: 1, startTime: 1 }).lean();
+
+    subEvents.forEach(sub => {
+      if (sub.qrImage) sub.qrImage = fixImageUrl(sub.qrImage);
+      if (sub.posterImage) sub.posterImage = fixImageUrl(sub.posterImage);
+    });
 
     res.render("events/edit", { event, subEvents });
   } catch (error) {
@@ -153,7 +194,6 @@ exports.getEditEvent = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* ===============================
    UPDATE EVENT (ADMIN)
@@ -183,7 +223,6 @@ exports.updateEvent = async (req, res) => {
   }
 };
 
-
 /* ===============================
    TOGGLE EVENT PUBLIC/PRIVATE (ADMIN)
 ================================ */
@@ -200,7 +239,6 @@ exports.toggleEventVisibility = async (req, res) => {
   }
 };
 
-
 /* ===============================
    DELETE EVENT (ADMIN)
 ================================ */
@@ -214,7 +252,6 @@ exports.deleteEvent = async (req, res) => {
   }
 };
 
-
 /* ===============================
    MANUAL MOVE TO PAST (ADMIN)
 ================================ */
@@ -227,7 +264,6 @@ exports.moveEventToPast = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* ===============================
    ADD REVIEW (PUBLIC)
@@ -245,7 +281,6 @@ exports.addReview = async (req, res) => {
   }
 };
 
-
 /* ===============================
    DELETE REVIEW (ADMIN)
 ================================ */
@@ -260,7 +295,6 @@ exports.deleteReview = async (req, res) => {
   }
 };
 
-
 /* ===============================
    DELETE BANNER IMAGE
 ================================ */
@@ -274,24 +308,19 @@ exports.deleteBannerImage = async (req, res) => {
   }
 };
 
-
 /* ===============================
    ADD GALLERY IMAGE (with speaker + detail)
-   FIX: When multiple files uploaded, apply shared speakerName/detail to all
-        (single pair of fields for the batch upload)
 ================================ */
 exports.addGalleryImages = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) return res.redirect(`/events/${req.params.id}`);
 
-    // speakerName and detail are single shared values for the whole upload batch
-    const speakerName = req.body.speakerName || "";
-    const detail      = req.body.detail      || "";
+    const { speakerName, detail } = req.body;
 
-    const images = req.files.map((file) => ({
+    const images = req.files.map((file, i) => ({
       url: file.path,
-      speakerName: speakerName.trim(),
-      detail: detail.trim(),
+      speakerName: Array.isArray(speakerName) ? (speakerName[i] || "") : (speakerName || ""),
+      detail: Array.isArray(detail) ? (detail[i] || "") : (detail || ""),
     }));
 
     await Event.findByIdAndUpdate(req.params.id, {
@@ -304,7 +333,6 @@ exports.addGalleryImages = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* ===============================
    UPDATE GALLERY IMAGE META (admin)
@@ -326,7 +354,6 @@ exports.updateGalleryImageMeta = async (req, res) => {
   }
 };
 
-
 /* ===============================
    DELETE SINGLE GALLERY IMAGE
 ================================ */
@@ -345,7 +372,6 @@ exports.deleteGalleryImage = async (req, res) => {
   }
 };
 
-
 /* ===============================
    ADD COORDINATOR
 ================================ */
@@ -360,7 +386,6 @@ exports.addCoordinator = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* ===============================
    DELETE COORDINATOR
@@ -378,7 +403,6 @@ exports.deleteCoordinator = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* ===============================
    ADD DOCUMENT
@@ -401,7 +425,6 @@ exports.addDocument = async (req, res) => {
   }
 };
 
-
 /* ===============================
    DELETE DOCUMENT
 ================================ */
@@ -418,7 +441,6 @@ exports.deleteDocument = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* =================================
    SUBEVENT CRUD (ADMIN)
@@ -463,7 +485,6 @@ exports.createSubEvent = async (req, res) => {
   }
 };
 
-
 // Update SubEvent
 exports.updateSubEvent = async (req, res) => {
   try {
@@ -496,7 +517,6 @@ exports.updateSubEvent = async (req, res) => {
   }
 };
 
-
 // Delete SubEvent
 exports.deleteSubEvent = async (req, res) => {
   try {
@@ -511,7 +531,6 @@ exports.deleteSubEvent = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* =================================
    FORM BUILDER
@@ -546,7 +565,6 @@ exports.addFormField = async (req, res) => {
   }
 };
 
-
 exports.updateFormField = async (req, res) => {
   try {
     const { id, fieldId } = req.params;
@@ -575,7 +593,6 @@ exports.updateFormField = async (req, res) => {
   }
 };
 
-
 exports.deleteFormField = async (req, res) => {
   try {
     const { id, fieldId } = req.params;
@@ -594,7 +611,6 @@ exports.deleteFormField = async (req, res) => {
   }
 };
 
-
 /* =================================
    USER REGISTRATION
 ================================= */
@@ -609,6 +625,10 @@ exports.showRegistrationForm = async (req, res) => {
       return res.redirect(`/events/${subEvent.eventId._id}`);
     }
 
+    // Fix subevent images
+    if (subEvent.qrImage) subEvent.qrImage = fixImageUrl(subEvent.qrImage);
+    if (subEvent.posterImage) subEvent.posterImage = fixImageUrl(subEvent.posterImage);
+
     const registrationCount = await Registration.countDocuments({ subEventId });
     subEvent.registrationCount = registrationCount;
 
@@ -618,7 +638,6 @@ exports.showRegistrationForm = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 exports.submitRegistration = async (req, res) => {
   try {
@@ -721,7 +740,6 @@ exports.submitRegistration = async (req, res) => {
   }
 };
 
-
 exports.registrationSuccess = async (req, res) => {
   try {
     const { subEventId } = req.params;
@@ -733,7 +751,6 @@ exports.registrationSuccess = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* =================================
    ADMIN REGISTRATION MANAGEMENT
@@ -756,7 +773,6 @@ exports.getRegistrationsForSubEvent = async (req, res) => {
   }
 };
 
-
 exports.verifyRegistration = async (req, res) => {
   try {
     const reg = await Registration.findByIdAndUpdate(req.params.id, { status: "verified" }, { new: true });
@@ -766,7 +782,6 @@ exports.verifyRegistration = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 exports.pendingRegistration = async (req, res) => {
   try {
@@ -778,7 +793,6 @@ exports.pendingRegistration = async (req, res) => {
   }
 };
 
-
 exports.rejectRegistration = async (req, res) => {
   try {
     const reg = await Registration.findByIdAndUpdate(req.params.id, { status: "rejected" }, { new: true });
@@ -788,7 +802,6 @@ exports.rejectRegistration = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 exports.deleteRegistration = async (req, res) => {
   try {
@@ -801,7 +814,6 @@ exports.deleteRegistration = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 /* ===============================
    EXPORT REGISTRATIONS CSV
@@ -816,6 +828,7 @@ exports.exportRegistrationsCSV = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
+    // Dynamic field headers
     const fieldHeaders = subEvent.formFields
       .sort((a, b) => a.order - b.order)
       .map(f => `"${f.label}"`);
@@ -876,7 +889,6 @@ exports.exportRegistrationsCSV = async (req, res) => {
     res.redirect("/events");
   }
 };
-
 
 exports.getSubEventsByEvent = async (eventId) => {
   return await SubEvent.find({ eventId }).lean();

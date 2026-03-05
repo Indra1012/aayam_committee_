@@ -5,7 +5,7 @@
     <!-- Banner -->
     <% if (event.bannerImage) { %>
       <div class="event-detail-banner" data-aos="fade-down" style="position:relative;overflow:hidden;border-radius:var(--r-lg);margin-bottom:32px;">
-        <img src="<%= imgUrl(event.bannerImage) %>" alt="<%= event.title %>" style="width:100%;max-height:420px;object-fit:cover;display:block;">
+        <img src="<%= event.bannerImage %>" alt="<%= event.title %>" style="width:100%;max-height:420px;object-fit:cover;display:block;">
         <% if (isPast) { %>
           <div style="position:absolute;top:16px;right:16px;">
             <span class="badge-completed" style="font-size:0.8rem;padding:6px 14px;">Completed</span>
@@ -166,37 +166,35 @@
       <% if (event.galleryImages && event.galleryImages.length > 0) { %>
         <div class="gallery-grid-new">
           <% event.galleryImages.forEach(function(img, i) { %>
-            <% if (img && img.url) { %>
-              <div class="gallery-item-new" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
+            <div class="gallery-item-new" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
 
-                <!-- Image box -->
-                <div class="gallery-img-box">
-                  <img
-                    src="<%= imgUrl(img.url) %>"
-                    alt="<%= img.speakerName || ('Gallery image ' + (i+1)) %>"
-                    class="gallery-img-actual"
-                    loading="lazy"
-                    onerror="this.parentElement.parentElement.style.display='none';"
-                  >
-                  <% if (isAdmin) { %>
-                    <form action="/events/<%= event._id %>/gallery/<%= img._id %>/delete" method="POST"
-                      style="position:absolute;top:7px;right:7px;margin:0;z-index:2;"
-                      onsubmit="return confirm('Remove this image?')">
-                      <button type="submit" class="gal-del-btn"><i class="bi bi-x-lg"></i></button>
-                    </form>
-                  <% } %>
-                </div>
-
-                <!-- Caption BELOW the image — only when data exists -->
-                <% if (img.speakerName || img.detail) { %>
-                  <div class="gallery-caption-below">
-                    <% if (img.speakerName) { %><div class="gcap-name"><%= img.speakerName %></div><% } %>
-                    <% if (img.detail) { %><div class="gcap-detail"><%= img.detail %></div><% } %>
-                  </div>
+              <!-- Image wrapper — fixed ratio, image always fully visible -->
+              <div class="gallery-img-wrap">
+                <img
+                  src="<%= img.url %>"
+                  alt="<%= img.speakerName || 'Gallery image ' + (i+1) %>"
+                  class="gallery-img-actual"
+                  loading="lazy"
+                  onerror="this.parentElement.parentElement.style.display='none'"
+                >
+                <% if (isAdmin) { %>
+                  <form action="/events/<%= event._id %>/gallery/<%= img._id %>/delete" method="POST"
+                    style="position:absolute;top:7px;right:7px;margin:0;"
+                    onsubmit="return confirm('Remove this image?')">
+                    <button type="submit" class="gal-del-btn"><i class="bi bi-x-lg"></i></button>
+                  </form>
                 <% } %>
-
               </div>
-            <% } %>
+
+              <!-- Caption below image — only when data exists -->
+              <% if (img.speakerName || img.detail) { %>
+                <div class="gallery-caption-below">
+                  <% if (img.speakerName) { %><div class="gcap-name"><%= img.speakerName %></div><% } %>
+                  <% if (img.detail) { %><div class="gcap-detail"><%= img.detail %></div><% } %>
+                </div>
+              <% } %>
+
+            </div>
           <% }); %>
         </div>
 
@@ -261,24 +259,31 @@
     <div class="detail-section" data-aos="fade-up">
       <h2 class="detail-section-title">Event Documents</h2>
       <% if (event.documents && event.documents.length > 0) { %>
-        <% event.documents.forEach(function(doc, i) { %>
-          <% if (doc.isPublic || isAdmin) { %>
-            <div class="person-item">
-              <div>
-                <div class="person-name"><%= doc.title %></div>
-                <% if (!doc.isPublic) { %><span style="font-size:0.72rem;color:#b8860b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Admin Only</span><% } %>
+        <%
+          var visibleDocs = event.documents.filter(function(d){ return d.isPublic || isAdmin; });
+        %>
+        <% if (visibleDocs.length > 0) { %>
+          <% event.documents.forEach(function(doc, i) { %>
+            <% if (doc.isPublic || isAdmin) { %>
+              <div class="person-item">
+                <div>
+                  <div class="person-name"><%= doc.title %></div>
+                  <% if (!doc.isPublic && isAdmin) { %><span style="font-size:0.72rem;color:#b8860b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Admin Only</span><% } %>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <a href="<%= doc.file %>" target="_blank" class="btn-details" style="font-size:0.82rem;padding:6px 14px;">📄 View</a>
+                  <% if (isAdmin) { %>
+                    <form action="/events/<%= event._id %>/documents/<%= i %>/delete" method="POST" onsubmit="return confirm('Delete this document?')">
+                      <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
+                    </form>
+                  <% } %>
+                </div>
               </div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <a href="<%= doc.file %>" target="_blank" class="btn-details" style="font-size:0.82rem;padding:6px 14px;">📄 View</a>
-                <% if (isAdmin) { %>
-                  <form action="/events/<%= event._id %>/documents/<%= i %>/delete" method="POST" onsubmit="return confirm('Delete this document?')">
-                    <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
-                  </form>
-                <% } %>
-              </div>
-            </div>
-          <% } %>
-        <% }); %>
+            <% } %>
+          <% }); %>
+        <% } else { %>
+          <p style="color:var(--tx-muted);font-size:0.92rem;">No public documents available.</p>
+        <% } %>
       <% } else { %>
         <p style="color:var(--tx-muted);font-size:0.92rem;">No documents uploaded yet.</p>
       <% } %>
@@ -299,7 +304,7 @@
       <% } %>
     </div>
 
-    <!-- ═══ REVIEWS (past events only) ═══ -->
+    <!-- ═══ REVIEWS ═══ -->
     <% if (isPast) { %>
       <div class="detail-section" data-aos="fade-up">
         <h2 class="detail-section-title">⭐ Event Reviews</h2>
@@ -333,7 +338,7 @@
 </div>
 
 <style>
-.event-detail-content { max-width: 900px; margin: 0 auto; }
+/* ── Description body ── */
 .event-description-body { font-size:clamp(0.95rem,1.5vw,1.08rem);color:var(--tx-mid);line-height:1.9;max-width:780px; }
 .event-description-body p { margin-bottom:14px; }
 .event-description-body ul,.event-description-body ol { padding-left:22px;margin-bottom:14px; }
@@ -343,13 +348,16 @@
 body.dark-mode .event-description-body { color:var(--dk-muted); }
 body.dark-mode .event-description-body strong { color:var(--dk-text); }
 
-/* ══ GALLERY GRID ══ */
+/* ══════════════════════════════
+   GALLERY — Fixed & Working
+══════════════════════════════ */
 .gallery-grid-new {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 10px;
 }
+
 .gallery-item-new {
   display: flex;
   flex-direction: column;
@@ -357,53 +365,62 @@ body.dark-mode .event-description-body strong { color:var(--dk-text); }
   overflow: hidden;
   border: 1px solid var(--border-l);
   background: var(--cream-alt);
-  transition: box-shadow 0.24s, transform 0.24s;
+  transition: box-shadow 0.24s ease, transform 0.24s ease;
 }
+
 .gallery-item-new:hover {
   box-shadow: 0 6px 24px rgba(166,124,82,0.14);
   transform: translateY(-2px);
 }
 
-/* Image box — fixed aspect ratio so all images same height */
-.gallery-img-box {
+/* Key fix: wrapper uses padding-bottom trick for reliable aspect ratio */
+.gallery-img-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  padding-bottom: 75%; /* 4:3 ratio */
   overflow: hidden;
-  background: rgba(166,124,82,0.05);
+  background: rgba(166,124,82,0.06);
   flex-shrink: 0;
 }
+
+/* Image fills the wrapper completely */
 .gallery-img-actual {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
   transition: transform 0.38s ease;
 }
-.gallery-item-new:hover .gallery-img-actual { transform: scale(1.04); }
 
-/* Admin delete button */
+.gallery-item-new:hover .gallery-img-actual {
+  transform: scale(1.04);
+}
+
+/* Admin delete button — positioned inside wrapper */
 .gal-del-btn {
+  position: relative;
+  z-index: 2;
   width: 28px;
   height: 28px;
   border-radius: 50%;
   background: rgba(0,0,0,0.60);
   border: none;
   color: #fff;
-  font-size: 0.64rem;
+  font-size: 0.65rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(4px);
   transition: background 0.2s;
-  line-height: 1;
+  padding: 0;
 }
 .gal-del-btn:hover { background: #c0392b; }
 
-/* Caption below image */
+/* Caption below — only rendered when data exists */
 .gallery-caption-below {
   padding: 9px 12px 11px;
   border-top: 1px solid var(--border-l);
@@ -419,28 +436,4 @@ body.dark-mode .gcap-detail { color:var(--dk-muted); }
 
 @media (max-width:900px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr);gap:12px; } }
 @media (max-width:480px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr);gap:8px; } .gcap-name{font-size:0.76rem;} .gcap-detail{font-size:0.68rem;} }
-
-/* ══ SECTION + PERSON + REVIEW ══ */
-.detail-section { margin-bottom: 38px; padding-bottom: 32px; border-bottom: 1px solid var(--border-l); }
-.detail-section:last-child { border-bottom: none; }
-.detail-section-title { font-family:var(--font-display);font-size:1.15rem;font-weight:800;color:var(--tx);margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid rgba(166,124,82,0.18); }
-
-.person-item { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);margin-bottom:10px;flex-wrap:wrap; }
-.person-name { font-weight:700;font-size:0.95rem;color:var(--tx); }
-.person-email { font-size:0.8rem;color:var(--tx-muted);margin-top:2px; }
-
-.review-card { background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);padding:16px 18px;margin-bottom:12px; }
-.review-name { font-weight:700;font-size:0.9rem;color:var(--br);margin-bottom:6px; }
-.review-body { font-size:0.9rem;color:var(--tx-mid);line-height:1.7;margin:0; }
-
-body.dark-mode .person-item,
-body.dark-mode .review-card { background:var(--dk-surface);border-color:var(--border-d); }
-body.dark-mode .person-name,
-body.dark-mode .review-name { color:var(--br-light); }
-
-.gallery-empty { text-align:center;padding:40px 20px;background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-lg);margin-bottom:20px; }
-.gallery-empty-icon { font-size:2.5rem;margin-bottom:10px;opacity:0.5; }
-.gallery-empty p { color:var(--tx-muted);font-size:0.92rem;margin:0; }
-
-.admin-add-form { background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-md);padding:18px 20px; }
 </style>
