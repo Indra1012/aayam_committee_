@@ -1,93 +1,129 @@
 <!-- views/events/register-success.ejs -->
 <div class="container">
-  <div style="
-    max-width: 520px;
-    margin: 0 auto;
-    padding: clamp(60px,8vw,110px) 0;
-    text-align: center;
-  ">
+  <div style="max-width:600px; margin:0 auto; padding: clamp(60px,8vw,100px) 0; text-align:center;">
 
-    <!-- Success icon -->
+    <!-- Success Icon -->
     <div data-aos="zoom-in" style="
-      width: 80px; height: 80px;
-      border-radius: 50%;
-      background: rgba(39,174,96,0.12);
-      border: 2px solid rgba(39,174,96,0.28);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2.2rem;
-      margin: 0 auto 24px;
+      width:90px; height:90px;
+      border-radius:50%;
+      background:linear-gradient(135deg,rgba(39,174,96,0.15),rgba(39,174,96,0.08));
+      border:2px solid rgba(39,174,96,0.30);
+      display:flex; align-items:center; justify-content:center;
+      font-size:2.5rem;
+      margin:0 auto 28px;
+      box-shadow:0 8px 32px rgba(39,174,96,0.15);
     ">
-      ✓
+      ✅
     </div>
 
-    <div class="section-label" data-aos="fade-up">Registration Complete</div>
+    <!-- Title -->
+    <div data-aos="fade-up" data-aos-delay="80">
+      <div class="section-label" style="margin-bottom:10px; color:#27ae60;">Registration Successful</div>
+      <h1 style="
+        font-family: var(--font-display);
+        font-size: clamp(1.8rem,5vw,2.6rem);
+        font-weight: 900;
+        color: var(--tx);
+        margin-bottom: 14px;
+        letter-spacing: -0.5px;
+        line-height: 1.15;
+      ">
+        You're Registered! 🎉
+      </h1>
 
-    <h1 class="page-title" data-aos="fade-up" data-aos-delay="60" style="margin-top: 6px; margin-bottom: 14px;">
-      You're registered!
-    </h1>
+      <% if (subEvent) { %>
+        <p style="
+          font-size: clamp(0.95rem,1.5vw,1.08rem);
+          color: var(--tx-muted);
+          line-height: 1.8;
+          margin-bottom: 10px;
+        ">
+          Your registration for <strong style="color:var(--tx);"><%= subEvent.title %></strong> has been submitted successfully.
+        </p>
+        <% if (subEvent.eventId && subEvent.eventId.title) { %>
+          <p style="font-size:0.88rem;color:var(--tx-muted);margin-bottom:28px;">
+            Part of: <em><%= subEvent.eventId.title %></em>
+          </p>
+        <% } %>
+      <% } else { %>
+        <p style="font-size:1rem;color:var(--tx-muted);line-height:1.8;margin-bottom:28px;">
+          Your registration has been submitted successfully.
+        </p>
+      <% } %>
+    </div>
 
-    <p data-aos="fade-up" data-aos-delay="100" style="
-      font-size: clamp(0.93rem,1.5vw,1.05rem);
-      color: var(--tx-muted);
-      line-height: 1.75;
-      margin-bottom: 10px;
+    <!-- Info card -->
+    <div data-aos="fade-up" data-aos-delay="160" style="
+      background: var(--cream-alt);
+      border: 1px solid var(--border-l);
+      border-radius: var(--r-xl);
+      padding: clamp(22px,3.5vw,36px);
+      margin-bottom: 32px;
+      position: relative;
+      overflow: hidden;
+      text-align: left;
     ">
-      Your registration for <strong style="color: var(--tx);"><%= subEvent.title %></strong> has been submitted successfully.
-    </p>
+      <!-- Shimmer top bar -->
+      <div style="
+        position:absolute; top:0; left:0; right:0; height:3px;
+        background:linear-gradient(90deg,#27ae60,#2ecc71,#a8e063,#27ae60);
+        background-size:200% 100%;
+        animation:bandShimmer 3s linear infinite;
+      "></div>
 
-    <% if (subEvent.requirePaymentScreenshot) { %>
-      <div style="
-        background: rgba(201,168,76,0.10);
-        border: 1px solid rgba(201,168,76,0.26);
-        border-radius: var(--r-md);
-        padding: 14px 18px;
-        margin: 22px 0 28px;
-        font-size: 0.9rem;
-        color: #8a6914;
-        font-weight: 500;
-        text-align: left;
-      " data-aos="fade-up" data-aos-delay="130">
-        <strong>⏳ Pending verification</strong><br>
-        Your payment screenshot has been received. The organiser will verify your payment and confirm your seat shortly.
+      <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#27ae60;margin-bottom:16px;">
+        What Happens Next
       </div>
-    <% } else { %>
-      <div style="
-        background: rgba(39,174,96,0.08);
-        border: 1px solid rgba(39,174,96,0.22);
-        border-radius: var(--r-md);
-        padding: 14px 18px;
-        margin: 22px 0 28px;
-        font-size: 0.9rem;
-        color: #27ae60;
-        font-weight: 500;
-      " data-aos="fade-up" data-aos-delay="130">
-        ✅ Your seat is confirmed!,
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:rgba(39,174,96,0.12);border:1px solid rgba(39,174,96,0.25);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;margin-top:1px;">1</div>
+          <div>
+            <div style="font-weight:700;font-size:0.9rem;color:var(--tx);margin-bottom:3px;">Registration Under Review</div>
+            <div style="font-size:0.82rem;color:var(--tx-muted);line-height:1.6;">Your registration is currently pending verification by the event coordinators.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:rgba(39,174,96,0.12);border:1px solid rgba(39,174,96,0.25);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;margin-top:1px;">2</div>
+          <div>
+            <div style="font-weight:700;font-size:0.9rem;color:var(--tx);margin-bottom:3px;">Stay Updated</div>
+            <div style="font-size:0.82rem;color:var(--tx-muted);line-height:1.6;">Keep an eye on announcements and your email for any updates regarding the event.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:rgba(39,174,96,0.12);border:1px solid rgba(39,174,96,0.25);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;margin-top:1px;">3</div>
+          <div>
+            <div style="font-weight:700;font-size:0.9rem;color:var(--tx);margin-bottom:3px;">Show Up & Enjoy!</div>
+            <div style="font-size:0.82rem;color:var(--tx-muted);line-height:1.6;">Be present on the event day and make the most of the experience.</div>
+          </div>
+        </div>
       </div>
-      <div style="
-        background: rgba(39,174,96,0.08);
-        border: 1px solid rgba(39,174,96,0.22);
-        border-radius: var(--r-md);
-        padding: 14px 18px;
-        margin: 22px 0 28px;
-        font-size: 0.9rem;
-        color: #ae3d27;
-        font-weight: 500;
-      " data-aos="fade-up" data-aos-delay="130">
-“If anything goes wrong, we will inform you via your registered email or contact number.”
-</div>
-    <% } %>
+    </div>
 
     <!-- Action buttons -->
-    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;" data-aos="fade-up" data-aos-delay="160">
-      <% if (subEvent.eventId) { %>
+    <div data-aos="fade-up" data-aos-delay="240" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <% if (subEvent && subEvent.eventId && subEvent.eventId._id) { %>
         <a href="/events/<%= subEvent.eventId._id %>" class="btn-register">
-          View Event <i class="bi bi-arrow-right"></i>
+          <i class="bi bi-calendar-event"></i> View Event
+        </a>
+        <a href="/events/<%= subEvent.eventId._id %>/register" class="btn-details">
+          <i class="bi bi-arrow-left"></i> Register for Another Session
+        </a>
+      <% } else { %>
+        <a href="/events" class="btn-register">
+          <i class="bi bi-calendar-event"></i> View All Events
         </a>
       <% } %>
-      <a href="/events" class="btn-details">
-        All Events
-      </a>
     </div>
 
   </div>
 </div>
+
+<style>
+@keyframes bandShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+body.dark-mode .cream-alt,
+body.dark-mode [style*="var(--cream-alt)"] { background: var(--dk-surface); }
+</style>

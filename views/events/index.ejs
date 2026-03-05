@@ -30,7 +30,6 @@
           </summary>
           <form action="/events/add" method="POST" enctype="multipart/form-data" class="mt-4">
             <input type="hidden" name="type" value="upcoming">
-            <%-- Default: Public. Admin can change to Private here or later via Edit. --%>
             <input type="hidden" name="isPublic" value="true">
             <input type="text" name="title" placeholder="Event Title" class="form-control mb-2" required>
             <textarea name="shortDescription" placeholder="Short description" class="form-control mb-2" required></textarea>
@@ -48,24 +47,31 @@
             <div style="font-size:0.78rem;color:var(--tx-muted);margin-bottom:10px;padding:8px 12px;background:rgba(39,174,96,0.07);border-radius:var(--r-sm);border:1px solid rgba(39,174,96,0.18);">
               ✅ Events are <strong>Public by default</strong>. To make private, go to Edit after creating.
             </div>
-            <button class="btn-register w-100">➕ Add Upcoming Event</button>
+            <button type="submit" class="btn-register w-100">➕ Add Upcoming Event</button>
           </form>
         </details>
       <% } %>
 
-      <% if (upcomingEvents.length === 0) { %>
+      <% if (!upcomingEvents || upcomingEvents.length === 0) { %>
         <div class="gallery-empty" data-aos="fade-up">
           <div class="gallery-empty-icon">📅</div>
           <p>No upcoming events right now.</p>
         </div>
       <% } %>
 
-      <% upcomingEvents.forEach((event, i) => { %>
+      <% upcomingEvents.forEach(function(event, i) { %>
         <div class="event-card ev-card-uniform" data-aos="fade-up" data-aos-delay="<%= i * 70 %>">
-          <!-- Image — fixed height, always fills uniformly -->
+
+          <!-- Banner image -->
           <a href="/events/<%= event._id %>" class="ev-img-link">
             <% if (event.bannerImage) { %>
-              <img src="<%= event.bannerImage %>" class="ev-img" alt="<%= event.title %>">
+              <img
+                src="<%= event.bannerImage %>"
+                class="ev-img"
+                alt="<%= event.title %>"
+                loading="lazy"
+                onerror="this.style.display='none';this.parentElement.classList.add('ev-img-fallback');"
+              >
             <% } else { %>
               <div class="ev-img-placeholder"><i class="bi bi-calendar-event"></i></div>
             <% } %>
@@ -77,7 +83,6 @@
               <a href="/events/<%= event._id %>" style="text-decoration:none;flex:1;min-width:0;">
                 <h3 class="ev-title"><%= event.title %></h3>
               </a>
-              <%# Only admins see the Private badge — public users see nothing %>
               <% if (!event.isPublic && user && (user.role === "admin" || user.role === "superadmin")) { %>
                 <span class="ev-private-badge">🔒 Private</span>
               <% } %>
@@ -111,21 +116,21 @@
               <div class="ev-admin-row">
                 <a href="/events/edit/<%= event._id %>" class="btn-details" style="font-size:0.75rem;padding:4px 10px;">✏ Edit</a>
                 <form action="/events/toggle-visibility/<%= event._id %>" method="POST" style="margin:0;">
-                  <button class="<%= event.isPublic ? 'btn-admin-warn' : 'btn-register' %>" style="font-size:0.75rem;padding:4px 10px;">
+                  <button type="submit" class="<%= event.isPublic ? 'btn-admin-warn' : 'btn-register' %>" style="font-size:0.75rem;padding:4px 10px;">
                     <%= event.isPublic ? '🔒 Make Private' : '🌐 Make Public' %>
                   </button>
                 </form>
                 <form action="/events/move-to-past/<%= event._id %>" method="POST" onsubmit="return confirm('Move to past?')" style="margin:0;">
-                  <button class="btn-admin-warn" style="font-size:0.75rem;padding:4px 10px;">⏳ Move to Past</button>
+                  <button type="submit" class="btn-admin-warn" style="font-size:0.75rem;padding:4px 10px;">⏳ Move to Past</button>
                 </form>
                 <form action="/events/delete/<%= event._id %>" method="POST" onsubmit="return confirm('Delete this event?')" style="margin:0;">
-                  <button class="btn-admin-danger" style="font-size:0.75rem;padding:4px 10px;">✕ Delete</button>
+                  <button type="submit" class="btn-admin-danger" style="font-size:0.75rem;padding:4px 10px;">✕ Delete</button>
                 </form>
               </div>
             <% } %>
           </div>
         </div>
-      <% }) %>
+      <% }); %>
     </div>
 
     <!-- ── PAST EVENTS ── -->
@@ -141,7 +146,6 @@
           </summary>
           <form action="/events/add" method="POST" enctype="multipart/form-data" class="mt-4">
             <input type="hidden" name="type" value="past">
-            <%-- Default: Public --%>
             <input type="hidden" name="isPublic" value="true">
             <input type="text" name="title" placeholder="Event Title" class="form-control mb-2" required>
             <textarea name="shortDescription" placeholder="Short description" class="form-control mb-2" required></textarea>
@@ -156,23 +160,30 @@
             <div style="font-size:0.78rem;color:var(--tx-muted);margin-bottom:10px;padding:8px 12px;background:rgba(39,174,96,0.07);border-radius:var(--r-sm);border:1px solid rgba(39,174,96,0.18);">
               ✅ Events are <strong>Public by default</strong>. To make private, go to Edit after creating.
             </div>
-            <button class="btn-register w-100">➕ Add Past Event</button>
+            <button type="submit" class="btn-register w-100">➕ Add Past Event</button>
           </form>
         </details>
       <% } %>
 
-      <% if (pastEvents.length === 0) { %>
+      <% if (!pastEvents || pastEvents.length === 0) { %>
         <div class="gallery-empty" data-aos="fade-up">
           <div class="gallery-empty-icon">🕰</div>
           <p>No past events yet.</p>
         </div>
       <% } %>
 
-      <% pastEvents.forEach((event, i) => { %>
+      <% pastEvents.forEach(function(event, i) { %>
         <div class="event-card ev-card-uniform" data-aos="fade-up" data-aos-delay="<%= i * 70 %>">
+
           <a href="/events/<%= event._id %>" class="ev-img-link">
             <% if (event.bannerImage) { %>
-              <img src="<%= event.bannerImage %>" class="ev-img ev-img-past" alt="<%= event.title %>">
+              <img
+                src="<%= event.bannerImage %>"
+                class="ev-img ev-img-past"
+                alt="<%= event.title %>"
+                loading="lazy"
+                onerror="this.style.display='none';this.parentElement.classList.add('ev-img-fallback');"
+              >
             <% } else { %>
               <div class="ev-img-placeholder ev-img-past"><i class="bi bi-calendar-check"></i></div>
             <% } %>
@@ -185,6 +196,8 @@
               </a>
               <span class="badge-completed flex-shrink-0">Completed</span>
             </div>
+
+            <p class="ev-desc"><%= event.shortDescription %></p>
 
             <% if (event.startDate && event.endDate) { %>
               <div class="ev-date">
@@ -204,13 +217,13 @@
               <div class="ev-admin-row">
                 <a href="/events/edit/<%= event._id %>" class="btn-details" style="font-size:0.75rem;padding:4px 10px;">✏ Edit</a>
                 <form action="/events/delete/<%= event._id %>" method="POST" onsubmit="return confirm('Delete this event?')" style="margin:0;">
-                  <button class="btn-admin-danger" style="font-size:0.75rem;padding:4px 10px;">✕ Delete</button>
+                  <button type="submit" class="btn-admin-danger" style="font-size:0.75rem;padding:4px 10px;">✕ Delete</button>
                 </form>
               </div>
             <% } %>
           </div>
         </div>
-      <% }) %>
+      <% }); %>
     </div>
 
   </div>
@@ -219,8 +232,6 @@
 <style>
 /* ══════════════════════════════════════
    UNIFORM EVENT CARDS
-   Both columns use identical card rules
-   so sizes always match.
 ══════════════════════════════════════ */
 .ev-card-uniform {
   display: flex;
@@ -237,15 +248,22 @@
   transform: translateY(-2px);
 }
 
-/* Image link wrapper */
+/* Image link wrapper — fixed aspect ratio */
 .ev-img-link {
   display: block;
   text-decoration: none;
   width: 100%;
-  aspect-ratio: 16 / 7;   /* ← fixed ratio keeps all cards same height */
+  aspect-ratio: 16 / 7;
   overflow: hidden;
   background: rgba(166,124,82,0.06);
   flex-shrink: 0;
+  position: relative;
+}
+.ev-img-link.ev-img-fallback {
+  background: rgba(166,124,82,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .ev-img {
   width: 100%;
@@ -297,7 +315,6 @@
   color: var(--tx-muted);
   line-height: 1.6;
   margin-bottom: 10px;
-  /* clamp to 3 lines so cards stay same height */
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -316,7 +333,7 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: auto;    /* push to bottom of card */
+  margin-top: auto;
   padding-top: 4px;
 }
 .ev-admin-row {
@@ -328,7 +345,7 @@
   border-top: 1px dashed var(--border-l);
 }
 
-/* Admin-only private badge */
+/* Private badge — admin only */
 .ev-private-badge {
   padding: 2px 8px;
   border-radius: var(--r-full);
@@ -341,9 +358,17 @@
   flex-shrink: 0;
 }
 
-body.dark-mode .ev-card-uniform { background: var(--dk-surface); border-color: var(--border-d); }
+/* Section utilities */
+.gallery-empty { text-align:center;padding:40px 20px;background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-lg);margin-bottom:20px; }
+.gallery-empty-icon { font-size:2.5rem;margin-bottom:10px;opacity:0.5; }
+.gallery-empty p { color:var(--tx-muted);font-size:0.92rem;margin:0; }
 
-/* Responsive tweaks */
+.admin-add-form { background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-md);padding:18px 20px; }
+
+body.dark-mode .ev-card-uniform { background: var(--dk-surface); border-color: var(--border-d); }
+body.dark-mode .ev-title { color: var(--dk-text); }
+
+/* Responsive */
 @media (max-width: 576px) {
   .ev-img-link { aspect-ratio: 16 / 8; }
   .ev-admin-row { gap: 4px; }

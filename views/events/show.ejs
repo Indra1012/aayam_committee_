@@ -166,34 +166,37 @@
       <% if (event.galleryImages && event.galleryImages.length > 0) { %>
         <div class="gallery-grid-new">
           <% event.galleryImages.forEach(function(img, i) { %>
-            <div class="gallery-item-new" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
+            <% if (img && img.url) { %>
+              <div class="gallery-item-new" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
 
-              <!-- Image box — always fully visible, zero overlay text -->
-              <div class="gallery-img-box">
-                <img
-                  src="<%= img.url %>"
-                  alt="<%= img.speakerName || 'Gallery image' %>"
-                  class="gallery-img-actual"
-                  loading="lazy"
-                >
-                <% if (isAdmin) { %>
-                  <form action="/events/<%= event._id %>/gallery/<%= img._id %>/delete" method="POST"
-                    style="position:absolute;top:7px;right:7px;margin:0;"
-                    onsubmit="return confirm('Remove this image?')">
-                    <button class="gal-del-btn"><i class="bi bi-x-lg"></i></button>
-                  </form>
-                <% } %>
-              </div>
-
-              <!-- Caption BELOW the image — only rendered when data actually exists -->
-              <% if (img.speakerName || img.detail) { %>
-                <div class="gallery-caption-below">
-                  <% if (img.speakerName) { %><div class="gcap-name"><%= img.speakerName %></div><% } %>
-                  <% if (img.detail) { %><div class="gcap-detail"><%= img.detail %></div><% } %>
+                <!-- Image box -->
+                <div class="gallery-img-box">
+                  <img
+                    src="<%= img.url %>"
+                    alt="<%= img.speakerName || ('Gallery image ' + (i+1)) %>"
+                    class="gallery-img-actual"
+                    loading="lazy"
+                    onerror="this.parentElement.parentElement.style.display='none';"
+                  >
+                  <% if (isAdmin) { %>
+                    <form action="/events/<%= event._id %>/gallery/<%= img._id %>/delete" method="POST"
+                      style="position:absolute;top:7px;right:7px;margin:0;z-index:2;"
+                      onsubmit="return confirm('Remove this image?')">
+                      <button type="submit" class="gal-del-btn"><i class="bi bi-x-lg"></i></button>
+                    </form>
+                  <% } %>
                 </div>
-              <% } %>
 
-            </div>
+                <!-- Caption BELOW the image — only when data exists -->
+                <% if (img.speakerName || img.detail) { %>
+                  <div class="gallery-caption-below">
+                    <% if (img.speakerName) { %><div class="gcap-name"><%= img.speakerName %></div><% } %>
+                    <% if (img.detail) { %><div class="gcap-detail"><%= img.detail %></div><% } %>
+                  </div>
+                <% } %>
+
+              </div>
+            <% } %>
           <% }); %>
         </div>
 
@@ -218,7 +221,7 @@
             </div>
           </div>
           <input type="file" name="galleryImages" multiple accept="image/*" class="form-control mb-3" required>
-          <button class="btn-register">➕ Upload Images</button>
+          <button type="submit" class="btn-register">➕ Upload Images</button>
         </form>
       <% } %>
     </div>
@@ -235,7 +238,7 @@
             </div>
             <% if (isAdmin) { %>
               <form action="/events/<%= event._id %>/conducted-by/<%= i %>/delete" method="POST" onsubmit="return confirm('Remove this coordinator?')">
-                <button class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
+                <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
               </form>
             <% } %>
           </div>
@@ -248,7 +251,7 @@
           <div class="row g-2">
             <div class="col-md-5"><input type="text" name="name" class="form-control" placeholder="Coordinator name" required></div>
             <div class="col-md-5"><input type="email" name="email" class="form-control" placeholder="Email address" required></div>
-            <div class="col-md-2"><button class="btn-register w-100">Add</button></div>
+            <div class="col-md-2"><button type="submit" class="btn-register w-100">Add</button></div>
           </div>
         </form>
       <% } %>
@@ -269,7 +272,7 @@
                 <a href="<%= doc.file %>" target="_blank" class="btn-details" style="font-size:0.82rem;padding:6px 14px;">📄 View</a>
                 <% if (isAdmin) { %>
                   <form action="/events/<%= event._id %>/documents/<%= i %>/delete" method="POST" onsubmit="return confirm('Delete this document?')">
-                    <button class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
+                    <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
                   </form>
                 <% } %>
               </div>
@@ -289,14 +292,14 @@
                 <input class="form-check-input" type="checkbox" name="isPublic" id="isPublicDoc">
                 <label class="form-check-label" for="isPublicDoc" style="font-size:0.82rem;color:var(--tx-muted);">Public</label>
               </div>
-              <button class="btn-register w-100">Upload</button>
+              <button type="submit" class="btn-register w-100">Upload</button>
             </div>
           </div>
         </form>
       <% } %>
     </div>
 
-    <!-- ═══ REVIEWS ═══ -->
+    <!-- ═══ REVIEWS (past events only) ═══ -->
     <% if (isPast) { %>
       <div class="detail-section" data-aos="fade-up">
         <h2 class="detail-section-title">⭐ Event Reviews</h2>
@@ -304,23 +307,25 @@
           <div class="row g-2">
             <div class="col-md-4"><input type="text" name="name" class="form-control" placeholder="Your name" required></div>
             <div class="col-md-6"><textarea name="message" class="form-control" placeholder="Write your review..." rows="2" required></textarea></div>
-            <div class="col-md-2 d-flex align-items-end"><button class="btn-register w-100">Submit</button></div>
+            <div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn-register w-100">Submit</button></div>
           </div>
         </form>
-        <% if (reviews.length === 0) { %>
+        <% if (!reviews || reviews.length === 0) { %>
           <p style="color:var(--tx-muted);font-size:0.92rem;">No reviews yet. Be the first!</p>
         <% } %>
-        <% reviews.forEach(function(review) { %>
-          <div class="review-card" data-aos="fade-up">
-            <div class="review-name"><%= review.name %></div>
-            <p class="review-body"><%= review.message %></p>
-            <% if (isAdmin) { %>
-              <form action="/events/<%= event._id %>/reviews/<%= review._id %>/delete" method="POST" class="mt-2" onsubmit="return confirm('Delete review?')">
-                <button class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕ Delete</button>
-              </form>
-            <% } %>
-          </div>
-        <% }); %>
+        <% if (reviews && reviews.length > 0) { %>
+          <% reviews.forEach(function(review) { %>
+            <div class="review-card" data-aos="fade-up">
+              <div class="review-name"><%= review.name %></div>
+              <p class="review-body"><%= review.message %></p>
+              <% if (isAdmin) { %>
+                <form action="/events/<%= event._id %>/reviews/<%= review._id %>/delete" method="POST" class="mt-2" onsubmit="return confirm('Delete review?')">
+                  <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕ Delete</button>
+                </form>
+              <% } %>
+            </div>
+          <% }); %>
+        <% } %>
       </div>
     <% } %>
 
@@ -328,6 +333,7 @@
 </div>
 
 <style>
+.event-detail-content { max-width: 900px; margin: 0 auto; }
 .event-description-body { font-size:clamp(0.95rem,1.5vw,1.08rem);color:var(--tx-mid);line-height:1.9;max-width:780px; }
 .event-description-body p { margin-bottom:14px; }
 .event-description-body ul,.event-description-body ol { padding-left:22px;margin-bottom:14px; }
@@ -337,12 +343,12 @@
 body.dark-mode .event-description-body { color:var(--dk-muted); }
 body.dark-mode .event-description-body strong { color:var(--dk-text); }
 
-/* ══ GALLERY ══ */
+/* ══ GALLERY GRID ══ */
 .gallery-grid-new {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 24px;
 }
 .gallery-item-new {
   display: flex;
@@ -357,13 +363,15 @@ body.dark-mode .event-description-body strong { color:var(--dk-text); }
   box-shadow: 0 6px 24px rgba(166,124,82,0.14);
   transform: translateY(-2px);
 }
-/* Image box with fixed ratio — image always fills, never hidden */
+
+/* Image box — fixed aspect ratio so all images same height */
 .gallery-img-box {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: rgba(166,124,82,0.05);
+  flex-shrink: 0;
 }
 .gallery-img-actual {
   position: absolute;
@@ -378,19 +386,24 @@ body.dark-mode .event-description-body strong { color:var(--dk-text); }
 
 /* Admin delete button */
 .gal-del-btn {
-  width: 26px; height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.58);
-  border: none; color: #fff;
-  font-size: 0.62rem;
+  background: rgba(0,0,0,0.60);
+  border: none;
+  color: #fff;
+  font-size: 0.64rem;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   backdrop-filter: blur(4px);
   transition: background 0.2s;
+  line-height: 1;
 }
 .gal-del-btn:hover { background: #c0392b; }
 
-/* Caption below — clean text, no overlay */
+/* Caption below image */
 .gallery-caption-below {
   padding: 9px 12px 11px;
   border-top: 1px solid var(--border-l);
@@ -404,6 +417,30 @@ body.dark-mode .gallery-caption-below { background:var(--dk-surface);border-colo
 body.dark-mode .gcap-name { color:var(--dk-text); }
 body.dark-mode .gcap-detail { color:var(--dk-muted); }
 
-@media (max-width:900px)  { .gallery-grid-new { grid-template-columns:repeat(2,1fr);gap:12px; } }
-@media (max-width:480px)  { .gallery-grid-new { grid-template-columns:repeat(2,1fr);gap:8px; } .gcap-name{font-size:0.76rem;} .gcap-detail{font-size:0.68rem;} }
+@media (max-width:900px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr);gap:12px; } }
+@media (max-width:480px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr);gap:8px; } .gcap-name{font-size:0.76rem;} .gcap-detail{font-size:0.68rem;} }
+
+/* ══ SECTION + PERSON + REVIEW ══ */
+.detail-section { margin-bottom: 38px; padding-bottom: 32px; border-bottom: 1px solid var(--border-l); }
+.detail-section:last-child { border-bottom: none; }
+.detail-section-title { font-family:var(--font-display);font-size:1.15rem;font-weight:800;color:var(--tx);margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid rgba(166,124,82,0.18); }
+
+.person-item { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);margin-bottom:10px;flex-wrap:wrap; }
+.person-name { font-weight:700;font-size:0.95rem;color:var(--tx); }
+.person-email { font-size:0.8rem;color:var(--tx-muted);margin-top:2px; }
+
+.review-card { background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);padding:16px 18px;margin-bottom:12px; }
+.review-name { font-weight:700;font-size:0.9rem;color:var(--br);margin-bottom:6px; }
+.review-body { font-size:0.9rem;color:var(--tx-mid);line-height:1.7;margin:0; }
+
+body.dark-mode .person-item,
+body.dark-mode .review-card { background:var(--dk-surface);border-color:var(--border-d); }
+body.dark-mode .person-name,
+body.dark-mode .review-name { color:var(--br-light); }
+
+.gallery-empty { text-align:center;padding:40px 20px;background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-lg);margin-bottom:20px; }
+.gallery-empty-icon { font-size:2.5rem;margin-bottom:10px;opacity:0.5; }
+.gallery-empty p { color:var(--tx-muted);font-size:0.92rem;margin:0; }
+
+.admin-add-form { background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-md);padding:18px 20px; }
 </style>

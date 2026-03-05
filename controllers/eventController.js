@@ -5,12 +5,6 @@ const SubEvent = require("../models/SubEvent");
 const Registration = require("../models/Registration");
 const { uploadDocToCloud } = require("../middlewares/uploadEvent");
 
-/* ── helpers ── */
-function parseTime12(str) {
-  // normalise "9:00 AM" → "09:00 AM"
-  if (!str) return "";
-  return str.trim();
-}
 
 /* ===============================
    EVENTS LIST PAGE
@@ -33,6 +27,7 @@ exports.getEventsPage = async (req, res) => {
   }
 };
 
+
 /* ===============================
    EVENT DETAIL PAGE
 ================================ */
@@ -43,7 +38,7 @@ exports.getEventDetail = async (req, res) => {
     const event = await Event.findById(req.params.id).lean();
     if (!event) return res.redirect("/events");
 
-    const isPast = event.type === "past";
+    const isPast  = event.type === "past";
     const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "superadmin");
 
     // Private events: only admin can see full detail
@@ -74,6 +69,7 @@ exports.getEventDetail = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* ===============================
    SUBEVENT SELECTION PAGE
@@ -110,6 +106,7 @@ exports.getSubEventsPage = async (req, res) => {
   }
 };
 
+
 /* ===============================
    ADD EVENT (ADMIN)
 ================================ */
@@ -139,6 +136,7 @@ exports.addEvent = async (req, res) => {
   }
 };
 
+
 /* ===============================
    EDIT EVENT PAGE (ADMIN)
 ================================ */
@@ -155,6 +153,7 @@ exports.getEditEvent = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* ===============================
    UPDATE EVENT (ADMIN)
@@ -184,6 +183,7 @@ exports.updateEvent = async (req, res) => {
   }
 };
 
+
 /* ===============================
    TOGGLE EVENT PUBLIC/PRIVATE (ADMIN)
 ================================ */
@@ -200,6 +200,7 @@ exports.toggleEventVisibility = async (req, res) => {
   }
 };
 
+
 /* ===============================
    DELETE EVENT (ADMIN)
 ================================ */
@@ -213,6 +214,7 @@ exports.deleteEvent = async (req, res) => {
   }
 };
 
+
 /* ===============================
    MANUAL MOVE TO PAST (ADMIN)
 ================================ */
@@ -225,6 +227,7 @@ exports.moveEventToPast = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* ===============================
    ADD REVIEW (PUBLIC)
@@ -242,6 +245,7 @@ exports.addReview = async (req, res) => {
   }
 };
 
+
 /* ===============================
    DELETE REVIEW (ADMIN)
 ================================ */
@@ -256,6 +260,7 @@ exports.deleteReview = async (req, res) => {
   }
 };
 
+
 /* ===============================
    DELETE BANNER IMAGE
 ================================ */
@@ -269,19 +274,24 @@ exports.deleteBannerImage = async (req, res) => {
   }
 };
 
+
 /* ===============================
    ADD GALLERY IMAGE (with speaker + detail)
+   FIX: When multiple files uploaded, apply shared speakerName/detail to all
+        (single pair of fields for the batch upload)
 ================================ */
 exports.addGalleryImages = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) return res.redirect(`/events/${req.params.id}`);
 
-    const { speakerName, detail } = req.body;
+    // speakerName and detail are single shared values for the whole upload batch
+    const speakerName = req.body.speakerName || "";
+    const detail      = req.body.detail      || "";
 
-    const images = req.files.map((file, i) => ({
+    const images = req.files.map((file) => ({
       url: file.path,
-      speakerName: Array.isArray(speakerName) ? (speakerName[i] || "") : (speakerName || ""),
-      detail: Array.isArray(detail) ? (detail[i] || "") : (detail || ""),
+      speakerName: speakerName.trim(),
+      detail: detail.trim(),
     }));
 
     await Event.findByIdAndUpdate(req.params.id, {
@@ -294,6 +304,7 @@ exports.addGalleryImages = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* ===============================
    UPDATE GALLERY IMAGE META (admin)
@@ -315,6 +326,7 @@ exports.updateGalleryImageMeta = async (req, res) => {
   }
 };
 
+
 /* ===============================
    DELETE SINGLE GALLERY IMAGE
 ================================ */
@@ -333,6 +345,7 @@ exports.deleteGalleryImage = async (req, res) => {
   }
 };
 
+
 /* ===============================
    ADD COORDINATOR
 ================================ */
@@ -347,6 +360,7 @@ exports.addCoordinator = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* ===============================
    DELETE COORDINATOR
@@ -364,6 +378,7 @@ exports.deleteCoordinator = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* ===============================
    ADD DOCUMENT
@@ -386,6 +401,7 @@ exports.addDocument = async (req, res) => {
   }
 };
 
+
 /* ===============================
    DELETE DOCUMENT
 ================================ */
@@ -402,6 +418,7 @@ exports.deleteDocument = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* =================================
    SUBEVENT CRUD (ADMIN)
@@ -446,6 +463,7 @@ exports.createSubEvent = async (req, res) => {
   }
 };
 
+
 // Update SubEvent
 exports.updateSubEvent = async (req, res) => {
   try {
@@ -478,6 +496,7 @@ exports.updateSubEvent = async (req, res) => {
   }
 };
 
+
 // Delete SubEvent
 exports.deleteSubEvent = async (req, res) => {
   try {
@@ -492,6 +511,7 @@ exports.deleteSubEvent = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* =================================
    FORM BUILDER
@@ -526,6 +546,7 @@ exports.addFormField = async (req, res) => {
   }
 };
 
+
 exports.updateFormField = async (req, res) => {
   try {
     const { id, fieldId } = req.params;
@@ -554,6 +575,7 @@ exports.updateFormField = async (req, res) => {
   }
 };
 
+
 exports.deleteFormField = async (req, res) => {
   try {
     const { id, fieldId } = req.params;
@@ -571,6 +593,7 @@ exports.deleteFormField = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* =================================
    USER REGISTRATION
@@ -595,6 +618,7 @@ exports.showRegistrationForm = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 exports.submitRegistration = async (req, res) => {
   try {
@@ -697,6 +721,7 @@ exports.submitRegistration = async (req, res) => {
   }
 };
 
+
 exports.registrationSuccess = async (req, res) => {
   try {
     const { subEventId } = req.params;
@@ -708,6 +733,7 @@ exports.registrationSuccess = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* =================================
    ADMIN REGISTRATION MANAGEMENT
@@ -730,6 +756,7 @@ exports.getRegistrationsForSubEvent = async (req, res) => {
   }
 };
 
+
 exports.verifyRegistration = async (req, res) => {
   try {
     const reg = await Registration.findByIdAndUpdate(req.params.id, { status: "verified" }, { new: true });
@@ -739,6 +766,7 @@ exports.verifyRegistration = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 exports.pendingRegistration = async (req, res) => {
   try {
@@ -750,6 +778,7 @@ exports.pendingRegistration = async (req, res) => {
   }
 };
 
+
 exports.rejectRegistration = async (req, res) => {
   try {
     const reg = await Registration.findByIdAndUpdate(req.params.id, { status: "rejected" }, { new: true });
@@ -759,6 +788,7 @@ exports.rejectRegistration = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 exports.deleteRegistration = async (req, res) => {
   try {
@@ -771,6 +801,7 @@ exports.deleteRegistration = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 /* ===============================
    EXPORT REGISTRATIONS CSV
@@ -785,7 +816,6 @@ exports.exportRegistrationsCSV = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Dynamic field headers
     const fieldHeaders = subEvent.formFields
       .sort((a, b) => a.order - b.order)
       .map(f => `"${f.label}"`);
@@ -846,6 +876,7 @@ exports.exportRegistrationsCSV = async (req, res) => {
     res.redirect("/events");
   }
 };
+
 
 exports.getSubEventsByEvent = async (eventId) => {
   return await SubEvent.find({ eventId }).lean();
