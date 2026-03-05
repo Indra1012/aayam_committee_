@@ -24,6 +24,9 @@ const MongoStore = require("connect-mongo").default;
 ================================ */
 const app = express();
 
+/* TRUST PROXY — Required for secure cookies behind Render/custom domain */
+app.set("trust proxy", 1);
+
 /* ===============================
    DATABASE CONNECTION
 ================================ */
@@ -53,6 +56,8 @@ app.use(
     }),
     cookie: {
       maxAge: 1000 * 60 * 60 * 24,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   })
 );
@@ -92,7 +97,7 @@ const adminRoutes = require("./routes/adminRoutes");
 app.use(authRoutes);
 app.use(homeRoutes);
 app.use(teamRoutes);
-app.use(eventRoutes);   // ✅ Your new SubEvent + Registration routes active here
+app.use(eventRoutes);
 app.use(reachOutRoutes);
 app.use(adminRoutes);
 
