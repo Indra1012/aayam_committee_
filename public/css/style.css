@@ -605,60 +605,57 @@ body.dark-mode .drawer-theme-row .drawer-icon {
 
 .home-wrapper section { padding: clamp(60px,8vw,110px) 0; }
 
-/* ══════════ HERO ══════════ */
+/* ══════════ HERO ══════════
+   The body already has padding-top: var(--nav-h) for the fixed navbar.
+   We MUST override the section padding for .hs-hero to remove the extra gap.
+════════════════════════════ */
 .hs-hero {
   position: relative;
-  min-height: 100vh;
+  min-height: calc(100vh - var(--nav-h));
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   background: var(--cream);
-  /* ── REDUCED top padding to close navbar gap ── */
-  padding: clamp(30px,4vh,60px) 0 clamp(60px,8vh,100px);
+  /* Kill the section padding that causes the top gap */
+  padding-top: clamp(30px, 5vh, 60px) !important;
+  padding-bottom: clamp(50px, 7vh, 90px) !important;
 }
 body.dark-mode .hs-hero { background: var(--dk-base); }
 
-/* ── University label above hero badge ── */
+/* ══════════ UNIVERSITY NAME ══════════
+   Matches the screenshot: plain large spaced caps text, NO pill/border.
+   Just big, bold, letter-spaced heading above the badge.
+════════════════════════════ */
+.hero-university {
+  margin-bottom: clamp(8px, 1.5vw, 14px);
+}
+
 .university-name {
-  font-size: 0.82rem;
-  font-weight: 800;
+  /* Plain text – exactly like the image shows */
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2.8vw, 1.35rem);
+  font-weight: 700;
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--br-deep);
-  font-family: var(--font-display);
-  text-shadow: 0 0 40px rgba(93, 64, 55, 0.18);
-  position: relative;
-  display: inline-block;
+
+  /* No pill, no background, no border – clean like the image */
+  background: none;
+  border: none;
+  padding: 0;
+  position: static;
+  overflow: visible;
 }
 
-@media (max-width: 768px) {
-  .university-name {
-    font-size: 0.90rem;
-    letter-spacing: 0.25em;
-  }
-}
-
-@media (max-width: 480px) {
-  .university-name {
-    font-size: 0.90rem;
-    letter-spacing: 0.25em;
-  }
-}
-
-@media (max-width: 360px) {
-  .university-name {
-    font-size: 0.90rem;
-    letter-spacing: 0.20em;
-  }
-}
+/* No shimmer pseudo-elements */
+.university-name::before { display: none; }
+.university-name::after  { display: none; }
 
 body.dark-mode .university-name {
   color: var(--dk-text);
-  text-shadow: 0 0 30px rgba(255, 255, 255, 0.12);
-}
-body.dark-mode .university-name::after {
-  background: linear-gradient(90deg, var(--br-light), var(--gold));
 }
 
+/* ── Hero orbs ── */
 .hero-orb { position: absolute; border-radius: 50%; pointer-events: none; filter: blur(70px); animation: orbFloat 12s ease-in-out infinite; will-change: transform; }
 .hero-orb-1 { width: clamp(280px,44vw,580px); height: clamp(280px,44vw,580px); background: radial-gradient(circle, rgba(166,124,82,0.20) 0%, transparent 70%); top: -10%; right: -14%; }
 .hero-orb-2 { width: clamp(180px,28vw,380px); height: clamp(180px,28vw,380px); background: radial-gradient(circle, rgba(201,168,76,0.14) 0%, transparent 70%); bottom: 5%; left: -10%; animation-delay: -5s; animation-duration: 16s; }
@@ -709,14 +706,31 @@ body.dark-mode .university-name::after {
 .hs-hero-tagline { font-size: clamp(0.82rem,1.7vw,1.05rem); font-weight: 500; color: var(--tx-muted); letter-spacing: 2px; margin-bottom: 10px; }
 .hs-hero-sub { font-size: clamp(0.88rem,1.5vw,1rem); color: var(--tx-muted); max-width: 520px; margin: 0 auto clamp(22px,3.5vw,36px); line-height: 1.7; opacity: 0.85; }
 
-.hero-cta-row { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: clamp(32px,4.5vw,56px); }
+/* ══════════ CTA ROW – ALWAYS ONE LINE ══════════ */
+.hero-cta-row {
+  display: flex;
+  flex-direction: row;           /* force horizontal always */
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 2vw, 14px);
+  flex-wrap: nowrap;             /* never wrap to second line */
+  margin-bottom: clamp(32px, 4.5vw, 56px);
+}
+
 .hero-cta-primary {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 13px 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: clamp(10px, 1.8vw, 13px) clamp(18px, 3vw, 30px);
   background: linear-gradient(135deg, var(--br), var(--br-deep));
-  color: #fff; text-decoration: none;
+  color: #fff;
+  text-decoration: none;
   border-radius: var(--r-full);
-  font-size: 0.93rem; font-weight: 600; letter-spacing: 0.2px;
+  font-size: clamp(0.78rem, 2vw, 0.93rem);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  flex-shrink: 0;
   box-shadow: 0 8px 28px rgba(166,124,82,0.32);
   transition: transform 0.32s var(--hs-ease), box-shadow 0.32s ease;
 }
@@ -725,11 +739,17 @@ body.dark-mode .university-name::after {
 .hero-cta-primary:hover i { transform: translateX(4px); }
 
 .hero-cta-secondary {
-  display: inline-flex; align-items: center;
-  padding: 12px 26px;
-  border: 1.5px solid var(--border-l); border-radius: var(--r-full);
-  color: var(--tx-mid); text-decoration: none;
-  font-size: 0.93rem; font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  padding: clamp(9px, 1.6vw, 12px) clamp(16px, 2.5vw, 26px);
+  border: 1.5px solid var(--border-l);
+  border-radius: var(--r-full);
+  color: var(--tx-mid);
+  text-decoration: none;
+  font-size: clamp(0.78rem, 2vw, 0.93rem);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.28s ease;
 }
 .hero-cta-secondary:hover { border-color: var(--br); color: var(--br); background: rgba(166,124,82,0.06); transform: translateY(-2px); }
@@ -1304,15 +1324,29 @@ body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { backgrou
 }
 
 @media (max-width: 767px) {
-  .hs-hero { padding-top: clamp(20px,3vh,40px); }
+  /* Hero – small top padding only, no giant gap */
+  .hs-hero {
+    padding-top: clamp(20px, 4vh, 40px) !important;
+    padding-bottom: clamp(40px, 6vh, 70px) !important;
+  }
+
+  /* University name – keep it big and readable on phones */
+  .university-name {
+    font-size: clamp(0.82rem, 4vw, 1.1rem);
+    letter-spacing: 0.24em;
+  }
+
+  /* Stats */
   .hero-stats { max-width: 340px; padding: 14px 12px; }
   .stat-number { font-size: clamp(1.2rem, 5vw, 1.6rem); }
   .stat-label { font-size: 0.6rem; letter-spacing: 0; }
+
+  /* Gallery */
   .hs-gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .events-gallery { grid-template-columns: repeat(2, 1fr); }
   .scope-cards { grid-template-columns: 1fr; }
-  .hero-cta-row { flex-direction: column; align-items: stretch; padding: 0 20px; }
-  .hero-cta-primary, .hero-cta-secondary { justify-content: center; }
+
+  /* Contact */
   .contact-card-premium { border-radius: var(--r-lg); }
   .admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
@@ -1329,7 +1363,22 @@ body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { backgrou
   .hs-gallery-grid { grid-template-columns: repeat(2,1fr); }
   .title-highlight { padding-bottom: 0.04em; }
   .title-highlight::after { height: 3px; }
-  .university-name { font-size: 0.62rem; letter-spacing: 0.18em; }
+
+  /* University name – LARGE on small phones, same style as desktop */
+  .university-name {
+    font-size: clamp(0.78rem, 3.8vw, 1rem);
+    letter-spacing: 0.20em;
+  }
+
+  /* CTA buttons – stay side by side, shrink comfortably */
+  .hero-cta-primary {
+    padding: 10px 16px;
+    font-size: 0.76rem;
+  }
+  .hero-cta-secondary {
+    padding: 9px 14px;
+    font-size: 0.76rem;
+  }
 }
 
 @media (max-width: 360px) {
@@ -1342,6 +1391,23 @@ body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { backgrou
   .ham-btn { width: 36px; height: 36px; }
   .hs-gallery-grid { grid-template-columns: 1fr; }
   .hero-stats { max-width: 280px; }
+
+  /* University name – still clearly visible on tiny phones */
+  .university-name {
+    font-size: 0.76rem;
+    letter-spacing: 0.16em;
+  }
+
+  /* CTA – absolute minimum */
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    padding: 9px 12px;
+    font-size: 0.72rem;
+  }
+
+  .hero-cta-row {
+    gap: 7px;
+  }
 }
 
 @media (min-width: 992px) {
@@ -1361,7 +1427,8 @@ body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { backgrou
 
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  .hero-orb, .badge-dot, .title-highlight::after, .scroll-wheel, .contact-card-band { animation: none !important; }
+  .hero-orb, .badge-dot, .title-highlight::after, .scroll-wheel,
+  .contact-card-band, .university-name::before { animation: none !important; }
   .title-highlight::after { transform: scaleX(1); }
   * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
