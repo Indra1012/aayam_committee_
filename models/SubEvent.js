@@ -34,10 +34,10 @@ const subEventSchema = new mongoose.Schema(
     },
 
     // ── Day / Date / Time ──
-    dayNumber: { type: Number, default: null },     // e.g. 1, 2, 3
-    eventDate: { type: Date, default: null },        // actual date
-    startTime: { type: String, default: "" },        // "09:00 AM"
-    endTime:   { type: String, default: "" },        // "11:00 AM"
+    dayNumber: { type: Number, default: null },
+    eventDate: { type: Date, default: null },
+    startTime: { type: String, default: "" },
+    endTime:   { type: String, default: "" },
 
     // ── Capacity ──
     maxParticipants: { type: Number, default: null },
@@ -57,6 +57,9 @@ const subEventSchema = new mongoose.Schema(
     // ── Toggles ──
     requirePaymentScreenshot: { type: Boolean, default: false },
     enableTeamMembers: { type: Boolean, default: false },
+
+    // ── External registration link ──
+    externalRegistrationLink: { type: String, default: "" },
   },
   { timestamps: true }
 );

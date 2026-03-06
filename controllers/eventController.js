@@ -477,6 +477,10 @@ exports.deleteDocument = async (req, res) => {
    SUBEVENT CRUD (ADMIN)
 ================================= */
 
+/* =================================
+   SUBEVENT CRUD (ADMIN)
+================================= */
+
 exports.createSubEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -506,6 +510,7 @@ exports.createSubEvent = async (req, res) => {
       posterImage,
       enableTeamMembers: false,
       requirePaymentScreenshot: false,
+      externalRegistrationLink: req.body.externalRegistrationLink || "",  // ← ADDED
     });
 
     res.redirect(`/events/${eventId}`);
@@ -533,6 +538,7 @@ exports.updateSubEvent = async (req, res) => {
       eventDate: req.body.eventDate || null,
       startTime: req.body.startTime || "",
       endTime: req.body.endTime || "",
+      externalRegistrationLink: req.body.externalRegistrationLink || "",  // ← ADDED
     };
 
     if (files.qrImage)     updateData.qrImage     = files.qrImage[0].path;

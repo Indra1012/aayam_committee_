@@ -126,11 +126,21 @@
                 <% } %>
 
                 <!-- Register button -->
+                <!-- Register button -->
                 <% var isFull2 = sub.maxParticipants && sub.registrationCount >= sub.maxParticipants; %>
                 <% if (isFull2) { %>
                   <button disabled style="padding:9px 22px;border-radius:var(--r-full);background:rgba(166,124,82,0.08);border:1.5px solid var(--border-l);font-size:0.88rem;font-weight:600;color:var(--tx-muted);cursor:not-allowed;">
                     Registrations Closed
                   </button>
+                <% } else if (sub.externalRegistrationLink) { %>
+                  
+                    href="<%= sub.externalRegistrationLink %>"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn-register"
+                    style="display:inline-flex;align-items:center;gap:8px;">
+                    <i class="bi bi-box-arrow-up-right"></i> Register via Google Form
+                  </a>
                 <% } else { %>
                   <a href="/register/<%= sub._id %>" class="btn-register">
                     Register Now <i class="bi bi-arrow-right"></i>

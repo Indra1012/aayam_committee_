@@ -145,7 +145,7 @@
   <!-- ═══════════════════════════════
        SECTION 2 — ADD NEW SUBEVENT
   ════════════════════════════════ -->
-  <div class="edit-section-card" data-aos="fade-up" style="border-left:4px solid var(--br);">
+<div class="edit-section-card" data-aos="fade-up" style="border-left:4px solid var(--br);">
     <div class="edit-section-header">
       <div class="edit-section-icon" style="background:rgba(166,124,82,0.15);">➕</div>
       <div>
@@ -226,6 +226,21 @@
           <label class="form-label-custom">Sub-Event Poster <span style="font-weight:400;color:var(--tx-muted);font-size:0.75rem;">(if no QR needed)</span></label>
           <input type="file" name="posterImage" class="form-control-custom" accept="image/*">
         </div>
+
+        <!-- ── NEW: External Registration Link ── -->
+        <div class="edit-field-group" style="grid-column:1/-1;">
+          <label class="form-label-custom">
+            Google Form / Registration Link
+            <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(optional — redirects users to external form)</span>
+          </label>
+          <input
+            type="url"
+            name="externalRegistrationLink"
+            class="form-control-custom"
+            placeholder="https://forms.google.com/...">
+        </div>
+        <!-- ── END NEW ── -->
+
       </div>
 
       <button type="submit" class="btn-register" style="margin-top:6px;">
