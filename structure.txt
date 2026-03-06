@@ -164,6 +164,7 @@ C:.
     +---events
     |       edit.ejs
     |       index.ejs
+    |       register.ejs
     |       register-success.ejs
     |       register.ejs
     |       show.ejs

@@ -5,7 +5,7 @@
     <!-- Banner -->
     <% if (event.bannerImage) { %>
       <div class="event-detail-banner" data-aos="fade-down" style="position:relative;overflow:hidden;border-radius:var(--r-lg);margin-bottom:32px;">
-        <img src="<%= event.bannerImage %>" alt="<%= event.title %>" style="width:100%;max-height:420px;object-fit:cover;display:block;">
+        <img src="<%= imgUrl(event.bannerImage) %>" alt="<%= event.title %>" style="width:100%;max-height:420px;object-fit:cover;display:block;">
         <% if (isPast) { %>
           <div style="position:absolute;top:16px;right:16px;">
             <span class="badge-completed" style="font-size:0.8rem;padding:6px 14px;">Completed</span>
@@ -28,7 +28,7 @@
           <i class="bi bi-pencil-square"></i> Edit Event
         </a>
         <form action="/events/toggle-visibility/<%= event._id %>" method="POST" style="margin:0;">
-          <button class="<%= event.isPublic ? 'btn-admin-warn' : 'btn-register' %>" style="font-size:0.82rem;">
+          <button type="submit" class="<%= event.isPublic ? 'btn-admin-warn' : 'btn-register' %>" style="font-size:0.82rem;">
             <%= event.isPublic ? '🔒 Make Private' : '🌐 Make Public' %>
           </button>
         </form>
@@ -136,7 +136,7 @@
                     </div>
                     <% if (sub.posterImage && !sub.qrImage) { %>
                       <div style="margin-top:12px;border-top:1px solid var(--border-l);padding-top:12px;">
-                        <img src="<%= sub.posterImage %>" alt="<%= sub.title %> Poster" style="max-height:200px;border-radius:var(--r-md);border:1px solid var(--border-l);">
+                        <img src="<%= imgUrl(sub.posterImage) %>" alt="<%= sub.title %> Poster" style="max-height:200px;border-radius:var(--r-md);border:1px solid var(--border-l);">
                       </div>
                     <% } %>
                   </div>
@@ -166,31 +166,36 @@
       <% if (event.galleryImages && event.galleryImages.length > 0) { %>
         <div class="gallery-grid-new">
           <% event.galleryImages.forEach(function(img, i) { %>
+            <%
+              var hasName    = img.speakerName && img.speakerName.trim() !== '';
+              var hasDetail  = img.detail      && img.detail.trim()      !== '';
+              var hasCaption = hasName || hasDetail;
+            %>
             <div class="gallery-item-new" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
 
-              <!-- Image wrapper — fixed ratio, image always fully visible -->
+              <!-- Image wrapper — padding-bottom trick = reliable 4:3 -->
               <div class="gallery-img-wrap">
                 <img
-                  src="<%= img.url %>"
-                  alt="<%= img.speakerName || 'Gallery image ' + (i+1) %>"
+                  src="<%= imgUrl(img.url) %>"
+                  alt="<%= hasName ? img.speakerName.trim() : ('Gallery image ' + (i+1)) %>"
                   class="gallery-img-actual"
                   loading="lazy"
                   onerror="this.parentElement.parentElement.style.display='none'"
                 >
                 <% if (isAdmin) { %>
                   <form action="/events/<%= event._id %>/gallery/<%= img._id %>/delete" method="POST"
-                    style="position:absolute;top:7px;right:7px;margin:0;"
+                    style="position:absolute;top:7px;right:7px;margin:0;z-index:2;"
                     onsubmit="return confirm('Remove this image?')">
                     <button type="submit" class="gal-del-btn"><i class="bi bi-x-lg"></i></button>
                   </form>
                 <% } %>
               </div>
 
-              <!-- Caption below image — only when data exists -->
-              <% if (img.speakerName || img.detail) { %>
+              <!-- Caption — ONLY when text actually exists, never an empty box -->
+              <% if (hasCaption) { %>
                 <div class="gallery-caption-below">
-                  <% if (img.speakerName) { %><div class="gcap-name"><%= img.speakerName %></div><% } %>
-                  <% if (img.detail) { %><div class="gcap-detail"><%= img.detail %></div><% } %>
+                  <% if (hasName) { %><div class="gcap-name"><%= img.speakerName.trim() %></div><% } %>
+                  <% if (hasDetail) { %><div class="gcap-detail"><%= img.detail.trim() %></div><% } %>
                 </div>
               <% } %>
 
@@ -205,21 +210,34 @@
         </div>
       <% } %>
 
+      <!-- Admin upload form -->
       <% if (isAdmin) { %>
-        <form action="/events/<%= event._id %>/gallery" method="POST" enctype="multipart/form-data" class="admin-add-form mt-4">
-          <div class="section-label" style="margin-bottom:12px;">Upload Gallery Images</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-            <div>
-              <label class="form-label-custom">Speaker / Name <span style="font-weight:400;color:var(--tx-muted);">(optional)</span></label>
-              <input type="text" name="speakerName" class="form-control" placeholder="e.g. Dr. Raj Mehta">
+        <form action="/events/<%= event._id %>/gallery" method="POST" enctype="multipart/form-data" class="admin-gallery-upload-form mt-4">
+          <div class="section-label" style="margin-bottom:16px;"><i class="bi bi-cloud-upload"></i> Upload Gallery Images</div>
+
+          <div class="gallery-upload-fields">
+            <div class="gup-field">
+              <label class="gup-label">Speaker / Person Name <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+              <input type="text" name="speakerName" class="form-control-custom" placeholder="e.g. Dr. Raj Mehta">
             </div>
-            <div>
-              <label class="form-label-custom">Detail <span style="font-weight:400;color:var(--tx-muted);">(optional)</span></label>
-              <input type="text" name="detail" class="form-control" placeholder="e.g. Day 1 · AI Session">
+            <div class="gup-field">
+              <label class="gup-label">Caption / Detail <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+              <input type="text" name="detail" class="form-control-custom" placeholder="e.g. Day 1 · AI Workshop">
             </div>
           </div>
-          <input type="file" name="galleryImages" multiple accept="image/*" class="form-control mb-3" required>
-          <button type="submit" class="btn-register">➕ Upload Images</button>
+
+          <div class="gup-file-area" onclick="document.getElementById('galleryFileInput').click()">
+            <div class="gup-file-icon">📷</div>
+            <div class="gup-file-label">Click to select images</div>
+            <div class="gup-file-hint">JPG, PNG, WEBP · Multiple files allowed · Max 15</div>
+            <input type="file" id="galleryFileInput" name="galleryImages" multiple accept="image/*"
+              style="display:none;" required onchange="showGalleryFiles(this)">
+            <div id="galleryFileNames" style="margin-top:10px;font-size:0.8rem;color:var(--br);font-weight:600;"></div>
+          </div>
+
+          <button type="submit" class="btn-register" style="margin-top:14px;">
+            <i class="bi bi-cloud-upload"></i> Upload Images
+          </button>
         </form>
       <% } %>
     </div>
@@ -268,7 +286,9 @@
               <div class="person-item">
                 <div>
                   <div class="person-name"><%= doc.title %></div>
-                  <% if (!doc.isPublic && isAdmin) { %><span style="font-size:0.72rem;color:#b8860b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Admin Only</span><% } %>
+                  <% if (!doc.isPublic && isAdmin) { %>
+                    <span style="font-size:0.72rem;color:#b8860b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Admin Only</span>
+                  <% } %>
                 </div>
                 <div style="display:flex;gap:8px;align-items:center;">
                   <a href="<%= doc.file %>" target="_blank" class="btn-details" style="font-size:0.82rem;padding:6px 14px;">📄 View</a>
@@ -304,7 +324,7 @@
       <% } %>
     </div>
 
-    <!-- ═══ REVIEWS ═══ -->
+    <!-- ═══ REVIEWS (past events only) ═══ -->
     <% if (isPast) { %>
       <div class="detail-section" data-aos="fade-up">
         <h2 class="detail-section-title">⭐ Event Reviews</h2>
@@ -338,6 +358,9 @@
 </div>
 
 <style>
+/* ── Page wrapper ── */
+.event-detail-content { max-width:900px; margin:0 auto; }
+
 /* ── Description body ── */
 .event-description-body { font-size:clamp(0.95rem,1.5vw,1.08rem);color:var(--tx-mid);line-height:1.9;max-width:780px; }
 .event-description-body p { margin-bottom:14px; }
@@ -348,16 +371,43 @@
 body.dark-mode .event-description-body { color:var(--dk-muted); }
 body.dark-mode .event-description-body strong { color:var(--dk-text); }
 
-/* ══════════════════════════════
-   GALLERY — Fixed & Working
-══════════════════════════════ */
+/* ── Sections ── */
+.detail-section { margin-bottom:38px;padding-bottom:32px;border-bottom:1px solid var(--border-l); }
+.detail-section:last-child { border-bottom:none; }
+.detail-section-title { font-family:var(--font-display);font-size:1.15rem;font-weight:800;color:var(--tx);margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid rgba(166,124,82,0.18); }
+
+/* ── Person / doc row ── */
+.person-item { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);margin-bottom:10px;flex-wrap:wrap; }
+.person-name { font-weight:700;font-size:0.95rem;color:var(--tx); }
+.person-email { font-size:0.8rem;color:var(--tx-muted);margin-top:2px; }
+
+/* ── Reviews ── */
+.review-card { background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);padding:16px 18px;margin-bottom:12px; }
+.review-name { font-weight:700;font-size:0.9rem;color:var(--br);margin-bottom:6px; }
+.review-body { font-size:0.9rem;color:var(--tx-mid);line-height:1.7;margin:0; }
+
+/* ── Empty state ── */
+.gallery-empty { text-align:center;padding:40px 20px;background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-lg);margin-bottom:20px; }
+.gallery-empty-icon { font-size:2.5rem;margin-bottom:10px;opacity:0.5; }
+.gallery-empty p { color:var(--tx-muted);font-size:0.92rem;margin:0; }
+
+/* ── Generic admin form box ── */
+.admin-add-form { background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-md);padding:18px 20px; }
+
+body.dark-mode .person-item,
+body.dark-mode .review-card { background:var(--dk-surface);border-color:var(--border-d); }
+body.dark-mode .person-name { color:var(--dk-text); }
+body.dark-mode .review-name { color:var(--br-light); }
+
+/* ══════════════════════════════════════
+   GALLERY GRID
+══════════════════════════════════════ */
 .gallery-grid-new {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 10px;
 }
-
 .gallery-item-new {
   display: flex;
   flex-direction: column;
@@ -367,73 +417,113 @@ body.dark-mode .event-description-body strong { color:var(--dk-text); }
   background: var(--cream-alt);
   transition: box-shadow 0.24s ease, transform 0.24s ease;
 }
-
 .gallery-item-new:hover {
   box-shadow: 0 6px 24px rgba(166,124,82,0.14);
   transform: translateY(-2px);
 }
 
-/* Key fix: wrapper uses padding-bottom trick for reliable aspect ratio */
+/* padding-bottom trick — works in all browsers, reliable 4:3 */
 .gallery-img-wrap {
   position: relative;
   width: 100%;
-  padding-bottom: 75%; /* 4:3 ratio */
+  padding-bottom: 75%;
   overflow: hidden;
   background: rgba(166,124,82,0.06);
   flex-shrink: 0;
 }
-
-/* Image fills the wrapper completely */
 .gallery-img-actual {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   object-fit: cover;
   display: block;
   transition: transform 0.38s ease;
 }
+.gallery-item-new:hover .gallery-img-actual { transform: scale(1.04); }
 
-.gallery-item-new:hover .gallery-img-actual {
-  transform: scale(1.04);
-}
-
-/* Admin delete button — positioned inside wrapper */
+/* Admin delete button */
 .gal-del-btn {
-  position: relative;
-  z-index: 2;
-  width: 28px;
-  height: 28px;
+  width: 28px; height: 28px;
   border-radius: 50%;
   background: rgba(0,0,0,0.60);
-  border: none;
-  color: #fff;
-  font-size: 0.65rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: none; color: #fff;
+  font-size: 0.65rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
   backdrop-filter: blur(4px);
   transition: background 0.2s;
   padding: 0;
 }
 .gal-del-btn:hover { background: #c0392b; }
 
-/* Caption below — only rendered when data exists */
+/* Caption — only rendered when text exists, no empty box ever */
 .gallery-caption-below {
-  padding: 9px 12px 11px;
+  padding: 10px 13px 12px;
   border-top: 1px solid var(--border-l);
   background: var(--cream-alt);
 }
-.gcap-name { font-size:0.83rem;font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:2px; }
-.gcap-detail { font-size:0.73rem;color:var(--tx-muted);line-height:1.4; }
+.gcap-name {
+  font-family: var(--font-display);
+  font-size: 0.84rem; font-weight: 700;
+  color: var(--tx); line-height: 1.3; margin-bottom: 2px;
+}
+.gcap-detail {
+  font-size: 0.73rem; color: var(--tx-muted);
+  line-height: 1.4; font-weight: 500;
+}
 
-body.dark-mode .gallery-item-new { background:var(--dk-surface);border-color:var(--border-d); }
+body.dark-mode .gallery-item-new      { background:var(--dk-surface);border-color:var(--border-d); }
 body.dark-mode .gallery-caption-below { background:var(--dk-surface);border-color:var(--border-d); }
-body.dark-mode .gcap-name { color:var(--dk-text); }
+body.dark-mode .gcap-name   { color:var(--dk-text); }
 body.dark-mode .gcap-detail { color:var(--dk-muted); }
 
-@media (max-width:900px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr);gap:12px; } }
-@media (max-width:480px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr);gap:8px; } .gcap-name{font-size:0.76rem;} .gcap-detail{font-size:0.68rem;} }
+@media (max-width:900px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr); gap:12px; } }
+@media (max-width:480px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr); gap:8px; } .gcap-name{font-size:0.76rem;} .gcap-detail{font-size:0.68rem;} }
+
+/* ══════════════════════════════════════
+   GALLERY UPLOAD FORM
+══════════════════════════════════════ */
+.admin-gallery-upload-form {
+  background: var(--cream-alt);
+  border: 1.5px dashed rgba(166,124,82,0.30);
+  border-radius: var(--r-lg);
+  padding: clamp(18px,2.5vw,28px);
+}
+.gallery-upload-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+@media (max-width:540px) { .gallery-upload-fields { grid-template-columns:1fr; } }
+
+.gup-label {
+  display: block;
+  font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--br); margin-bottom: 6px;
+}
+.gup-file-area {
+  border: 2px dashed rgba(166,124,82,0.32);
+  border-radius: var(--r-md);
+  padding: 22px 16px; text-align: center;
+  cursor: pointer;
+  transition: border-color 0.22s, background 0.22s;
+  background: rgba(166,124,82,0.02);
+}
+.gup-file-area:hover { border-color: var(--br); background: rgba(166,124,82,0.05); }
+.gup-file-icon  { font-size:1.8rem; margin-bottom:6px; opacity:0.55; }
+.gup-file-label { font-size:0.88rem; font-weight:600; color:var(--tx-mid); margin-bottom:3px; }
+.gup-file-hint  { font-size:0.75rem; color:var(--tx-muted); }
+
+body.dark-mode .admin-gallery-upload-form { background:var(--dk-surface); }
 </style>
+
+<script>
+function showGalleryFiles(input) {
+  var el = document.getElementById('galleryFileNames');
+  if (!el || !input.files.length) return;
+  var names = Array.from(input.files).map(function(f){ return f.name; }).join(', ');
+  el.textContent = '✓ ' + input.files.length + ' file(s) selected: ' + names;
+  input.closest('.gup-file-area').style.borderColor = 'var(--br)';
+}
+</script>
