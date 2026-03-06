@@ -12,6 +12,21 @@ function parseTime12(str) {
   return str.trim();
 }
 
+/* ── Helper: convert "09:30 AM" / "12:00 PM" etc. → total minutes (0–1439) for sorting ── */
+function timeToMinutes(str) {
+  if (!str || str.trim() === "") return 9999; // no time → push to end
+  const match = str.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return 9999;
+  let hours   = parseInt(match[1], 10);
+  const mins  = parseInt(match[2], 10);
+  const ampm  = match[3].toUpperCase();
+  if (ampm === "AM") {
+    if (hours === 12) hours = 0;          // 12:xx AM → 0 hrs
+  } else {
+    if (hours !== 12) hours += 12;        // 1–11 PM  → add 12
+  }
+  return hours * 60 + mins;
+}
 
 /* ── Helper: fix image URL (handle old local paths) ── */
 function fixImageUrl(url) {
@@ -19,6 +34,28 @@ function fixImageUrl(url) {
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
   if (!url.startsWith("/")) return "/" + url;
   return url;
+}
+
+/* ── Helper: group & sort subEvents by dayNumber then by startTime ── */
+function groupSubEventsByDay(subEvents) {
+  // Sort: primary = dayNumber (nulls last), secondary = startTime minutes
+  const sorted = [...subEvents].sort((a, b) => {
+    const dayA = a.dayNumber != null ? a.dayNumber : Infinity;
+    const dayB = b.dayNumber != null ? b.dayNumber : Infinity;
+    if (dayA !== dayB) return dayA - dayB;
+    return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+  });
+
+  const dayMap = {};
+  for (const sub of sorted) {
+    const key = sub.dayNumber || 0;
+    if (!dayMap[key]) dayMap[key] = [];
+    dayMap[key].push(sub);
+  }
+
+  return Object.keys(dayMap)
+    .sort((a, b) => Number(a) - Number(b))
+    .map(k => ({ day: Number(k), subEvents: dayMap[k] }));
 }
 
 
@@ -34,8 +71,6 @@ exports.getEventsPage = async (req, res) => {
     );
 
     // ── ONE-TIME MIGRATION: fix legacy events with null/missing isPublic ──
-    // This runs on every page load but only affects documents that still need fixing.
-    // Cost is negligible once all records are fixed (updateMany with no matches is fast).
     await Event.updateMany(
       { isPublic: { $exists: false } },
       { $set: { isPublic: true } }
@@ -81,7 +116,6 @@ exports.getEventDetail = async (req, res) => {
     const isPast  = event.type === "past";
     const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "superadmin");
 
-    // ── FIXED: use strict === false so null/undefined defaults to PUBLIC ──
     if (event.isPublic === false && !isAdmin) {
       return res.render("events/private", { event });
     }
@@ -90,17 +124,16 @@ exports.getEventDetail = async (req, res) => {
       ? await Review.find({ event: event._id }).sort({ createdAt: -1 }).lean()
       : [];
 
-    const subEvents = await SubEvent.find({ eventId: event._id }).sort({ dayNumber: 1, startTime: 1 }).lean();
+    // Fetch all subevents, then sort by dayNumber + startTime in JS
+    const subEventsRaw = await SubEvent.find({ eventId: event._id }).lean();
+    const subEvents = [...subEventsRaw].sort((a, b) => {
+      const dayA = a.dayNumber != null ? a.dayNumber : Infinity;
+      const dayB = b.dayNumber != null ? b.dayNumber : Infinity;
+      if (dayA !== dayB) return dayA - dayB;
+      return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+    });
 
-    const dayMap = {};
-    for (const sub of subEvents) {
-      const key = sub.dayNumber || 0;
-      if (!dayMap[key]) dayMap[key] = [];
-      dayMap[key].push(sub);
-    }
-    const groupedSubEvents = Object.keys(dayMap)
-      .sort((a, b) => Number(a) - Number(b))
-      .map(k => ({ day: Number(k), subEvents: dayMap[k] }));
+    const groupedSubEvents = groupSubEventsByDay(subEvents);
 
     res.render("events/show", { event, isPast, reviews, subEvents, groupedSubEvents });
   } catch (error) {
@@ -121,23 +154,24 @@ exports.getSubEventsPage = async (req, res) => {
     if (!event) return res.redirect("/events");
     if (event.type === "past") return res.redirect(`/events/${event._id}`);
 
-    const subEvents = await SubEvent.find({ eventId: event._id }).sort({ dayNumber: 1, startTime: 1 }).lean();
+    // Fetch raw, enrich with registrationCount + fix image URLs
+    const subEventsRaw = await SubEvent.find({ eventId: event._id }).lean();
 
-    for (let sub of subEvents) {
+    for (let sub of subEventsRaw) {
       sub.registrationCount = await Registration.countDocuments({ subEventId: sub._id });
-      if (sub.qrImage) sub.qrImage = fixImageUrl(sub.qrImage);
+      if (sub.qrImage)     sub.qrImage     = fixImageUrl(sub.qrImage);
       if (sub.posterImage) sub.posterImage = fixImageUrl(sub.posterImage);
     }
 
-    const dayMap = {};
-    for (const sub of subEvents) {
-      const key = sub.dayNumber || 0;
-      if (!dayMap[key]) dayMap[key] = [];
-      dayMap[key].push(sub);
-    }
-    const groupedSubEvents = Object.keys(dayMap)
-      .sort((a, b) => Number(a) - Number(b))
-      .map(k => ({ day: Number(k), subEvents: dayMap[k] }));
+    // Sort by dayNumber then startTime
+    const subEvents = [...subEventsRaw].sort((a, b) => {
+      const dayA = a.dayNumber != null ? a.dayNumber : Infinity;
+      const dayB = b.dayNumber != null ? b.dayNumber : Infinity;
+      if (dayA !== dayB) return dayA - dayB;
+      return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+    });
+
+    const groupedSubEvents = groupSubEventsByDay(subEvents);
 
     res.render("events/subevents", { event, subEvents, groupedSubEvents });
   } catch (error) {
@@ -166,7 +200,6 @@ exports.addEvent = async (req, res) => {
       endDate,
       bannerImage: req.file.path,
       registrationLink: registrationLink ? registrationLink.trim() : "",
-      // ── FIXED: default to true if not explicitly "false" ──
       isPublic: isPublic !== "false",
     });
 
@@ -188,10 +221,17 @@ exports.getEditEvent = async (req, res) => {
 
     event.bannerImage = fixImageUrl(event.bannerImage);
 
-    const subEvents = await SubEvent.find({ eventId: event._id }).sort({ dayNumber: 1, startTime: 1 }).lean();
+    // Sort subevents by dayNumber + startTime for the edit page too
+    const subEventsRaw = await SubEvent.find({ eventId: event._id }).lean();
+    const subEvents = [...subEventsRaw].sort((a, b) => {
+      const dayA = a.dayNumber != null ? a.dayNumber : Infinity;
+      const dayB = b.dayNumber != null ? b.dayNumber : Infinity;
+      if (dayA !== dayB) return dayA - dayB;
+      return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+    });
 
     subEvents.forEach(sub => {
-      if (sub.qrImage) sub.qrImage = fixImageUrl(sub.qrImage);
+      if (sub.qrImage)     sub.qrImage     = fixImageUrl(sub.qrImage);
       if (sub.posterImage) sub.posterImage = fixImageUrl(sub.posterImage);
     });
 
@@ -218,7 +258,6 @@ exports.updateEvent = async (req, res) => {
       startDate,
       endDate,
       registrationLink: registrationLink ? registrationLink.trim() : "",
-      // ── FIXED: default to true unless explicitly sent as "false" ──
       isPublic: req.body.isPublic !== "false",
     };
 
@@ -240,7 +279,6 @@ exports.toggleEventVisibility = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
     if (!event) return res.redirect("/events");
-    // ── FIXED: treat null/undefined as true (public) before toggling ──
     event.isPublic = event.isPublic === false ? true : false;
     await event.save();
     res.redirect(`/events/edit/${req.params.id}`);
@@ -257,7 +295,6 @@ exports.toggleEventVisibility = async (req, res) => {
 exports.deleteEvent = async (req, res) => {
   try {
     const eventId = req.params.id;
-    // Cascade delete subevents and their registrations
     const subEvents = await SubEvent.find({ eventId }).lean();
     for (const sub of subEvents) {
       await Registration.deleteMany({ subEventId: sub._id });
@@ -477,10 +514,6 @@ exports.deleteDocument = async (req, res) => {
    SUBEVENT CRUD (ADMIN)
 ================================= */
 
-/* =================================
-   SUBEVENT CRUD (ADMIN)
-================================= */
-
 exports.createSubEvent = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -510,7 +543,7 @@ exports.createSubEvent = async (req, res) => {
       posterImage,
       enableTeamMembers: false,
       requirePaymentScreenshot: false,
-      externalRegistrationLink: req.body.externalRegistrationLink || "",  // ← ADDED
+      externalRegistrationLink: req.body.externalRegistrationLink || "",
     });
 
     res.redirect(`/events/${eventId}`);
@@ -538,7 +571,7 @@ exports.updateSubEvent = async (req, res) => {
       eventDate: req.body.eventDate || null,
       startTime: req.body.startTime || "",
       endTime: req.body.endTime || "",
-      externalRegistrationLink: req.body.externalRegistrationLink || "",  // ← ADDED
+      externalRegistrationLink: req.body.externalRegistrationLink || "",
     };
 
     if (files.qrImage)     updateData.qrImage     = files.qrImage[0].path;
@@ -661,7 +694,7 @@ exports.showRegistrationForm = async (req, res) => {
       return res.redirect(`/events/${subEvent.eventId._id}`);
     }
 
-    if (subEvent.qrImage) subEvent.qrImage = fixImageUrl(subEvent.qrImage);
+    if (subEvent.qrImage)     subEvent.qrImage     = fixImageUrl(subEvent.qrImage);
     if (subEvent.posterImage) subEvent.posterImage = fixImageUrl(subEvent.posterImage);
 
     const registrationCount = await Registration.countDocuments({ subEventId });
