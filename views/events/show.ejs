@@ -5,13 +5,13 @@
     <!-- Banner -->
     <% if (event.bannerImage) { %>
       <div class="event-detail-banner" data-aos="fade-down" style="position:relative;overflow:hidden;border-radius:var(--r-lg);margin-bottom:32px;">
-        <img src="<%= imgUrl(event.bannerImage) %>" alt="<%= event.title %>" style="width:100%;max-height:420px;object-fit:cover;display:block;">
+        <img src="<%= event.bannerImage %>" alt="<%= event.title %>" style="width:100%;max-height:420px;object-fit:cover;display:block;">
         <% if (isPast) { %>
           <div style="position:absolute;top:16px;right:16px;">
             <span class="badge-completed" style="font-size:0.8rem;padding:6px 14px;">Completed</span>
           </div>
         <% } %>
-        <% if (!event.isPublic && user && (user.role === 'admin' || user.role === 'superadmin')) { %>
+        <% if (event.isPublic === false && user && (user.role === 'admin' || user.role === 'superadmin')) { %>
           <div style="position:absolute;top:16px;left:16px;">
             <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:var(--r-full);background:rgba(0,0,0,0.65);color:#ffd700;font-size:0.72rem;font-weight:700;letter-spacing:1px;border:1px solid rgba(255,215,0,0.35);backdrop-filter:blur(6px);">
               🔒 Private — Admin View
@@ -28,8 +28,8 @@
           <i class="bi bi-pencil-square"></i> Edit Event
         </a>
         <form action="/events/toggle-visibility/<%= event._id %>" method="POST" style="margin:0;">
-          <button type="submit" class="<%= event.isPublic ? 'btn-admin-warn' : 'btn-register' %>" style="font-size:0.82rem;">
-            <%= event.isPublic ? '🔒 Make Private' : '🌐 Make Public' %>
+          <button type="submit" class="<%= event.isPublic === false ? 'btn-register' : 'btn-admin-warn' %>" style="font-size:0.82rem;">
+            <%= event.isPublic === false ? '🌐 Make Public' : '🔒 Make Private' %>
           </button>
         </form>
       </div>
@@ -134,9 +134,10 @@
                         <% if (isAdmin) { %><a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem;padding:5px 12px;white-space:nowrap;"><i class="bi bi-people"></i> Registrations</a><% } %>
                       </div>
                     </div>
+                    <!-- Sub-event poster (only when no QR) -->
                     <% if (sub.posterImage && !sub.qrImage) { %>
                       <div style="margin-top:12px;border-top:1px solid var(--border-l);padding-top:12px;">
-                        <img src="<%= imgUrl(sub.posterImage) %>" alt="<%= sub.title %> Poster" style="max-height:200px;border-radius:var(--r-md);border:1px solid var(--border-l);">
+                        <img src="<%= sub.posterImage %>" alt="<%= sub.title %> Poster" style="max-height:200px;border-radius:var(--r-md);border:1px solid var(--border-l);">
                       </div>
                     <% } %>
                   </div>
@@ -173,10 +174,10 @@
             %>
             <div class="gallery-item-new" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
 
-              <!-- Image wrapper — padding-bottom trick = reliable 4:3 -->
+              <!-- Fixed 4:3 image wrapper -->
               <div class="gallery-img-wrap">
                 <img
-                  src="<%= imgUrl(img.url) %>"
+                  src="<%= img.url %>"
                   alt="<%= hasName ? img.speakerName.trim() : ('Gallery image ' + (i+1)) %>"
                   class="gallery-img-actual"
                   loading="lazy"
@@ -191,7 +192,7 @@
                 <% } %>
               </div>
 
-              <!-- Caption — ONLY when text actually exists, never an empty box -->
+              <!-- Caption — ONLY rendered when real text exists. Never an empty box. -->
               <% if (hasCaption) { %>
                 <div class="gallery-caption-below">
                   <% if (hasName) { %><div class="gcap-name"><%= img.speakerName.trim() %></div><% } %>
@@ -210,7 +211,7 @@
         </div>
       <% } %>
 
-      <!-- Admin upload form -->
+      <!-- Admin upload form — teams-page style two-column inputs -->
       <% if (isAdmin) { %>
         <form action="/events/<%= event._id %>/gallery" method="POST" enctype="multipart/form-data" class="admin-gallery-upload-form mt-4">
           <div class="section-label" style="margin-bottom:16px;"><i class="bi bi-cloud-upload"></i> Upload Gallery Images</div>
@@ -406,7 +407,7 @@ body.dark-mode .review-name { color:var(--br-light); }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  margin-bottom: 10px;
+  margin-bottom: 24px;
 }
 .gallery-item-new {
   display: flex;
@@ -422,7 +423,7 @@ body.dark-mode .review-name { color:var(--br-light); }
   transform: translateY(-2px);
 }
 
-/* padding-bottom trick — works in all browsers, reliable 4:3 */
+/* Reliable 4:3 ratio using padding-bottom trick */
 .gallery-img-wrap {
   position: relative;
   width: 100%;
@@ -441,7 +442,7 @@ body.dark-mode .review-name { color:var(--br-light); }
 }
 .gallery-item-new:hover .gallery-img-actual { transform: scale(1.04); }
 
-/* Admin delete button */
+/* Admin delete button — sits inside .gallery-img-wrap */
 .gal-del-btn {
   width: 28px; height: 28px;
   border-radius: 50%;
@@ -455,7 +456,7 @@ body.dark-mode .review-name { color:var(--br-light); }
 }
 .gal-del-btn:hover { background: #c0392b; }
 
-/* Caption — only rendered when text exists, no empty box ever */
+/* Caption — teams-page style. Only rendered when text exists. */
 .gallery-caption-below {
   padding: 10px 13px 12px;
   border-top: 1px solid var(--border-l);
@@ -480,7 +481,7 @@ body.dark-mode .gcap-detail { color:var(--dk-muted); }
 @media (max-width:480px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr); gap:8px; } .gcap-name{font-size:0.76rem;} .gcap-detail{font-size:0.68rem;} }
 
 /* ══════════════════════════════════════
-   GALLERY UPLOAD FORM
+   GALLERY UPLOAD FORM — teams-page style
 ══════════════════════════════════════ */
 .admin-gallery-upload-form {
   background: var(--cream-alt);
