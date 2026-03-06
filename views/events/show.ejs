@@ -88,6 +88,7 @@
             </a>
           </div>
         </div>
+
       <% } else if (hasSubEvents) { %>
         <div class="detail-section" data-aos="fade-up">
           <h2 class="detail-section-title"><%= isPast ? 'Sessions & Registrations' : 'Register for Sessions' %></h2>
@@ -97,8 +98,10 @@
               <a href="<%= event.registrationLink %>" target="_blank" rel="noopener noreferrer" class="btn-details" style="font-size:0.8rem;padding:6px 14px;white-space:nowrap;flex-shrink:0;">Open Form <i class="bi bi-box-arrow-up-right"></i></a>
             </div>
           <% } %>
+
           <% if (groupedSubEvents && groupedSubEvents.length > 0) { %>
             <% groupedSubEvents.forEach(function(group) { %>
+
               <% if (group.day > 0) { %>
                 <div style="display:flex;align-items:center;gap:12px;margin:22px 0 12px;" data-aos="fade-up">
                   <div style="padding:4px 16px;background:linear-gradient(135deg,var(--br),var(--br-deep));color:#fff;border-radius:var(--r-full);font-size:0.78rem;font-weight:700;letter-spacing:1px;white-space:nowrap;">
@@ -109,48 +112,94 @@
                   <div style="flex:1;height:1px;background:var(--border-l);"></div>
                 </div>
               <% } %>
+
               <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:8px;">
                 <% group.subEvents.forEach(function(sub) { %>
-                  <div style="background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);padding:16px 18px;transition:border-color 0.22s,box-shadow 0.22s;" onmouseover="this.style.borderColor='var(--br)';this.style.boxShadow='0 4px 16px rgba(166,124,82,0.10)'" onmouseout="this.style.borderColor='var(--border-l)';this.style.boxShadow='none'">
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-                      <div style="flex:1;min-width:0;">
-                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
-                          <div style="font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--tx);"><%= sub.title %></div>
+
+                  <!-- ── Compact sub-event card ── -->
+                  <div class="show-sub-card" data-aos="fade-up">
+
+                    <!-- Row 1: title + action buttons -->
+                    <div class="show-sub-top">
+                      <div class="show-sub-left">
+                        <div class="show-sub-title"><%= sub.title %></div>
+
+                        <!-- Meta pills — all on one compact row -->
+                        <div class="show-sub-pills">
                           <% if (sub.startTime || sub.endTime) { %>
-                            <span style="font-size:0.72rem;font-weight:700;padding:2px 9px;border-radius:var(--r-sm);background:rgba(201,168,76,0.12);color:#8a6914;border:1px solid rgba(201,168,76,0.24);">
-                              <i class="bi bi-clock"></i> <%= sub.startTime %><% if (sub.endTime) { %> – <%= sub.endTime %><% } %>
+                            <span class="spill spill-time">
+                              <i class="bi bi-clock"></i>
+                              <%= sub.startTime %><% if (sub.endTime) { %>&thinsp;–&thinsp;<%= sub.endTime %><% } %>
                             </span>
                           <% } %>
-                        </div>
-                        <% if (sub.description) { %><div style="font-size:0.83rem;color:var(--tx-muted);margin-bottom:8px;"><%= sub.description %></div><% } %>
-                        <div style="display:flex;gap:7px;flex-wrap:wrap;">
-                          <span style="font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:var(--r-sm);background:rgba(166,124,82,0.09);color:var(--br);"><%= sub.isGroupEvent ? '👥 Team' : '👤 Individual' %></span>
-                          <% if (sub.maxParticipants) { %><span style="font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:var(--r-sm);background:rgba(241,196,15,0.10);color:#b8860b;">Max <%= sub.maxParticipants %></span><% } %>
-                          <% if (sub.requirePaymentScreenshot) { %><span style="font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:var(--r-sm);background:rgba(39,174,96,0.09);color:#27ae60;">💳 Payment required</span><% } %>
+
+                          <% if (sub.isGroupEvent) { %>
+                            <span class="spill spill-type"><i class="bi bi-people"></i> Team&thinsp;<%= sub.minTeamSize %>–<%= sub.maxTeamSize %></span>
+                          <% } else { %>
+                            <span class="spill spill-type"><i class="bi bi-person"></i> Individual</span>
+                          <% } %>
+
+                          <% if (sub.maxParticipants) { %>
+                            <span class="spill spill-cap"><i class="bi bi-person-check"></i> Max&thinsp;<%= sub.maxParticipants %></span>
+                          <% } %>
+
+                          <% if (sub.requirePaymentScreenshot) { %>
+                            <span class="spill spill-pay"><i class="bi bi-credit-card"></i> Payment req.</span>
+                          <% } %>
+
+                          <% if (sub.externalRegistrationLink && sub.externalRegistrationLink.trim() !== '') { %>
+                            <span class="spill spill-ext"><i class="bi bi-box-arrow-up-right"></i> External Form</span>
+                          <% } %>
                         </div>
                       </div>
-                      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">
-                        <% if (!isPast) { %><a href="/register/<%= sub._id %>" class="btn-register" style="white-space:nowrap;">Register <i class="bi bi-arrow-right"></i></a><% } %>
-                        <% if (isAdmin) { %><a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem;padding:5px 12px;white-space:nowrap;"><i class="bi bi-people"></i> Registrations</a><% } %>
+
+                      <!-- Action buttons -->
+                      <div class="show-sub-actions">
+                        <% if (!isPast) { %>
+                          <% if (sub.externalRegistrationLink && sub.externalRegistrationLink.trim() !== '') { %>
+                            <a href="<%= sub.externalRegistrationLink %>" target="_blank" rel="noopener noreferrer" class="btn-register" style="white-space:nowrap;font-size:0.85rem;padding:8px 16px;">
+                              Register <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                          <% } else { %>
+                            <a href="/register/<%= sub._id %>" class="btn-register" style="white-space:nowrap;font-size:0.85rem;padding:8px 16px;">
+                              Register <i class="bi bi-arrow-right"></i>
+                            </a>
+                          <% } %>
+                        <% } %>
+                        <% if (isAdmin) { %>
+                          <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem;padding:6px 12px;white-space:nowrap;">
+                            <i class="bi bi-people"></i> Registrations
+                          </a>
+                        <% } %>
                       </div>
                     </div>
-                    <!-- Sub-event poster (only when no QR) -->
-                    <% if (sub.posterImage && !sub.qrImage) { %>
-                      <div style="margin-top:12px;border-top:1px solid var(--border-l);padding-top:12px;">
-                        <img src="<%= sub.posterImage %>" alt="<%= sub.title %> Poster" style="max-height:200px;border-radius:var(--r-md);border:1px solid var(--border-l);">
+
+                    <!-- Description (if any) -->
+                    <% if (sub.description) { %>
+                      <div class="show-sub-desc"><%= sub.description %></div>
+                    <% } %>
+
+                    <!-- Poster centred (only when no QR, or show even with QR — poster always centred) -->
+                    <% if (sub.posterImage) { %>
+                      <div class="show-sub-poster-wrap">
+                        <img src="<%= sub.posterImage %>" alt="<%= sub.title %> Poster" class="show-sub-poster-img">
                       </div>
                     <% } %>
+
                   </div>
+
                 <% }); %>
               </div>
             <% }); %>
           <% } %>
+
           <% if (!isPast && subEvents.length > 1) { %>
             <div style="margin-top:18px;">
               <a href="/events/<%= event._id %>/register" class="btn-register">Browse All Sessions <i class="bi bi-arrow-right"></i></a>
             </div>
           <% } %>
         </div>
+
       <% } else if (!isPast) { %>
         <div data-aos="fade-up" style="margin:0 0 30px;">
           <p style="color:var(--tx-muted);font-size:0.93rem;padding:14px 18px;background:rgba(166,124,82,0.05);border-radius:var(--r-md);border:1px solid var(--border-l);margin:0;">
@@ -173,8 +222,6 @@
               var hasCaption = hasName || hasDetail;
             %>
             <div class="gallery-item-new" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
-
-              <!-- Fixed 4:3 image wrapper -->
               <div class="gallery-img-wrap">
                 <img
                   src="<%= img.url %>"
@@ -191,15 +238,12 @@
                   </form>
                 <% } %>
               </div>
-
-              <!-- Caption — ONLY rendered when real text exists. Never an empty box. -->
               <% if (hasCaption) { %>
                 <div class="gallery-caption-below">
                   <% if (hasName) { %><div class="gcap-name"><%= img.speakerName.trim() %></div><% } %>
                   <% if (hasDetail) { %><div class="gcap-detail"><%= img.detail.trim() %></div><% } %>
                 </div>
               <% } %>
-
             </div>
           <% }); %>
         </div>
@@ -211,11 +255,9 @@
         </div>
       <% } %>
 
-      <!-- Admin upload form — teams-page style two-column inputs -->
       <% if (isAdmin) { %>
         <form action="/events/<%= event._id %>/gallery" method="POST" enctype="multipart/form-data" class="admin-gallery-upload-form mt-4">
           <div class="section-label" style="margin-bottom:16px;"><i class="bi bi-cloud-upload"></i> Upload Gallery Images</div>
-
           <div class="gallery-upload-fields">
             <div class="gup-field">
               <label class="gup-label">Speaker / Person Name <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
@@ -226,7 +268,6 @@
               <input type="text" name="detail" class="form-control-custom" placeholder="e.g. Day 1 · AI Workshop">
             </div>
           </div>
-
           <div class="gup-file-area" onclick="document.getElementById('galleryFileInput').click()">
             <div class="gup-file-icon">📷</div>
             <div class="gup-file-label">Click to select images</div>
@@ -235,7 +276,6 @@
               style="display:none;" required onchange="showGalleryFiles(this)">
             <div id="galleryFileNames" style="margin-top:10px;font-size:0.8rem;color:var(--br);font-weight:600;"></div>
           </div>
-
           <button type="submit" class="btn-register" style="margin-top:14px;">
             <i class="bi bi-cloud-upload"></i> Upload Images
           </button>
@@ -278,9 +318,7 @@
     <div class="detail-section" data-aos="fade-up">
       <h2 class="detail-section-title">Event Documents</h2>
       <% if (event.documents && event.documents.length > 0) { %>
-        <%
-          var visibleDocs = event.documents.filter(function(d){ return d.isPublic || isAdmin; });
-        %>
+        <% var visibleDocs = event.documents.filter(function(d){ return d.isPublic || isAdmin; }); %>
         <% if (visibleDocs.length > 0) { %>
           <% event.documents.forEach(function(doc, i) { %>
             <% if (doc.isPublic || isAdmin) { %>
@@ -401,6 +439,97 @@ body.dark-mode .person-name { color:var(--dk-text); }
 body.dark-mode .review-name { color:var(--br-light); }
 
 /* ══════════════════════════════════════
+   COMPACT SUB-EVENT CARDS (show page)
+══════════════════════════════════════ */
+.show-sub-card {
+  background: var(--cream-alt);
+  border: 1px solid var(--border-l);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition: border-color 0.22s, box-shadow 0.22s;
+}
+.show-sub-card:hover {
+  border-color: var(--br);
+  box-shadow: 0 4px 18px rgba(166,124,82,0.10);
+}
+
+/* Top row: title + actions side by side */
+.show-sub-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: clamp(12px,1.8vw,18px) clamp(14px,2vw,20px) clamp(10px,1.5vw,14px);
+  flex-wrap: wrap;
+}
+.show-sub-left { flex: 1; min-width: 0; }
+.show-sub-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.95rem,1.8vw,1.05rem);
+  color: var(--tx);
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+.show-sub-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+/* Compact pills row */
+.show-sub-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.spill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 9px;
+  border-radius: var(--r-full);
+  font-size: 0.71rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.spill-time { background: rgba(201,168,76,0.10); border-color: rgba(201,168,76,0.26); color: #8a6914; }
+.spill-type { background: rgba(166,124,82,0.08); border-color: rgba(166,124,82,0.20); color: var(--br); }
+.spill-cap  { background: rgba(166,124,82,0.08); border-color: rgba(166,124,82,0.20); color: var(--br); }
+.spill-pay  { background: rgba(39,174,96,0.08);  border-color: rgba(39,174,96,0.22); color: #27ae60; }
+.spill-ext  { background: rgba(39,174,96,0.08);  border-color: rgba(39,174,96,0.22); color: #27ae60; }
+
+/* Description */
+.show-sub-desc {
+  margin: 0 clamp(14px,2vw,20px) clamp(10px,1.5vw,14px);
+  font-size: 0.83rem;
+  color: var(--tx-muted);
+  line-height: 1.6;
+}
+
+/* Poster — always centred, no side-float */
+.show-sub-poster-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0 clamp(14px,2vw,20px) clamp(12px,2vw,18px);
+  border-top: 1px solid var(--border-l);
+  padding-top: clamp(12px,2vw,16px);
+}
+.show-sub-poster-img {
+  max-width: 320px;
+  width: 100%;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-l);
+  display: block;
+}
+
+body.dark-mode .show-sub-card { background: var(--dk-surface); border-color: var(--border-d); }
+body.dark-mode .show-sub-poster-wrap { border-color: var(--border-d); }
+
+/* ══════════════════════════════════════
    GALLERY GRID
 ══════════════════════════════════════ */
 .gallery-grid-new {
@@ -422,8 +551,6 @@ body.dark-mode .review-name { color:var(--br-light); }
   box-shadow: 0 6px 24px rgba(166,124,82,0.14);
   transform: translateY(-2px);
 }
-
-/* Reliable 4:3 ratio using padding-bottom trick */
 .gallery-img-wrap {
   position: relative;
   width: 100%;
@@ -441,8 +568,6 @@ body.dark-mode .review-name { color:var(--br-light); }
   transition: transform 0.38s ease;
 }
 .gallery-item-new:hover .gallery-img-actual { transform: scale(1.04); }
-
-/* Admin delete button — sits inside .gallery-img-wrap */
 .gal-del-btn {
   width: 28px; height: 28px;
   border-radius: 50%;
@@ -455,8 +580,6 @@ body.dark-mode .review-name { color:var(--br-light); }
   padding: 0;
 }
 .gal-del-btn:hover { background: #c0392b; }
-
-/* Caption — teams-page style. Only rendered when text exists. */
 .gallery-caption-below {
   padding: 10px 13px 12px;
   border-top: 1px solid var(--border-l);
@@ -471,18 +594,14 @@ body.dark-mode .review-name { color:var(--br-light); }
   font-size: 0.73rem; color: var(--tx-muted);
   line-height: 1.4; font-weight: 500;
 }
-
 body.dark-mode .gallery-item-new      { background:var(--dk-surface);border-color:var(--border-d); }
 body.dark-mode .gallery-caption-below { background:var(--dk-surface);border-color:var(--border-d); }
 body.dark-mode .gcap-name   { color:var(--dk-text); }
 body.dark-mode .gcap-detail { color:var(--dk-muted); }
-
 @media (max-width:900px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr); gap:12px; } }
 @media (max-width:480px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr); gap:8px; } .gcap-name{font-size:0.76rem;} .gcap-detail{font-size:0.68rem;} }
 
-/* ══════════════════════════════════════
-   GALLERY UPLOAD FORM — teams-page style
-══════════════════════════════════════ */
+/* ── Gallery upload form ── */
 .admin-gallery-upload-form {
   background: var(--cream-alt);
   border: 1.5px dashed rgba(166,124,82,0.30);
@@ -496,7 +615,6 @@ body.dark-mode .gcap-detail { color:var(--dk-muted); }
   margin-bottom: 16px;
 }
 @media (max-width:540px) { .gallery-upload-fields { grid-template-columns:1fr; } }
-
 .gup-label {
   display: block;
   font-size: 0.72rem; font-weight: 700;
@@ -515,7 +633,6 @@ body.dark-mode .gcap-detail { color:var(--dk-muted); }
 .gup-file-icon  { font-size:1.8rem; margin-bottom:6px; opacity:0.55; }
 .gup-file-label { font-size:0.88rem; font-weight:600; color:var(--tx-mid); margin-bottom:3px; }
 .gup-file-hint  { font-size:0.75rem; color:var(--tx-muted); }
-
 body.dark-mode .admin-gallery-upload-form { background:var(--dk-surface); }
 </style>
 

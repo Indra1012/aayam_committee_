@@ -1,4 +1,18 @@
 <!-- views/events/register.ejs -->
+<%
+  /* ── If this sub-event uses an external registration link, redirect immediately ── */
+  if (subEvent.externalRegistrationLink && subEvent.externalRegistrationLink.trim() !== '') {
+%>
+  <script>window.location.replace("<%= subEvent.externalRegistrationLink %>");</script>
+  <div class="container" style="text-align:center;padding:80px 20px;">
+    <div style="font-size:2rem;margin-bottom:16px;">🔗</div>
+    <p style="color:var(--tx-muted);font-size:1rem;">Redirecting to registration form…</p>
+    <a href="<%= subEvent.externalRegistrationLink %>" target="_blank" rel="noopener noreferrer" class="btn-register" style="margin-top:16px;display:inline-flex;">
+      Click here if not redirected <i class="bi bi-box-arrow-up-right"></i>
+    </a>
+  </div>
+<% } else { %>
+
 <div class="container">
 
   <!-- Back link -->
@@ -19,6 +33,7 @@
     <% if (subEvent.description) { %>
       <p class="page-subtitle"><%= subEvent.description %></p>
     <% } %>
+
     <!-- Date / time badge -->
     <% if (subEvent.startTime || subEvent.eventDate) { %>
       <div style="margin-top:10px;display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(166,124,82,0.08);border:1px solid rgba(166,124,82,0.20);border-radius:var(--r-full);">
@@ -67,18 +82,37 @@
       </div>
     <% } %>
 
-    <!-- ── QR Code / Payment info ── -->
-    <% if (subEvent.qrImage) { %>
-      <div style="background:var(--cream-alt);border:1px solid rgba(201,168,76,0.28);border-radius:var(--r-lg);padding:clamp(20px,3vw,32px);margin-bottom:26px;text-align:center;" data-aos="fade-up">
-        <div style="font-size:0.7rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--br);margin-bottom:12px;">Payment Instructions</div>
-        <p style="font-size:0.9rem;color:var(--tx-muted);margin-bottom:16px;">Scan the QR code to complete your payment, then upload the screenshot below.</p>
-        <div style="display:inline-block;padding:10px;background:#fff;border-radius:var(--r-md);box-shadow:var(--sh-sm);">
-          <img src="<%= subEvent.qrImage %>" alt="Payment QR" style="max-width:200px;display:block;">
-        </div>
-      </div>
-    <% } else if (subEvent.posterImage) { %>
-      <div style="background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-lg);padding:16px;margin-bottom:22px;text-align:center;" data-aos="fade-up">
-        <img src="<%= subEvent.posterImage %>" alt="<%= subEvent.title %>" style="max-height:280px;border-radius:var(--r-md);box-shadow:var(--sh-sm);">
+    <!-- ── Poster + QR section ── -->
+    <%
+      var hasPoster = subEvent.posterImage && subEvent.posterImage.trim() !== '';
+      var hasQR     = subEvent.qrImage     && subEvent.qrImage.trim()     !== '';
+    %>
+
+    <% if (hasPoster || hasQR) { %>
+      <div class="reg-media-block" data-aos="fade-up">
+
+        <!-- Poster — always centred -->
+        <% if (hasPoster) { %>
+          <div class="reg-poster-wrap">
+            <img src="<%= subEvent.posterImage %>" alt="<%= subEvent.title %> Poster" class="reg-poster-img">
+          </div>
+        <% } %>
+
+        <!-- QR code — shown below poster when both exist, or alone -->
+        <% if (hasQR) { %>
+          <div class="reg-qr-wrap">
+            <div style="font-size:0.7rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--br);margin-bottom:10px;">
+              Payment Instructions
+            </div>
+            <p style="font-size:0.88rem;color:var(--tx-muted);margin-bottom:16px;text-align:center;">
+              Scan the QR code to complete your payment, then upload the screenshot below.
+            </p>
+            <div style="display:inline-block;padding:10px;background:#fff;border-radius:var(--r-md);box-shadow:var(--sh-sm);">
+              <img src="<%= subEvent.qrImage %>" alt="Payment QR" style="max-width:200px;display:block;">
+            </div>
+          </div>
+        <% } %>
+
       </div>
     <% } %>
 
@@ -92,7 +126,7 @@
       <div class="form-card" data-aos="fade-up" data-aos-delay="100">
         <form id="registrationForm" action="/register/<%= subEvent._id %>" method="POST" enctype="multipart/form-data" novalidate>
 
-          <!-- ── Built-in participant fields (always shown) ── -->
+          <!-- ── Built-in participant fields ── -->
           <div style="padding:16px;background:rgba(166,124,82,0.05);border:1px solid rgba(166,124,82,0.16);border-radius:var(--r-md);margin-bottom:22px;">
             <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--br);margin-bottom:14px;">
               <i class="bi bi-person-fill"></i> Participant Details
@@ -123,7 +157,7 @@
             </div>
           </div>
 
-          <!-- ── Dynamic form fields ── -->
+          <!-- ── Dynamic form fields (only rendered if fields exist) ── -->
           <% if (subEvent.formFields && subEvent.formFields.length > 0) { %>
             <% subEvent.formFields.slice().sort((a, b) => a.order - b.order).forEach((field, fi) => { %>
 
@@ -182,13 +216,8 @@
 
               </div>
             <% }) %>
-
-          <% } else { %>
-            <div class="gallery-empty" style="padding:30px 0;margin-bottom:20px;">
-              <div class="gallery-empty-icon" style="font-size:2rem;">📋</div>
-              <p style="color:var(--tx-muted);font-size:0.9rem;">No additional form fields set up.</p>
-            </div>
           <% } %>
+          <!-- No "no fields" message — just silently omit -->
 
           <!-- ── Team Members (if enabled) ── -->
           <% if (subEvent.enableTeamMembers) { %>
@@ -249,7 +278,6 @@
       </div>
 
     <% } else { %>
-
       <!-- Full state -->
       <div class="gallery-empty" data-aos="fade-up">
         <div class="gallery-empty-icon">🔒</div>
@@ -260,20 +288,54 @@
           </a>
         <% } %>
       </div>
-
     <% } %>
 
   </div>
 </div>
-
 
 <style>
   @keyframes spin { to { transform: rotate(360deg); } }
   .checkbox-opt:has(input:checked) { border-color: var(--br); background: rgba(166,124,82,0.06); }
   .progress-fill-normal { background: linear-gradient(90deg, var(--br), var(--gold)); }
   .progress-fill-full   { background: linear-gradient(90deg, #c0392b, #e74c3c); }
-</style>
 
+  /* ── Poster + QR media block ── */
+  .reg-media-block {
+    background: var(--cream-alt);
+    border: 1px solid var(--border-l);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    margin-bottom: 26px;
+    text-align: center;
+  }
+
+  /* Poster — full width, centred */
+  .reg-poster-wrap {
+    display: flex;
+    justify-content: center;
+    padding: clamp(16px,2.5vw,24px) clamp(16px,2.5vw,24px) 0;
+  }
+  .reg-poster-img {
+    max-width: 420px;
+    width: 100%;
+    border-radius: var(--r-md);
+    box-shadow: var(--sh-sm);
+    display: block;
+  }
+
+  /* QR section below poster */
+  .reg-qr-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(18px,2.5vw,28px);
+    border-top: 1px solid var(--border-l);
+    margin-top: clamp(16px,2.5vw,24px);
+  }
+
+  body.dark-mode .reg-media-block { background: var(--dk-surface); border-color: var(--border-d); }
+  body.dark-mode .reg-qr-wrap { border-color: var(--border-d); }
+</style>
 
 <script>
   // ── Show filename after file pick ──
@@ -299,9 +361,9 @@
   }
 
   // ── Team member add ──
-  const addBtn     = document.getElementById('addMemberBtn');
-  const container  = document.getElementById('teamMembersContainer');
-  const teamError  = document.getElementById('teamError');
+  const addBtn    = document.getElementById('addMemberBtn');
+  const container = document.getElementById('teamMembersContainer');
+  const teamError = document.getElementById('teamError');
 
   if (addBtn && container) {
     const maxMembers = parseInt(addBtn.dataset.max) || 99;
@@ -330,3 +392,5 @@
     });
   }
 </script>
+
+<% } %>
