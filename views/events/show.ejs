@@ -454,13 +454,12 @@
                     👁 View
                   </a>
                   <%
-                    /* Download: append fl_attachment:true into Cloudinary URL so browser always downloads with correct filename+extension */
-                    var dlUrl = doc.file.replace('/upload/', '/upload/fl_attachment:true/');
+                    /* Download: for Cloudinary raw files, direct URL is correct — browser downloads with right extension */
                   %>
-                  <!-- <a href="<%= dlUrl %>" target="_blank" rel="noopener noreferrer"
+                  <a href="<%= doc.file %>" target="_blank" rel="noopener noreferrer"
                      class="btn-details" style="font-size:0.82rem;padding:6px 14px;">
                     ⬇ Download
-                  </a> -->
+                  </a>
                   <% if (isAdmin) { %>
                     <form action="/events/<%= event._id %>/documents/<%= i %>/delete" method="POST" onsubmit="return confirm('Delete this document?')">
                       <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>

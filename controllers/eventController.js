@@ -962,6 +962,7 @@ exports.deleteRegistration = async (req, res) => {
   }
 };
 
+
 /* ===============================
    EXPORT REGISTRATIONS CSV
 ================================ */
@@ -975,124 +976,125 @@ exports.exportRegistrationsCSV = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    const sortedFields = (subEvent.formFields || []).sort((a, b) => a.order - b.order);
+    // ── Helpers ──
+    const q  = (s) => `"${String(s || "").replace(/"/g, '""')}"`;   // wrap in CSV quotes
+    const qt = (s) => `"'${String(s || "").replace(/"/g, '""')}"`;  // force text (phones)
 
-    // ── Determine max team size across all registrations ──
-    let maxMemberCount = 0;
+    // ── Sorted custom fields ──
+    const sortedFields = (subEvent.formFields || []).slice().sort((a, b) => a.order - b.order);
+
+    // ── Fields that repeat per member ──
+    const memberCustomFields = sortedFields.filter(f => f.askForMembers && f.type !== "file");
+
+    // ── Find max member count across all registrations ──
+    let maxMembers = 0;
     if (subEvent.enableTeamMembers) {
-      registrations.forEach(reg => {
-        const count = (reg.teamMembers || []).length;
-        if (count > maxMemberCount) maxMemberCount = count;
+      registrations.forEach(r => {
+        const n = (r.teamMembers || []).length;
+        if (n > maxMembers) maxMembers = n;
       });
     }
 
-    // ── Custom fields that repeat per member ──
-    const memberCustomFields = sortedFields.filter(f => f.askForMembers && f.type !== 'file');
-
-    // ── Build header row ──
-    const headerCols = [
-      '"#"', '"Name"', '"Email"', '"Phone"',
-    ];
+    // ══════════════════════════════
+    //  BUILD HEADER ROW
+    // ══════════════════════════════
+    const headerCols = ['"#"', '"Leader Name"', '"Leader Email"', '"Leader Phone"'];
 
     // Leader custom fields
-    sortedFields.forEach(f => headerCols.push(`"${f.label.replace(/"/g, '""')}"`));
+    sortedFields.forEach(f => headerCols.push(q(f.label)));
 
-    // Team member columns (one set per member slot)
+    // One block of columns per member slot
     if (subEvent.enableTeamMembers) {
-      for (let m = 1; m <= maxMemberCount; m++) {
-        headerCols.push(`"Member ${m} Name"`);
-        headerCols.push(`"Member ${m} Email"`);
-        headerCols.push(`"Member ${m} Phone"`);
-        memberCustomFields.forEach(f => {
-          headerCols.push(`"Member ${m} ${f.label.replace(/"/g, '""')}"`);
-        });
+      for (let m = 1; m <= maxMembers; m++) {
+        headerCols.push(q(`Member ${m} — Name`));
+        headerCols.push(q(`Member ${m} — Email`));
+        headerCols.push(q(`Member ${m} — Phone`));
+        memberCustomFields.forEach(f => headerCols.push(q(`Member ${m} — ${f.label}`)));
       }
     }
 
-    headerCols.push('"Status"', '"Day"', '"Date"', '"Start Time"', '"End Time"', '"Registered At"');
+    headerCols.push('"Status"', '"Day"', '"Event Date"', '"Start Time"', '"End Time"', '"Registered At"');
 
-    // ── Build data rows ──
+    // ══════════════════════════════
+    //  BUILD DATA ROWS
+    // ══════════════════════════════
     const rows = registrations.map((reg, i) => {
       const cols = [];
 
       // Index
       cols.push(i + 1);
 
-      // Leader basics — wrap phone in = to force text in Excel
-      cols.push(`"${(reg.participantName  || '').replace(/"/g, '""')}"`);
-      cols.push(`"${(reg.participantEmail || '').replace(/"/g, '""')}"`);
-      // Force phone as text so Excel doesn't convert to scientific notation
-      cols.push(`"'${(reg.participantPhone || '').replace(/"/g, '""')}"`);
+      // Leader basics
+      cols.push(q(reg.participantName));
+      cols.push(q(reg.participantEmail));
+      cols.push(qt(reg.participantPhone));   // force text so Excel doesn't mangle phone
 
       // Leader custom field responses
       sortedFields.forEach(field => {
-        const resp = (reg.responses || []).find(r => r.fieldId && r.fieldId.toString() === field._id.toString());
+        const resp = (reg.responses || []).find(
+          r => r.fieldId && r.fieldId.toString() === field._id.toString()
+        );
         if (!resp || resp.value === null || resp.value === undefined) {
-          cols.push('""');
-          return;
+          cols.push('""'); return;
         }
-        if (field.type === 'file') {
-          const url = resp.value || '';
-          cols.push(`"${String(url).replace(/"/g, '""')}"`);
-          return;
+        if (field.type === "file") {
+          cols.push(q(resp.value)); return;
         }
-        const val = Array.isArray(resp.value) ? resp.value.join('; ') : resp.value;
-        cols.push(`"${String(val).replace(/"/g, '""')}"`);
+        const val = Array.isArray(resp.value) ? resp.value.join("; ") : resp.value;
+        cols.push(q(val));
       });
 
-      // Team member columns
+      // Team members — one block per slot up to maxMembers
       if (subEvent.enableTeamMembers) {
-        const members = (reg.teamMembers || []).map(m => {
-          if (typeof m === 'string') return { name: m, email: '', phone: '', responses: [] };
-          return m;
-        });
+        const members = (reg.teamMembers || []).map(m =>
+          typeof m === "string" ? { name: m, email: "", phone: "", responses: [] } : m
+        );
 
-        for (let m = 0; m < maxMemberCount; m++) {
-          const member = members[m] || null;
-          cols.push(member ? `"${(member.name  || '').replace(/"/g, '""')}"` : '""');
-          cols.push(member ? `"${(member.email || '').replace(/"/g, '""')}"` : '""');
-          // Force phone as text
-          cols.push(member && member.phone ? `"'${(member.phone || '').replace(/"/g, '""')}"` : '""');
+        for (let mi = 0; mi < maxMembers; mi++) {
+          const member = members[mi] || null;
+          cols.push(member ? q(member.name)  : '""');
+          cols.push(member ? q(member.email) : '""');
+          cols.push(member && member.phone ? qt(member.phone) : '""');
 
-          // Member custom field responses
           memberCustomFields.forEach(field => {
             if (!member || !member.responses || member.responses.length === 0) {
-              cols.push('""');
-              return;
+              cols.push('""'); return;
             }
-            const mResp = member.responses.find(r => r.fieldId && r.fieldId.toString() === field._id.toString());
-            if (!mResp || mResp.value === null || mResp.value === undefined) {
-              cols.push('""');
-              return;
+            const mr = member.responses.find(
+              r => r.fieldId && r.fieldId.toString() === field._id.toString()
+            );
+            if (!mr || mr.value === null || mr.value === undefined) {
+              cols.push('""'); return;
             }
-            const mVal = Array.isArray(mResp.value) ? mResp.value.join('; ') : mResp.value;
-            cols.push(`"${String(mVal).replace(/"/g, '""')}"`);
+            const mv = Array.isArray(mr.value) ? mr.value.join("; ") : mr.value;
+            cols.push(q(mv));
           });
         }
       }
 
-      // Meta columns
-      cols.push(`"${reg.status}"`);
-      cols.push(`"${subEvent.dayNumber || ''}"`);
-      cols.push(`"${subEvent.eventDate ? new Date(subEvent.eventDate).toLocaleDateString('en-IN') : ''}"`);
-      cols.push(`"${subEvent.startTime || ''}"`);
-      cols.push(`"${subEvent.endTime   || ''}"`);
-      cols.push(`"${new Date(reg.createdAt).toLocaleString('en-IN')}"`);
+      // Meta
+      cols.push(q(reg.status));
+      cols.push(q(subEvent.dayNumber || ""));
+      cols.push(q(subEvent.eventDate ? new Date(subEvent.eventDate).toLocaleDateString("en-IN") : ""));
+      cols.push(q(subEvent.startTime || ""));
+      cols.push(q(subEvent.endTime   || ""));
+      cols.push(q(new Date(reg.createdAt).toLocaleString("en-IN")));
 
-      return cols.join(',');
+      return cols.join(",");
     });
 
-    const csv      = [headerCols.join(','), ...rows].join('\n');
-    const filename = `${subEvent.title.replace(/\s+/g, '_')}_registrations.csv`;
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    // BOM for Excel to correctly detect UTF-8
-    res.send('\uFEFF' + csv);
+    const csv      = [headerCols.join(","), ...rows].join("\n");
+    const filename = `${subEvent.title.replace(/\s+/g, "_")}_registrations.csv`;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    // UTF-8 BOM so Excel opens with correct encoding
+    res.send("\uFEFF" + csv);
   } catch (error) {
-    console.error('Export CSV Error:', error.message);
-    res.redirect('/events');
+    console.error("Export CSV Error:", error.message);
+    res.redirect("/events");
   }
 };
+
 exports.getSubEventsByEvent = async (eventId) => {
   return await SubEvent.find({ eventId }).lean();
 };

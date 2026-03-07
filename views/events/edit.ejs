@@ -391,6 +391,22 @@
               <input type="file" name="posterImage" class="form-control-custom" accept="image/*">
             </div>
 
+            <!-- External Registration Link -->
+            <div class="edit-field-group">
+              <label class="form-label-custom">
+                Google Form / Registration Link
+                <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(optional — redirects users to external form)</span>
+              </label>
+              <input type="url" name="externalRegistrationLink" class="form-control-custom"
+                value="<%= sub.externalRegistrationLink || '' %>"
+                placeholder="https://forms.google.com/...">
+              <% if (sub.externalRegistrationLink && sub.externalRegistrationLink.trim() !== '') { %>
+                <div style="margin-top:6px;font-size:0.75rem;color:#27ae60;font-weight:600;">
+                  ✓ <a href="<%= sub.externalRegistrationLink %>" target="_blank" style="color:var(--br);"><%= sub.externalRegistrationLink %></a>
+                </div>
+              <% } %>
+            </div>
+
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.88rem;">
                 <i class="bi bi-floppy"></i> Save Settings
