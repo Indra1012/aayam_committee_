@@ -2,6 +2,7 @@
 <div class="container my-5">
   <div class="event-detail-content">
 
+
     <!-- Banner -->
     <% if (event.bannerImage) { %>
       <div class="event-detail-banner" data-aos="fade-down" style="position:relative;overflow:hidden;border-radius:var(--r-lg);margin-bottom:32px;">
@@ -21,6 +22,7 @@
       </div>
     <% } %>
 
+
     <!-- Admin action bar -->
     <% if (user && (user.role === 'admin' || user.role === 'superadmin')) { %>
       <div class="mb-3 d-flex gap-2 flex-wrap" data-aos="fade-up">
@@ -34,6 +36,7 @@
         </form>
       </div>
     <% } %>
+
 
     <!-- Title & meta -->
     <div data-aos="fade-up" data-aos-delay="60" style="margin-bottom:28px;">
@@ -64,12 +67,14 @@
       <% } %>
     </div>
 
+
     <%
       var isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
       var hasSubEvents = subEvents && subEvents.length > 0;
       var hasExternalLink = event.registrationLink && event.registrationLink.trim() !== '';
       var showRegSection = !isPast || isAdmin;
     %>
+
 
     <!-- ═══ REGISTRATION ═══ -->
     <% if (showRegSection) { %>
@@ -89,6 +94,7 @@
           </div>
         </div>
 
+
       <% } else if (hasSubEvents) { %>
         <div class="detail-section" data-aos="fade-up">
           <h2 class="detail-section-title"><%= isPast ? 'Sessions & Registrations' : 'Register for Sessions' %></h2>
@@ -99,8 +105,10 @@
             </div>
           <% } %>
 
+
           <% if (groupedSubEvents && groupedSubEvents.length > 0) { %>
             <% groupedSubEvents.forEach(function(group) { %>
+
 
               <% if (group.day > 0) { %>
                 <div style="display:flex;align-items:center;gap:12px;margin:22px 0 12px;" data-aos="fade-up">
@@ -113,16 +121,20 @@
                 </div>
               <% } %>
 
+
               <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:8px;">
                 <% group.subEvents.forEach(function(sub) { %>
 
+
                   <!-- ── Compact sub-event card ── -->
                   <div class="show-sub-card" data-aos="fade-up">
+
 
                     <!-- Row 1: title + action buttons -->
                     <div class="show-sub-top">
                       <div class="show-sub-left">
                         <div class="show-sub-title"><%= sub.title %></div>
+
 
                         <!-- Meta pills — all on one compact row -->
                         <div class="show-sub-pills">
@@ -133,25 +145,30 @@
                             </span>
                           <% } %>
 
+
                           <% if (sub.isGroupEvent) { %>
                             <span class="spill spill-type"><i class="bi bi-people"></i> Team&thinsp;<%= sub.minTeamSize %>–<%= sub.maxTeamSize %></span>
                           <% } else { %>
                             <span class="spill spill-type"><i class="bi bi-person"></i> Individual</span>
                           <% } %>
 
+
                           <% if (sub.maxParticipants) { %>
                             <span class="spill spill-cap"><i class="bi bi-person-check"></i> Max&thinsp;<%= sub.maxParticipants %></span>
                           <% } %>
 
+
                           <% if (sub.requirePaymentScreenshot) { %>
                             <span class="spill spill-pay"><i class="bi bi-credit-card"></i> Payment req.</span>
                           <% } %>
+
 
                           <% if (sub.externalRegistrationLink && sub.externalRegistrationLink.trim() !== '') { %>
                             <span class="spill spill-ext"><i class="bi bi-box-arrow-up-right"></i> External Form</span>
                           <% } %>
                         </div>
                       </div>
+
 
                       <!-- Action buttons -->
                       <div class="show-sub-actions">
@@ -174,10 +191,12 @@
                       </div>
                     </div>
 
+
                     <!-- Description (if any) -->
                     <% if (sub.description) { %>
                       <div class="show-sub-desc"><%= sub.description %></div>
                     <% } %>
+
 
                     <!-- Poster centred (only when no QR, or show even with QR — poster always centred) -->
                     <% if (sub.posterImage) { %>
@@ -186,12 +205,15 @@
                       </div>
                     <% } %>
 
+
                   </div>
+
 
                 <% }); %>
               </div>
             <% }); %>
           <% } %>
+
 
           <% if (!isPast && subEvents.length > 1) { %>
             <div style="margin-top:18px;">
@@ -199,6 +221,7 @@
             </div>
           <% } %>
         </div>
+
 
       <% } else if (!isPast) { %>
         <div data-aos="fade-up" style="margin:0 0 30px;">
@@ -209,79 +232,170 @@
       <% } %>
     <% } %>
 
-    <!-- ═══ GALLERY ═══ -->
-    <div class="detail-section" data-aos="fade-up">
-      <h2 class="detail-section-title">Event Gallery</h2>
 
-      <% if (event.galleryImages && event.galleryImages.length > 0) { %>
-        <div class="gallery-grid-new">
-          <% event.galleryImages.forEach(function(img, i) { %>
-            <%
-              var hasName    = img.speakerName && img.speakerName.trim() !== '';
-              var hasDetail  = img.detail      && img.detail.trim()      !== '';
-              var hasCaption = hasName || hasDetail;
-            %>
-            <div class="gallery-item-new" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
-              <div class="gallery-img-wrap">
-                <img
-                  src="<%= img.url %>"
-                  alt="<%= hasName ? img.speakerName.trim() : ('Gallery image ' + (i+1)) %>"
-                  class="gallery-img-actual"
-                  loading="lazy"
-                  onerror="this.parentElement.parentElement.style.display='none'"
-                >
-                <% if (isAdmin) { %>
-                  <form action="/events/<%= event._id %>/gallery/<%= img._id %>/delete" method="POST"
-                    style="position:absolute;top:7px;right:7px;margin:0;z-index:2;"
-                    onsubmit="return confirm('Remove this image?')">
-                    <button type="submit" class="gal-del-btn"><i class="bi bi-x-lg"></i></button>
-                  </form>
+    <!-- ═══════════════════════════════════════════
+         SPEAKERS
+         (only rendered if images exist OR admin)
+    ════════════════════════════════════════════ -->
+    <%
+      var hasSpeakerImages = event.speakerImages && event.speakerImages.length > 0;
+    %>
+    <% if (hasSpeakerImages || isAdmin) { %>
+      <div class="detail-section" data-aos="fade-up">
+        <% if (hasSpeakerImages) { %>
+          <h2 class="detail-section-title">Speakers</h2>
+        <% } %>
+
+        <% if (hasSpeakerImages) { %>
+          <div class="gallery-grid-new">
+            <% event.speakerImages.forEach(function(img, i) { %>
+              <%
+                var hasName    = img.speakerName && img.speakerName.trim() !== '';
+                var hasDetail  = img.detail      && img.detail.trim()      !== '';
+                var hasCaption = hasName || hasDetail;
+              %>
+              <div class="gallery-item-new <%= hasCaption ? '' : 'no-caption-card' %>" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
+                <div class="gallery-img-wrap">
+                  <img
+                    src="<%= img.url %>"
+                    alt="<%= hasName ? img.speakerName.trim() : ('Speaker ' + (i+1)) %>"
+                    class="gallery-img-actual"
+                    loading="lazy"
+                    onerror="this.parentElement.parentElement.style.display='none'"
+                  >
+                  <% if (isAdmin) { %>
+                    <form action="/events/<%= event._id %>/speakers/<%= img._id %>/delete" method="POST"
+                      style="position:absolute;top:7px;right:7px;margin:0;z-index:2;"
+                      onsubmit="return confirm('Remove this speaker image?')">
+                      <button type="submit" class="gal-del-btn"><i class="bi bi-x-lg"></i></button>
+                    </form>
+                  <% } %>
+                </div>
+                <% if (hasCaption) { %>
+                  <div class="gallery-caption-below">
+                    <% if (hasName) { %><div class="gcap-name"><%= img.speakerName.trim() %></div><% } %>
+                    <% if (hasDetail) { %><div class="gcap-detail"><%= img.detail.trim() %></div><% } %>
+                  </div>
                 <% } %>
               </div>
-              <% if (hasCaption) { %>
-                <div class="gallery-caption-below">
-                  <% if (hasName) { %><div class="gcap-name"><%= img.speakerName.trim() %></div><% } %>
-                  <% if (hasDetail) { %><div class="gcap-detail"><%= img.detail.trim() %></div><% } %>
+            <% }); %>
+          </div>
+        <% } %>
+
+        <!-- Admin upload form for speakers -->
+        <% if (isAdmin) { %>
+          <form action="/events/<%= event._id %>/speakers" method="POST" enctype="multipart/form-data" class="admin-gallery-upload-form mt-4">
+            <div class="section-label" style="margin-bottom:16px;"><i class="bi bi-cloud-upload"></i> Upload Speaker Images</div>
+            <div class="gallery-upload-fields">
+              <div class="gup-field">
+                <label class="gup-label">Speaker Name <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+                <input type="text" name="speakerName" class="form-control-custom" placeholder="e.g. Dr. Raj Mehta">
+              </div>
+              <div class="gup-field">
+                <label class="gup-label">Caption / Detail <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+                <input type="text" name="detail" class="form-control-custom" placeholder="e.g. Keynote Speaker · AI Workshop">
+              </div>
+            </div>
+            <div class="gup-file-area" onclick="document.getElementById('speakerFileInput').click()">
+              <div class="gup-file-icon">🎤</div>
+              <div class="gup-file-label">Click to select speaker images</div>
+              <div class="gup-file-hint">JPG, PNG, WEBP · Multiple files allowed · Max 15</div>
+              <input type="file" id="speakerFileInput" name="speakerImages" multiple accept="image/*"
+                style="display:none;" required onchange="showSpeakerFiles(this)">
+              <div id="speakerFileNames" style="margin-top:10px;font-size:0.8rem;color:var(--br);font-weight:600;"></div>
+            </div>
+            <button type="submit" class="btn-register" style="margin-top:14px;">
+              <i class="bi bi-cloud-upload"></i> Upload Speaker Images
+            </button>
+          </form>
+        <% } %>
+      </div>
+    <% } %>
+
+
+    <!-- ═══════════════════════════════════════════
+         GALLERY
+         (only rendered if images exist OR admin)
+    ════════════════════════════════════════════ -->
+    <%
+      var hasGalleryImages = event.galleryImages && event.galleryImages.length > 0;
+    %>
+    <% if (hasGalleryImages || isAdmin) { %>
+      <div class="detail-section" data-aos="fade-up">
+        <% if (hasGalleryImages) { %>
+          <h2 class="detail-section-title">Event Gallery</h2>
+        <% } %>
+
+        <% if (hasGalleryImages) { %>
+          <div class="gallery-grid-new">
+            <% event.galleryImages.forEach(function(img, i) { %>
+              <%
+                var hasName    = img.speakerName && img.speakerName.trim() !== '';
+                var hasDetail  = img.detail      && img.detail.trim()      !== '';
+                var hasCaption = hasName || hasDetail;
+              %>
+              <div class="gallery-item-new <%= hasCaption ? '' : 'no-caption-card' %>" data-aos="fade-up" data-aos-delay="<%= Math.min(i * 40, 280) %>">
+                <div class="gallery-img-wrap">
+                  <img
+                    src="<%= img.url %>"
+                    alt="<%= hasName ? img.speakerName.trim() : ('Gallery image ' + (i+1)) %>"
+                    class="gallery-img-actual"
+                    loading="lazy"
+                    onerror="this.parentElement.parentElement.style.display='none'"
+                  >
+                  <% if (isAdmin) { %>
+                    <form action="/events/<%= event._id %>/gallery/<%= img._id %>/delete" method="POST"
+                      style="position:absolute;top:7px;right:7px;margin:0;z-index:2;"
+                      onsubmit="return confirm('Remove this image?')">
+                      <button type="submit" class="gal-del-btn"><i class="bi bi-x-lg"></i></button>
+                    </form>
+                  <% } %>
                 </div>
-              <% } %>
-            </div>
-          <% }); %>
-        </div>
-
-      <% } else { %>
-        <div class="gallery-empty">
-          <div class="gallery-empty-icon">🖼</div>
-          <p>No gallery images yet.</p>
-        </div>
-      <% } %>
-
-      <% if (isAdmin) { %>
-        <form action="/events/<%= event._id %>/gallery" method="POST" enctype="multipart/form-data" class="admin-gallery-upload-form mt-4">
-          <div class="section-label" style="margin-bottom:16px;"><i class="bi bi-cloud-upload"></i> Upload Gallery Images</div>
-          <div class="gallery-upload-fields">
-            <div class="gup-field">
-              <label class="gup-label">Speaker / Person Name <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
-              <input type="text" name="speakerName" class="form-control-custom" placeholder="e.g. Dr. Raj Mehta">
-            </div>
-            <div class="gup-field">
-              <label class="gup-label">Caption / Detail <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
-              <input type="text" name="detail" class="form-control-custom" placeholder="e.g. Day 1 · AI Workshop">
-            </div>
+                <% if (hasCaption) { %>
+                  <div class="gallery-caption-below">
+                    <% if (hasName) { %><div class="gcap-name"><%= img.speakerName.trim() %></div><% } %>
+                    <% if (hasDetail) { %><div class="gcap-detail"><%= img.detail.trim() %></div><% } %>
+                  </div>
+                <% } %>
+              </div>
+            <% }); %>
           </div>
-          <div class="gup-file-area" onclick="document.getElementById('galleryFileInput').click()">
-            <div class="gup-file-icon">📷</div>
-            <div class="gup-file-label">Click to select images</div>
-            <div class="gup-file-hint">JPG, PNG, WEBP · Multiple files allowed · Max 15</div>
-            <input type="file" id="galleryFileInput" name="galleryImages" multiple accept="image/*"
-              style="display:none;" required onchange="showGalleryFiles(this)">
-            <div id="galleryFileNames" style="margin-top:10px;font-size:0.8rem;color:var(--br);font-weight:600;"></div>
+        <% } else if (isAdmin) { %>
+          <div class="gallery-empty">
+            <div class="gallery-empty-icon">🖼</div>
+            <p>No gallery images yet.</p>
           </div>
-          <button type="submit" class="btn-register" style="margin-top:14px;">
-            <i class="bi bi-cloud-upload"></i> Upload Images
-          </button>
-        </form>
-      <% } %>
-    </div>
+        <% } %>
+
+        <% if (isAdmin) { %>
+          <form action="/events/<%= event._id %>/gallery" method="POST" enctype="multipart/form-data" class="admin-gallery-upload-form mt-4">
+            <div class="section-label" style="margin-bottom:16px;"><i class="bi bi-cloud-upload"></i> Upload Gallery Images</div>
+            <div class="gallery-upload-fields">
+              <div class="gup-field">
+                <label class="gup-label">Speaker / Person Name <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+                <input type="text" name="speakerName" class="form-control-custom" placeholder="e.g. Dr. Raj Mehta">
+              </div>
+              <div class="gup-field">
+                <label class="gup-label">Caption / Detail <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+                <input type="text" name="detail" class="form-control-custom" placeholder="e.g. Day 1 · AI Workshop">
+              </div>
+            </div>
+            <div class="gup-file-area" onclick="document.getElementById('galleryFileInput').click()">
+              <div class="gup-file-icon">📷</div>
+              <div class="gup-file-label">Click to select images</div>
+              <div class="gup-file-hint">JPG, PNG, WEBP · Multiple files allowed · Max 15</div>
+              <input type="file" id="galleryFileInput" name="galleryImages" multiple accept="image/*"
+                style="display:none;" required onchange="showGalleryFiles(this)">
+              <div id="galleryFileNames" style="margin-top:10px;font-size:0.8rem;color:var(--br);font-weight:600;"></div>
+            </div>
+            <button type="submit" class="btn-register" style="margin-top:14px;">
+              <i class="bi bi-cloud-upload"></i> Upload Images
+            </button>
+          </form>
+        <% } %>
+      </div>
+    <% } %>
+
 
     <!-- ═══ CONDUCTED BY ═══ -->
     <div class="detail-section" data-aos="fade-up">
@@ -314,6 +428,7 @@
       <% } %>
     </div>
 
+
     <!-- ═══ DOCUMENTS ═══ -->
     <div class="detail-section" data-aos="fade-up">
       <h2 class="detail-section-title">Event Documents</h2>
@@ -329,8 +444,23 @@
                     <span style="font-size:0.72rem;color:#b8860b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Admin Only</span>
                   <% } %>
                 </div>
-                <div style="display:flex;gap:8px;align-items:center;">
-                  <a href="<%= doc.file %>" target="_blank" class="btn-details" style="font-size:0.82rem;padding:6px 14px;">📄 View</a>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                  <%
+                    /* View: Google Docs Viewer opens full screen in new tab — works for all Cloudinary raw PDFs/Docs */
+                    var gdocsView = 'https://docs.google.com/viewer?url=' + encodeURIComponent(doc.file) + '&embedded=false';
+                  %>
+                  <a href="<%= gdocsView %>" target="_blank" rel="noopener noreferrer"
+                     class="btn-details" style="font-size:0.82rem;padding:6px 14px;">
+                    👁 View
+                  </a>
+                  <%
+                    /* Download: append fl_attachment:true into Cloudinary URL so browser always downloads with correct filename+extension */
+                    var dlUrl = doc.file.replace('/upload/', '/upload/fl_attachment:true/');
+                  %>
+                  <!-- <a href="<%= dlUrl %>" target="_blank" rel="noopener noreferrer"
+                     class="btn-details" style="font-size:0.82rem;padding:6px 14px;">
+                    ⬇ Download
+                  </a> -->
                   <% if (isAdmin) { %>
                     <form action="/events/<%= event._id %>/documents/<%= i %>/delete" method="POST" onsubmit="return confirm('Delete this document?')">
                       <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
@@ -363,6 +493,7 @@
       <% } %>
     </div>
 
+
     <!-- ═══ REVIEWS (past events only) ═══ -->
     <% if (isPast) { %>
       <div class="detail-section" data-aos="fade-up">
@@ -393,12 +524,15 @@
       </div>
     <% } %>
 
+
   </div>
 </div>
+
 
 <style>
 /* ── Page wrapper ── */
 .event-detail-content { max-width:900px; margin:0 auto; }
+
 
 /* ── Description body ── */
 .event-description-body { font-size:clamp(0.95rem,1.5vw,1.08rem);color:var(--tx-mid);line-height:1.9;max-width:780px; }
@@ -410,33 +544,40 @@
 body.dark-mode .event-description-body { color:var(--dk-muted); }
 body.dark-mode .event-description-body strong { color:var(--dk-text); }
 
+
 /* ── Sections ── */
 .detail-section { margin-bottom:38px;padding-bottom:32px;border-bottom:1px solid var(--border-l); }
 .detail-section:last-child { border-bottom:none; }
 .detail-section-title { font-family:var(--font-display);font-size:1.15rem;font-weight:800;color:var(--tx);margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid rgba(166,124,82,0.18); }
+
 
 /* ── Person / doc row ── */
 .person-item { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);margin-bottom:10px;flex-wrap:wrap; }
 .person-name { font-weight:700;font-size:0.95rem;color:var(--tx); }
 .person-email { font-size:0.8rem;color:var(--tx-muted);margin-top:2px; }
 
+
 /* ── Reviews ── */
 .review-card { background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);padding:16px 18px;margin-bottom:12px; }
 .review-name { font-weight:700;font-size:0.9rem;color:var(--br);margin-bottom:6px; }
 .review-body { font-size:0.9rem;color:var(--tx-mid);line-height:1.7;margin:0; }
+
 
 /* ── Empty state ── */
 .gallery-empty { text-align:center;padding:40px 20px;background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-lg);margin-bottom:20px; }
 .gallery-empty-icon { font-size:2.5rem;margin-bottom:10px;opacity:0.5; }
 .gallery-empty p { color:var(--tx-muted);font-size:0.92rem;margin:0; }
 
+
 /* ── Generic admin form box ── */
 .admin-add-form { background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-md);padding:18px 20px; }
+
 
 body.dark-mode .person-item,
 body.dark-mode .review-card { background:var(--dk-surface);border-color:var(--border-d); }
 body.dark-mode .person-name { color:var(--dk-text); }
 body.dark-mode .review-name { color:var(--br-light); }
+
 
 /* ══════════════════════════════════════
    COMPACT SUB-EVENT CARDS (show page)
@@ -452,6 +593,7 @@ body.dark-mode .review-name { color:var(--br-light); }
   border-color: var(--br);
   box-shadow: 0 4px 18px rgba(166,124,82,0.10);
 }
+
 
 /* Top row: title + actions side by side */
 .show-sub-top {
@@ -479,6 +621,7 @@ body.dark-mode .review-name { color:var(--br-light); }
   flex-shrink: 0;
 }
 
+
 /* Compact pills row */
 .show-sub-pills {
   display: flex;
@@ -502,6 +645,7 @@ body.dark-mode .review-name { color:var(--br-light); }
 .spill-pay  { background: rgba(39,174,96,0.08);  border-color: rgba(39,174,96,0.22); color: #27ae60; }
 .spill-ext  { background: rgba(39,174,96,0.08);  border-color: rgba(39,174,96,0.22); color: #27ae60; }
 
+
 /* Description */
 .show-sub-desc {
   margin: 0 clamp(14px,2vw,20px) clamp(10px,1.5vw,14px);
@@ -509,6 +653,7 @@ body.dark-mode .review-name { color:var(--br-light); }
   color: var(--tx-muted);
   line-height: 1.6;
 }
+
 
 /* Poster — always centred, no side-float */
 .show-sub-poster-wrap {
@@ -526,11 +671,13 @@ body.dark-mode .review-name { color:var(--br-light); }
   display: block;
 }
 
+
 body.dark-mode .show-sub-card { background: var(--dk-surface); border-color: var(--border-d); }
 body.dark-mode .show-sub-poster-wrap { border-color: var(--border-d); }
 
+
 /* ══════════════════════════════════════
-   GALLERY GRID
+   GALLERY GRID (shared by Gallery + Speakers)
 ══════════════════════════════════════ */
 .gallery-grid-new {
   display: grid;
@@ -598,10 +745,27 @@ body.dark-mode .gallery-item-new      { background:var(--dk-surface);border-colo
 body.dark-mode .gallery-caption-below { background:var(--dk-surface);border-color:var(--border-d); }
 body.dark-mode .gcap-name   { color:var(--dk-text); }
 body.dark-mode .gcap-detail { color:var(--dk-muted); }
+
+/* ── No caption: plain image only, no card border/background/hover ── */
+.gallery-item-new.no-caption-card {
+  background: transparent;
+  border-color: transparent;
+}
+.gallery-item-new.no-caption-card:hover {
+  box-shadow: none;
+  transform: none;
+  border-color: transparent;
+}
+.gallery-item-new.no-caption-card .gallery-img-wrap {
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+body.dark-mode .gallery-item-new.no-caption-card { background: transparent; border-color: transparent; }
 @media (max-width:900px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr); gap:12px; } }
 @media (max-width:480px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr); gap:8px; } .gcap-name{font-size:0.76rem;} .gcap-detail{font-size:0.68rem;} }
 
-/* ── Gallery upload form ── */
+
+/* ── Gallery / Speaker upload form ── */
 .admin-gallery-upload-form {
   background: var(--cream-alt);
   border: 1.5px dashed rgba(166,124,82,0.30);
@@ -636,9 +800,20 @@ body.dark-mode .gcap-detail { color:var(--dk-muted); }
 body.dark-mode .admin-gallery-upload-form { background:var(--dk-surface); }
 </style>
 
+
+
+
 <script>
 function showGalleryFiles(input) {
   var el = document.getElementById('galleryFileNames');
+  if (!el || !input.files.length) return;
+  var names = Array.from(input.files).map(function(f){ return f.name; }).join(', ');
+  el.textContent = '✓ ' + input.files.length + ' file(s) selected: ' + names;
+  input.closest('.gup-file-area').style.borderColor = 'var(--br)';
+}
+
+function showSpeakerFiles(input) {
+  var el = document.getElementById('speakerFileNames');
   if (!el || !input.files.length) return;
   var names = Array.from(input.files).map(function(f){ return f.name; }).join(', ');
   el.textContent = '✓ ' + input.files.length + ' file(s) selected: ' + names;

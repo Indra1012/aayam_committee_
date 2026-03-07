@@ -434,7 +434,64 @@ exports.deleteGalleryImage = async (req, res) => {
     res.redirect("/events");
   }
 };
+/* ===============================
+   ADD SPEAKER IMAGE
+================================ */
 
+exports.addSpeakerImages = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) return res.redirect(`/events/${req.params.id}`);
+
+    const { speakerName, detail } = req.body;
+
+    const images = req.files.map((file, i) => ({
+      url: file.path,
+      speakerName: Array.isArray(speakerName) ? (speakerName[i] || "") : (speakerName || ""),
+      detail: Array.isArray(detail) ? (detail[i] || "") : (detail || ""),
+    }));
+
+    await Event.findByIdAndUpdate(req.params.id, {
+      $push: { speakerImages: { $each: images } },
+    });
+
+    res.redirect(`/events/${req.params.id}`);
+  } catch (error) {
+    console.error("Add Speaker Image Error:", error.message);
+    res.redirect("/events");
+  }
+};
+
+exports.updateSpeakerImageMeta = async (req, res) => {
+  try {
+    const { eventId, imageId } = req.params;
+    const { speakerName, detail } = req.body;
+
+    await Event.findOneAndUpdate(
+      { _id: eventId, "speakerImages._id": imageId },
+      { $set: { "speakerImages.$.speakerName": speakerName || "", "speakerImages.$.detail": detail || "" } }
+    );
+
+    res.redirect(`/events/${eventId}`);
+  } catch (error) {
+    console.error("Update Speaker Meta Error:", error.message);
+    res.redirect("/events");
+  }
+};
+
+exports.deleteSpeakerImage = async (req, res) => {
+  try {
+    const { eventId, imageId } = req.params;
+
+    await Event.findByIdAndUpdate(eventId, {
+      $pull: { speakerImages: { _id: imageId } },
+    });
+
+    res.redirect(`/events/${eventId}`);
+  } catch (error) {
+    console.error("Delete Speaker Image Error:", error.message);
+    res.redirect("/events");
+  }
+};
 
 /* ===============================
    ADD COORDINATOR

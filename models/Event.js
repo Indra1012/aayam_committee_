@@ -35,6 +35,9 @@ const eventSchema = new mongoose.Schema(
 
     galleryImages: [galleryItemSchema],
 
+    // ── Speaker images — same structure as galleryImages ──
+    speakerImages: [galleryItemSchema],
+
     conductedBy: [{ name: String, email: String }],
     contacts: [String],
     prizes: [String],

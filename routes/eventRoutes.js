@@ -34,12 +34,21 @@ router.post("/events/toggle-visibility/:id", isAdmin, eventController.toggleEven
 router.post(
   "/events/:id/gallery",
   isAdmin,
-  uploadImage.array("galleryImages", 15),
+  uploadImage.array("galleryImages", 30),
   eventController.addGalleryImages
 );
 router.post("/events/:eventId/gallery/:imageId/meta",  isAdmin, eventController.updateGalleryImageMeta);
 router.post("/events/:eventId/gallery/:imageId/delete", isAdmin, eventController.deleteGalleryImage);
 router.post("/events/:id/banner/delete", isAdmin, eventController.deleteBannerImage);
+
+router.post(
+  "/events/:id/speakers",
+  isAdmin,
+  uploadImage.array("speakerImages", 30),
+  eventController.addSpeakerImages
+);
+router.post("/events/:eventId/speakers/:imageId/meta",   isAdmin, eventController.updateSpeakerImageMeta);
+router.post("/events/:eventId/speakers/:imageId/delete", isAdmin, eventController.deleteSpeakerImage);
 
 /* ===============================
    COORDINATORS & DOCUMENTS

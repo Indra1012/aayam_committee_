@@ -34,18 +34,25 @@ const docFilter = (req, file, cb) => {
     "application/vnd.oasis.opendocument.spreadsheet",
     "application/vnd.oasis.opendocument.presentation",
   ];
-  allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error(`File type not allowed`), false);
+  allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error("File type not allowed"), false);
 };
 
-// Manual Cloudinary upload for documents
+// ─── Manual Cloudinary upload for documents ───────────────────────────────────
+// resource_type stays "raw" — correct for PDFs/docs.
+// public_id must NOT include the extension — Cloudinary appends it automatically for raw uploads,
+// which was causing the double .pdf.pdf bug.
 const uploadDocToCloud = (buffer, originalname) => {
   return new Promise((resolve, reject) => {
+    // Strip extension from public_id — Cloudinary re-appends it for raw type
+    const nameWithoutExt = originalname
+      .replace(/\s+/g, "_")       // spaces → underscores
+      .replace(/\.[^/.]+$/, "");  // strip last extension (.pdf, .docx, etc.)
+
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "aayam/event-documents",
         resource_type: "raw",
-        public_id: Date.now() + "-" + originalname.replace(/\s+/g, "_"),
-        format: "",
+        public_id: Date.now() + "-" + nameWithoutExt,
       },
       (error, result) => {
         if (error) return reject(error);
