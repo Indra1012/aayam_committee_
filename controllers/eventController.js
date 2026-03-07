@@ -14,16 +14,16 @@ function parseTime12(str) {
 
 /* ── Helper: convert "09:30 AM" / "12:00 PM" etc. → total minutes (0–1439) for sorting ── */
 function timeToMinutes(str) {
-  if (!str || str.trim() === "") return 9999; // no time → push to end
+  if (!str || str.trim() === "") return 9999;
   const match = str.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   if (!match) return 9999;
   let hours   = parseInt(match[1], 10);
   const mins  = parseInt(match[2], 10);
   const ampm  = match[3].toUpperCase();
   if (ampm === "AM") {
-    if (hours === 12) hours = 0;          // 12:xx AM → 0 hrs
+    if (hours === 12) hours = 0;
   } else {
-    if (hours !== 12) hours += 12;        // 1–11 PM  → add 12
+    if (hours !== 12) hours += 12;
   }
   return hours * 60 + mins;
 }
@@ -38,7 +38,6 @@ function fixImageUrl(url) {
 
 /* ── Helper: group & sort subEvents by dayNumber then by startTime ── */
 function groupSubEventsByDay(subEvents) {
-  // Sort: primary = dayNumber (nulls last), secondary = startTime minutes
   const sorted = [...subEvents].sort((a, b) => {
     const dayA = a.dayNumber != null ? a.dayNumber : Infinity;
     const dayB = b.dayNumber != null ? b.dayNumber : Infinity;
@@ -70,7 +69,6 @@ exports.getEventsPage = async (req, res) => {
       { $set: { type: "past" } }
     );
 
-    // ── ONE-TIME MIGRATION: fix legacy events with null/missing isPublic ──
     await Event.updateMany(
       { isPublic: { $exists: false } },
       { $set: { isPublic: true } }
@@ -124,7 +122,6 @@ exports.getEventDetail = async (req, res) => {
       ? await Review.find({ event: event._id }).sort({ createdAt: -1 }).lean()
       : [];
 
-    // Fetch all subevents, then sort by dayNumber + startTime in JS
     const subEventsRaw = await SubEvent.find({ eventId: event._id }).lean();
     const subEvents = [...subEventsRaw].sort((a, b) => {
       const dayA = a.dayNumber != null ? a.dayNumber : Infinity;
@@ -154,7 +151,6 @@ exports.getSubEventsPage = async (req, res) => {
     if (!event) return res.redirect("/events");
     if (event.type === "past") return res.redirect(`/events/${event._id}`);
 
-    // Fetch raw, enrich with registrationCount + fix image URLs
     const subEventsRaw = await SubEvent.find({ eventId: event._id }).lean();
 
     for (let sub of subEventsRaw) {
@@ -163,7 +159,6 @@ exports.getSubEventsPage = async (req, res) => {
       if (sub.posterImage) sub.posterImage = fixImageUrl(sub.posterImage);
     }
 
-    // Sort by dayNumber then startTime
     const subEvents = [...subEventsRaw].sort((a, b) => {
       const dayA = a.dayNumber != null ? a.dayNumber : Infinity;
       const dayB = b.dayNumber != null ? b.dayNumber : Infinity;
@@ -221,7 +216,6 @@ exports.getEditEvent = async (req, res) => {
 
     event.bannerImage = fixImageUrl(event.bannerImage);
 
-    // Sort subevents by dayNumber + startTime for the edit page too
     const subEventsRaw = await SubEvent.find({ eventId: event._id }).lean();
     const subEvents = [...subEventsRaw].sort((a, b) => {
       const dayA = a.dayNumber != null ? a.dayNumber : Infinity;
@@ -434,10 +428,11 @@ exports.deleteGalleryImage = async (req, res) => {
     res.redirect("/events");
   }
 };
+
+
 /* ===============================
    ADD SPEAKER IMAGE
 ================================ */
-
 exports.addSpeakerImages = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) return res.redirect(`/events/${req.params.id}`);
@@ -493,6 +488,7 @@ exports.deleteSpeakerImage = async (req, res) => {
   }
 };
 
+
 /* ===============================
    ADD COORDINATOR
 ================================ */
@@ -535,7 +531,8 @@ exports.addDocument = async (req, res) => {
     const { title, isPublic } = req.body;
     if (!req.file || !title) return res.redirect(`/events/${req.params.id}`);
 
-    const fileUrl = await uploadDocToCloud(req.file.buffer, req.file.originalname);
+    // FIXED: pass mimetype so Cloudinary appends correct extension
+    const fileUrl = await uploadDocToCloud(req.file.buffer, req.file.originalname, req.file.mimetype);
 
     await Event.findByIdAndUpdate(req.params.id, {
       $push: { documents: { title, file: fileUrl, isPublic: isPublic === "on" } },
@@ -664,7 +661,7 @@ exports.deleteSubEvent = async (req, res) => {
 exports.addFormField = async (req, res) => {
   try {
     const { id } = req.params;
-    const { label, type, options, required, placeholder } = req.body;
+    const { label, type, options, required, placeholder, askForMembers } = req.body;
 
     const subEvent = await SubEvent.findById(id);
     if (!subEvent) return res.redirect("/events");
@@ -672,8 +669,9 @@ exports.addFormField = async (req, res) => {
     const newField = {
       label,
       type,
-      required: required === "on",
-      placeholder: placeholder || "",
+      required:      required === "on",
+      placeholder:   placeholder || "",
+      askForMembers: askForMembers === "on" && type !== "file",
       options:
         type === "dropdown" || type === "checkbox"
           ? options ? options.split(",").map(o => o.trim()) : []
@@ -693,7 +691,7 @@ exports.addFormField = async (req, res) => {
 exports.updateFormField = async (req, res) => {
   try {
     const { id, fieldId } = req.params;
-    const { label, type, options, required, placeholder } = req.body;
+    const { label, type, options, required, placeholder, askForMembers } = req.body;
 
     const subEvent = await SubEvent.findById(id);
     if (!subEvent) return res.redirect("/events");
@@ -701,10 +699,11 @@ exports.updateFormField = async (req, res) => {
     const field = subEvent.formFields.id(fieldId);
     if (!field) return res.redirect(`/events/edit/${subEvent.eventId}`);
 
-    field.label = label;
-    field.type = type;
-    field.required = required === "on";
-    field.placeholder = placeholder || "";
+    field.label         = label;
+    field.type          = type;
+    field.required      = required === "on";
+    field.placeholder   = placeholder || "";
+    field.askForMembers = askForMembers === "on" && type !== "file";
     field.options =
       type === "dropdown" || type === "checkbox"
         ? options ? options.split(",").map(o => o.trim()) : []
@@ -770,6 +769,7 @@ exports.submitRegistration = async (req, res) => {
     const subEvent = await SubEvent.findById(subEventId).lean();
     if (!subEvent) return res.redirect("/events");
 
+    // ── Capacity check ──
     if (subEvent.maxParticipants) {
       const count = await Registration.countDocuments({ subEventId });
       if (count >= subEvent.maxParticipants) {
@@ -777,6 +777,7 @@ exports.submitRegistration = async (req, res) => {
       }
     }
 
+    // ── Leader built-in fields ──
     const participantName  = (req.body.participantName  || "").trim();
     const participantEmail = (req.body.participantEmail || "").trim();
     const participantPhone = (req.body.participantPhone || "").trim();
@@ -785,24 +786,27 @@ exports.submitRegistration = async (req, res) => {
       return res.redirect(`/register/${subEventId}?error=required`);
     }
 
+    // ── Uploaded files map ──
     const uploadedFiles = {};
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => { uploadedFiles[file.fieldname] = file; });
     }
 
+    // ── Leader custom field responses ──
     const responses = [];
     if (req.body.responses) {
       for (const [fieldId, value] of Object.entries(req.body.responses)) {
         if (!mongoose.Types.ObjectId.isValid(fieldId)) continue;
-        const fileKey = `responses[${fieldId}]`;
+        const fileKey      = `responses[${fieldId}]`;
         const uploadedFile = uploadedFiles[fileKey];
         responses.push({
           fieldId: new mongoose.Types.ObjectId(fieldId),
-          value: uploadedFile ? uploadedFile.path : (Array.isArray(value) ? value : value),
+          value:   uploadedFile ? uploadedFile.path : (Array.isArray(value) ? value : value),
         });
       }
     }
 
+    // Catch any file-type responses not already in responses array
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => {
         if (file.fieldname === "paymentScreenshot") return;
@@ -817,6 +821,7 @@ exports.submitRegistration = async (req, res) => {
       });
     }
 
+    // ── Validate required leader fields ──
     for (const field of subEvent.formFields) {
       if (!field.required) continue;
       const found = responses.find(r => r.fieldId.toString() === field._id.toString());
@@ -826,13 +831,36 @@ exports.submitRegistration = async (req, res) => {
       }
     }
 
+    // ── Team members (structured: name + email + phone + custom responses) ──
     let teamMembers = [];
-    if (subEvent.enableTeamMembers && req.body.teamMembers) {
-      teamMembers = Array.isArray(req.body.teamMembers)
-        ? req.body.teamMembers.filter(m => m.trim() !== "")
-        : [req.body.teamMembers].filter(m => m.trim() !== "");
+    if (subEvent.enableTeamMembers && req.body.members) {
+      const membersRaw = Array.isArray(req.body.members)
+        ? req.body.members
+        : Object.values(req.body.members);
+
+      teamMembers = membersRaw
+        .filter(m => m && (m.name || "").trim() !== "")
+        .map(m => {
+          const memberResponses = [];
+          if (m.responses) {
+            for (const [fieldId, value] of Object.entries(m.responses)) {
+              if (!mongoose.Types.ObjectId.isValid(fieldId)) continue;
+              memberResponses.push({
+                fieldId: new mongoose.Types.ObjectId(fieldId),
+                value:   Array.isArray(value) ? value : value,
+              });
+            }
+          }
+          return {
+            name:      (m.name  || "").trim(),
+            email:     (m.email || "").trim(),
+            phone:     (m.phone || "").trim(),
+            responses: memberResponses,
+          };
+        });
     }
 
+    // ── Payment screenshot ──
     let paymentScreenshot = null;
     if (subEvent.requirePaymentScreenshot) {
       const screenshotFile = uploadedFiles["paymentScreenshot"];
@@ -934,7 +962,6 @@ exports.deleteRegistration = async (req, res) => {
   }
 };
 
-
 /* ===============================
    EXPORT REGISTRATIONS CSV
 ================================ */
@@ -948,67 +975,124 @@ exports.exportRegistrationsCSV = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    const fieldHeaders = subEvent.formFields
-      .sort((a, b) => a.order - b.order)
-      .map(f => `"${f.label}"`);
+    const sortedFields = (subEvent.formFields || []).sort((a, b) => a.order - b.order);
 
-    const headers = [
-      '"#"',
-      '"Name"',
-      '"Email"',
-      '"Phone"',
-      ...fieldHeaders,
-      ...(subEvent.enableTeamMembers ? ['"Team Members"'] : []),
-      '"Status"',
-      '"Day"',
-      '"Date"',
-      '"Start Time"',
-      '"End Time"',
-      '"Registered At"',
-    ].join(",");
+    // ── Determine max team size across all registrations ──
+    let maxMemberCount = 0;
+    if (subEvent.enableTeamMembers) {
+      registrations.forEach(reg => {
+        const count = (reg.teamMembers || []).length;
+        if (count > maxMemberCount) maxMemberCount = count;
+      });
+    }
 
+    // ── Custom fields that repeat per member ──
+    const memberCustomFields = sortedFields.filter(f => f.askForMembers && f.type !== 'file');
+
+    // ── Build header row ──
+    const headerCols = [
+      '"#"', '"Name"', '"Email"', '"Phone"',
+    ];
+
+    // Leader custom fields
+    sortedFields.forEach(f => headerCols.push(`"${f.label.replace(/"/g, '""')}"`));
+
+    // Team member columns (one set per member slot)
+    if (subEvent.enableTeamMembers) {
+      for (let m = 1; m <= maxMemberCount; m++) {
+        headerCols.push(`"Member ${m} Name"`);
+        headerCols.push(`"Member ${m} Email"`);
+        headerCols.push(`"Member ${m} Phone"`);
+        memberCustomFields.forEach(f => {
+          headerCols.push(`"Member ${m} ${f.label.replace(/"/g, '""')}"`);
+        });
+      }
+    }
+
+    headerCols.push('"Status"', '"Day"', '"Date"', '"Start Time"', '"End Time"', '"Registered At"');
+
+    // ── Build data rows ──
     const rows = registrations.map((reg, i) => {
-      const fieldValues = subEvent.formFields
-        .sort((a, b) => a.order - b.order)
-        .map(field => {
-          const resp = reg.responses.find(r => r.fieldId.toString() === field._id.toString());
-          if (!resp) return '""';
-          const val = Array.isArray(resp.value) ? resp.value.join("; ") : resp.value;
-          return `"${String(val).replace(/"/g, '""')}"`;
+      const cols = [];
+
+      // Index
+      cols.push(i + 1);
+
+      // Leader basics — wrap phone in = to force text in Excel
+      cols.push(`"${(reg.participantName  || '').replace(/"/g, '""')}"`);
+      cols.push(`"${(reg.participantEmail || '').replace(/"/g, '""')}"`);
+      // Force phone as text so Excel doesn't convert to scientific notation
+      cols.push(`"'${(reg.participantPhone || '').replace(/"/g, '""')}"`);
+
+      // Leader custom field responses
+      sortedFields.forEach(field => {
+        const resp = (reg.responses || []).find(r => r.fieldId && r.fieldId.toString() === field._id.toString());
+        if (!resp || resp.value === null || resp.value === undefined) {
+          cols.push('""');
+          return;
+        }
+        if (field.type === 'file') {
+          const url = resp.value || '';
+          cols.push(`"${String(url).replace(/"/g, '""')}"`);
+          return;
+        }
+        const val = Array.isArray(resp.value) ? resp.value.join('; ') : resp.value;
+        cols.push(`"${String(val).replace(/"/g, '""')}"`);
+      });
+
+      // Team member columns
+      if (subEvent.enableTeamMembers) {
+        const members = (reg.teamMembers || []).map(m => {
+          if (typeof m === 'string') return { name: m, email: '', phone: '', responses: [] };
+          return m;
         });
 
-      const teamCol = subEvent.enableTeamMembers
-        ? [`"${(reg.teamMembers || []).join("; ")}"`]
-        : [];
+        for (let m = 0; m < maxMemberCount; m++) {
+          const member = members[m] || null;
+          cols.push(member ? `"${(member.name  || '').replace(/"/g, '""')}"` : '""');
+          cols.push(member ? `"${(member.email || '').replace(/"/g, '""')}"` : '""');
+          // Force phone as text
+          cols.push(member && member.phone ? `"'${(member.phone || '').replace(/"/g, '""')}"` : '""');
 
-      return [
-        i + 1,
-        `"${(reg.participantName  || "").replace(/"/g, '""')}"`,
-        `"${(reg.participantEmail || "").replace(/"/g, '""')}"`,
-        `"${(reg.participantPhone || "").replace(/"/g, '""')}"`,
-        ...fieldValues,
-        ...teamCol,
-        `"${reg.status}"`,
-        `"${subEvent.dayNumber || ""}"`,
-        `"${subEvent.eventDate ? new Date(subEvent.eventDate).toLocaleDateString("en-IN") : ""}"`,
-        `"${subEvent.startTime || ""}"`,
-        `"${subEvent.endTime || ""}"`,
-        `"${new Date(reg.createdAt).toLocaleString()}"`,
-      ].join(",");
+          // Member custom field responses
+          memberCustomFields.forEach(field => {
+            if (!member || !member.responses || member.responses.length === 0) {
+              cols.push('""');
+              return;
+            }
+            const mResp = member.responses.find(r => r.fieldId && r.fieldId.toString() === field._id.toString());
+            if (!mResp || mResp.value === null || mResp.value === undefined) {
+              cols.push('""');
+              return;
+            }
+            const mVal = Array.isArray(mResp.value) ? mResp.value.join('; ') : mResp.value;
+            cols.push(`"${String(mVal).replace(/"/g, '""')}"`);
+          });
+        }
+      }
+
+      // Meta columns
+      cols.push(`"${reg.status}"`);
+      cols.push(`"${subEvent.dayNumber || ''}"`);
+      cols.push(`"${subEvent.eventDate ? new Date(subEvent.eventDate).toLocaleDateString('en-IN') : ''}"`);
+      cols.push(`"${subEvent.startTime || ''}"`);
+      cols.push(`"${subEvent.endTime   || ''}"`);
+      cols.push(`"${new Date(reg.createdAt).toLocaleString('en-IN')}"`);
+
+      return cols.join(',');
     });
 
-    const csv = [headers, ...rows].join("\n");
-    const filename = `${subEvent.title.replace(/\s+/g, "_")}_registrations.csv`;
-
-    res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.send(csv);
+    const csv      = [headerCols.join(','), ...rows].join('\n');
+    const filename = `${subEvent.title.replace(/\s+/g, '_')}_registrations.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    // BOM for Excel to correctly detect UTF-8
+    res.send('\uFEFF' + csv);
   } catch (error) {
-    console.error("Export CSV Error:", error.message);
-    res.redirect("/events");
+    console.error('Export CSV Error:', error.message);
+    res.redirect('/events');
   }
 };
-
 exports.getSubEventsByEvent = async (eventId) => {
   return await SubEvent.find({ eventId }).lean();
 };

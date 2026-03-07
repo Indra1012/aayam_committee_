@@ -1,6 +1,5 @@
 <!-- views/events/register.ejs -->
 <%
-  /* ── If this sub-event uses an external registration link, redirect immediately ── */
   if (subEvent.externalRegistrationLink && subEvent.externalRegistrationLink.trim() !== '') {
 %>
   <script>window.location.replace("<%= subEvent.externalRegistrationLink %>");</script>
@@ -34,7 +33,6 @@
       <p class="page-subtitle"><%= subEvent.description %></p>
     <% } %>
 
-    <!-- Date / time badge -->
     <% if (subEvent.startTime || subEvent.eventDate) { %>
       <div style="margin-top:10px;display:inline-flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(166,124,82,0.08);border:1px solid rgba(166,124,82,0.20);border-radius:var(--r-full);">
         <i class="bi bi-clock" style="color:var(--br);"></i>
@@ -82,28 +80,21 @@
       </div>
     <% } %>
 
-    <!-- ── Poster + QR section ── -->
+    <!-- ── Poster + QR ── -->
     <%
       var hasPoster = subEvent.posterImage && subEvent.posterImage.trim() !== '';
       var hasQR     = subEvent.qrImage     && subEvent.qrImage.trim()     !== '';
     %>
-
     <% if (hasPoster || hasQR) { %>
       <div class="reg-media-block" data-aos="fade-up">
-
-        <!-- Poster — always centred -->
         <% if (hasPoster) { %>
           <div class="reg-poster-wrap">
             <img src="<%= subEvent.posterImage %>" alt="<%= subEvent.title %> Poster" class="reg-poster-img">
           </div>
         <% } %>
-
-        <!-- QR code — shown below poster when both exist, or alone -->
         <% if (hasQR) { %>
           <div class="reg-qr-wrap">
-            <div style="font-size:0.7rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--br);margin-bottom:10px;">
-              Payment Instructions
-            </div>
+            <div style="font-size:0.7rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--br);margin-bottom:10px;">Payment Instructions</div>
             <p style="font-size:0.88rem;color:var(--tx-muted);margin-bottom:16px;text-align:center;">
               Scan the QR code to complete your payment, then upload the screenshot below.
             </p>
@@ -112,13 +103,17 @@
             </div>
           </div>
         <% } %>
-
       </div>
     <% } %>
 
     <!-- ── Registration Form ── -->
     <%
       const isFullFinal = subEvent.maxParticipants && subEvent.registrationCount >= subEvent.maxParticipants;
+
+      // Build list of custom fields that should also repeat per member
+      const memberFields = (subEvent.formFields || [])
+        .filter(function(f){ return f.askForMembers; })
+        .sort(function(a,b){ return a.order - b.order; });
     %>
 
     <% if (!isFullFinal) { %>
@@ -126,10 +121,13 @@
       <div class="form-card" data-aos="fade-up" data-aos-delay="100">
         <form id="registrationForm" action="/register/<%= subEvent._id %>" method="POST" enctype="multipart/form-data" novalidate>
 
-          <!-- ── Built-in participant fields ── -->
+          <!-- ══════════════════════════════
+               LEADER / PARTICIPANT DETAILS
+          ══════════════════════════════ -->
           <div style="padding:16px;background:rgba(166,124,82,0.05);border:1px solid rgba(166,124,82,0.16);border-radius:var(--r-md);margin-bottom:22px;">
             <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--br);margin-bottom:14px;">
-              <i class="bi bi-person-fill"></i> Participant Details
+              <i class="bi bi-person-fill"></i>
+              <%= subEvent.enableTeamMembers ? 'Team Leader Details' : 'Participant Details' %>
             </div>
 
             <div class="form-group-custom">
@@ -157,29 +155,30 @@
             </div>
           </div>
 
-          <!-- ── Dynamic form fields (only rendered if fields exist) ── -->
+          <!-- ══════════════════════════════
+               CUSTOM FORM FIELDS (leader)
+          ══════════════════════════════ -->
           <% if (subEvent.formFields && subEvent.formFields.length > 0) { %>
             <% subEvent.formFields.slice().sort((a, b) => a.order - b.order).forEach((field, fi) => { %>
-
               <div class="form-group-custom" data-aos="fade-up" data-aos-delay="<%= fi * 40 %>">
                 <label class="form-label-custom" for="field-<%= field._id %>">
                   <%= field.label %>
                   <% if (field.required) { %><span style="color:#c0392b;margin-left:2px;">*</span><% } %>
+                  <% if (field.askForMembers && subEvent.enableTeamMembers) { %>
+                    <span style="font-size:0.7rem;font-weight:600;color:var(--br);margin-left:6px;opacity:0.75;">(asked per member too)</span>
+                  <% } %>
                 </label>
 
-                <!-- TEXT -->
                 <% if (field.type === 'text') { %>
                   <input type="text" id="field-<%= field._id %>" name="responses[<%= field._id %>]"
                     class="form-control-custom" placeholder="<%= field.placeholder || '' %>"
                     <%= field.required ? 'required' : '' %>>
 
-                <!-- TEXTAREA -->
                 <% } else if (field.type === 'textarea') { %>
                   <textarea id="field-<%= field._id %>" name="responses[<%= field._id %>]"
                     class="form-control-custom" rows="3" placeholder="<%= field.placeholder || '' %>"
                     style="resize:vertical;" <%= field.required ? 'required' : '' %>></textarea>
 
-                <!-- DROPDOWN -->
                 <% } else if (field.type === 'dropdown') { %>
                   <select id="field-<%= field._id %>" name="responses[<%= field._id %>]"
                     class="form-control-custom" style="cursor:pointer;" <%= field.required ? 'required' : '' %>>
@@ -189,7 +188,6 @@
                     <% }) %>
                   </select>
 
-                <!-- CHECKBOX -->
                 <% } else if (field.type === 'checkbox') { %>
                   <div style="display:flex;flex-direction:column;gap:10px;padding:10px 0;">
                     <% field.options.forEach(opt => { %>
@@ -201,9 +199,8 @@
                     <% }) %>
                   </div>
 
-                <!-- FILE UPLOAD -->
                 <% } else if (field.type === 'file') { %>
-                  <div style="border:2px dashed rgba(166,124,82,0.32);border-radius:var(--r-md);padding:20px;text-align:center;cursor:pointer;transition:border-color 0.24s ease;"
+                  <div style="border:2px dashed rgba(166,124,82,0.32);border-radius:var(--r-md);padding:20px;text-align:center;cursor:pointer;"
                     onclick="document.getElementById('file-<%= field._id %>').click()">
                     <div style="font-size:1.6rem;margin-bottom:6px;opacity:0.5;">📎</div>
                     <div style="font-size:0.85rem;color:var(--tx-muted);">Click to upload file</div>
@@ -213,25 +210,30 @@
                     <div id="filename-<%= field._id %>" style="font-size:0.8rem;color:var(--br);margin-top:6px;font-weight:600;"></div>
                   </div>
                 <% } %>
-
               </div>
             <% }) %>
           <% } %>
-          <!-- No "no fields" message — just silently omit -->
 
-          <!-- ── Team Members (if enabled) ── -->
+          <!-- ══════════════════════════════
+               TEAM MEMBERS (if enabled)
+          ══════════════════════════════ -->
           <% if (subEvent.enableTeamMembers) { %>
             <div style="border-top:1px solid var(--border-l);padding-top:22px;margin-top:10px;margin-bottom:22px;">
-              <div class="form-label-custom" style="margin-bottom:14px;">
-                <i class="bi bi-people"></i> Team Members
-                <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.78rem;color:var(--tx-muted);margin-left:6px;">
-                  (<%= subEvent.minTeamSize %>–<%= subEvent.maxTeamSize %> members)
-                </span>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                <div class="form-label-custom" style="margin-bottom:0;">
+                  <i class="bi bi-people"></i> Team Members
+                  <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.78rem;color:var(--tx-muted);margin-left:6px;">
+                    (<%= subEvent.minTeamSize %>–<%= subEvent.maxTeamSize %> members)
+                  </span>
+                </div>
               </div>
-              <div id="teamMembersContainer" style="display:flex;flex-direction:column;gap:10px;">
-                <input type="text" name="teamMembers[]" class="form-control-custom" placeholder="Member 1 name">
-              </div>
-              <button type="button" id="addMemberBtn" class="btn-details" style="margin-top:12px;" data-max="<%= subEvent.maxTeamSize %>">
+
+              <!-- Member cards injected here by JS -->
+              <div id="teamMembersContainer" style="display:flex;flex-direction:column;gap:14px;"></div>
+
+              <button type="button" id="addMemberBtn" class="btn-details" style="margin-top:12px;"
+                data-max="<%= subEvent.maxTeamSize %>">
                 <i class="bi bi-plus"></i> Add Member
               </button>
               <div id="teamError" style="display:none;font-size:0.82rem;color:#c0392b;margin-top:8px;font-weight:600;">
@@ -240,7 +242,7 @@
             </div>
           <% } %>
 
-          <!-- ── Payment Screenshot (if required) ── -->
+          <!-- ── Payment Screenshot ── -->
           <% if (subEvent.requirePaymentScreenshot) { %>
             <div class="form-group-custom" style="border-top:1px solid var(--border-l);padding-top:22px;">
               <label class="form-label-custom">
@@ -278,7 +280,6 @@
       </div>
 
     <% } else { %>
-      <!-- Full state -->
       <div class="gallery-empty" data-aos="fade-up">
         <div class="gallery-empty-icon">🔒</div>
         <p style="color:var(--tx-muted);">Registrations for this session are full.</p>
@@ -299,98 +300,179 @@
   .progress-fill-normal { background: linear-gradient(90deg, var(--br), var(--gold)); }
   .progress-fill-full   { background: linear-gradient(90deg, #c0392b, #e74c3c); }
 
-  /* ── Poster + QR media block ── */
-  .reg-media-block {
-    background: var(--cream-alt);
-    border: 1px solid var(--border-l);
-    border-radius: var(--r-lg);
-    overflow: hidden;
-    margin-bottom: 26px;
-    text-align: center;
-  }
+  .reg-media-block { background: var(--cream-alt); border: 1px solid var(--border-l); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 26px; text-align: center; }
+  .reg-poster-wrap { display: flex; justify-content: center; padding: clamp(16px,2.5vw,24px) clamp(16px,2.5vw,24px) 0; }
+  .reg-poster-img  { max-width: 420px; width: 100%; border-radius: var(--r-md); box-shadow: var(--sh-sm); display: block; }
+  .reg-qr-wrap     { display: flex; flex-direction: column; align-items: center; padding: clamp(18px,2.5vw,28px); border-top: 1px solid var(--border-l); margin-top: clamp(16px,2.5vw,24px); }
 
-  /* Poster — full width, centred */
-  .reg-poster-wrap {
-    display: flex;
-    justify-content: center;
-    padding: clamp(16px,2.5vw,24px) clamp(16px,2.5vw,24px) 0;
-  }
-  .reg-poster-img {
-    max-width: 420px;
-    width: 100%;
+  /* ── Member card ── */
+  .member-card {
+    background: rgba(166,124,82,0.04);
+    border: 1.5px solid rgba(166,124,82,0.20);
     border-radius: var(--r-md);
-    box-shadow: var(--sh-sm);
-    display: block;
+    overflow: hidden;
   }
-
-  /* QR section below poster */
-  .reg-qr-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: clamp(18px,2.5vw,28px);
-    border-top: 1px solid var(--border-l);
-    margin-top: clamp(16px,2.5vw,24px);
+  .member-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(166,124,82,0.08);
+    border-bottom: 1px solid rgba(166,124,82,0.15);
   }
+  .member-card-title { font-size: 0.8rem; font-weight: 700; color: var(--br); text-transform: uppercase; letter-spacing: 1px; }
+  .member-card-body  { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .member-remove-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--tx-muted); font-size: 0.85rem; padding: 2px 6px;
+    border-radius: var(--r-sm); transition: color 0.2s;
+  }
+  .member-remove-btn:hover { color: #c0392b; }
 
   body.dark-mode .reg-media-block { background: var(--dk-surface); border-color: var(--border-d); }
-  body.dark-mode .reg-qr-wrap { border-color: var(--border-d); }
+  body.dark-mode .reg-qr-wrap     { border-color: var(--border-d); }
+  body.dark-mode .member-card     { background: rgba(255,255,255,0.03); border-color: var(--border-d); }
+  body.dark-mode .member-card-header { background: rgba(255,255,255,0.05); border-color: var(--border-d); }
 </style>
 
 <script>
-  // ── Show filename after file pick ──
-  function showFileName(input) {
-    const id = input.id.replace('file-', 'filename-');
-    const el = document.getElementById(id);
-    if (el && input.files.length > 0) el.textContent = '✓ ' + input.files[0].name;
-  }
+// ── Data passed from server ──
+var enableTeamMembers = <%= subEvent.enableTeamMembers ? 'true' : 'false' %>;
+var maxTeamSize       = <%= subEvent.maxTeamSize || 1 %>;
+var minTeamSize       = <%= subEvent.minTeamSize || 1 %>;
 
-  // ── Payment screenshot preview ──
-  function handlePaymentUpload(input) {
-    if (!input.files || !input.files.length) return;
-    const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById('paymentPreviewImg').src = e.target.result;
-      document.getElementById('paymentFileName').textContent = '✓ ' + file.name;
-      document.getElementById('paymentPreview').style.display = 'block';
-      document.getElementById('paymentDropzone').style.borderColor = 'var(--br)';
-      document.getElementById('paymentDropzone').style.background = 'rgba(166,124,82,0.04)';
-    };
-    reader.readAsDataURL(file);
-  }
+// Custom fields that also apply to each member (only text/textarea/dropdown types make sense for members)
+var memberFields = <%- JSON.stringify(
+  (subEvent.formFields || [])
+    .filter(function(f){ return f.askForMembers && f.type !== 'file'; })
+    .sort(function(a,b){ return a.order - b.order; })
+    .map(function(f){ return { _id: f._id, label: f.label, type: f.type, placeholder: f.placeholder || '', required: f.required, options: f.options || [] }; })
+) %>;
 
-  // ── Team member add ──
-  const addBtn    = document.getElementById('addMemberBtn');
-  const container = document.getElementById('teamMembersContainer');
-  const teamError = document.getElementById('teamError');
+var memberCount   = 0;
+var container     = document.getElementById('teamMembersContainer');
+var addBtn        = document.getElementById('addMemberBtn');
+var teamError     = document.getElementById('teamError');
 
-  if (addBtn && container) {
-    const maxMembers = parseInt(addBtn.dataset.max) || 99;
-    addBtn.addEventListener('click', () => {
-      const current = container.querySelectorAll('input').length;
-      if (current >= maxMembers) { teamError.style.display = 'block'; return; }
-      teamError.style.display = 'none';
-      const input = document.createElement('input');
-      input.type        = 'text';
-      input.name        = 'teamMembers[]';
-      input.placeholder = `Member ${current + 1} name`;
-      input.className   = 'form-control-custom';
-      container.appendChild(input);
-      if (current + 1 >= maxMembers) addBtn.style.display = 'none';
-    });
-  }
+// ── Build one member card ──
+function buildMemberCard(index) {
+  memberCount++;
+  var card = document.createElement('div');
+  card.className = 'member-card';
+  card.dataset.memberIndex = index;
 
-  // ── Submit spinner ──
-  const form = document.getElementById('registrationForm');
-  if (form) {
-    form.addEventListener('submit', function() {
-      document.getElementById('submitText').style.display    = 'none';
-      document.getElementById('submitSpinner').style.display = 'inline';
-      document.getElementById('submitBtn').disabled          = true;
-      document.getElementById('submitBtn').style.opacity     = '0.8';
-    });
-  }
+  // Header
+  var header = document.createElement('div');
+  header.className = 'member-card-header';
+  header.innerHTML =
+    '<span class="member-card-title"><i class="bi bi-person"></i> Member ' + memberCount + '</span>' +
+    '<button type="button" class="member-remove-btn" onclick="removeMember(this)"><i class="bi bi-x-lg"></i> Remove</button>';
+
+  // Body
+  var body = document.createElement('div');
+  body.className = 'member-card-body';
+
+  // Default: Name, Email, Phone
+  body.innerHTML +=
+    '<div>' +
+      '<label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--br);display:block;margin-bottom:5px;">Full Name <span style="color:#c0392b;">*</span></label>' +
+      '<input type="text" name="members[' + index + '][name]" class="form-control-custom" placeholder="Member name" required>' +
+    '</div>' +
+    '<div>' +
+      '<label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--br);display:block;margin-bottom:5px;">Email Address <span style="color:#c0392b;">*</span></label>' +
+      '<input type="email" name="members[' + index + '][email]" class="form-control-custom" placeholder="member@example.com" required>' +
+    '</div>' +
+    '<div>' +
+      '<label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--br);display:block;margin-bottom:5px;">Phone Number <span style="color:#c0392b;">*</span></label>' +
+      '<input type="tel" name="members[' + index + '][phone]" class="form-control-custom" placeholder="+91 XXXXX XXXXX" required>' +
+    '</div>';
+
+  // Custom member fields
+  memberFields.forEach(function(field) {
+    var fieldHtml = '<div><label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--br);display:block;margin-bottom:5px;">' +
+      field.label + (field.required ? ' <span style="color:#c0392b;">*</span>' : '') + '</label>';
+
+    var fieldName = 'members[' + index + '][responses][' + field._id + ']';
+
+    if (field.type === 'text') {
+      fieldHtml += '<input type="text" name="' + fieldName + '" class="form-control-custom" placeholder="' + field.placeholder + '"' + (field.required ? ' required' : '') + '>';
+    } else if (field.type === 'textarea') {
+      fieldHtml += '<textarea name="' + fieldName + '" class="form-control-custom" rows="2" placeholder="' + field.placeholder + '"' + (field.required ? ' required' : '') + ' style="resize:vertical;"></textarea>';
+    } else if (field.type === 'dropdown') {
+      fieldHtml += '<select name="' + fieldName + '" class="form-control-custom"' + (field.required ? ' required' : '') + '><option value="">— Select —</option>';
+      field.options.forEach(function(opt) { fieldHtml += '<option value="' + opt + '">' + opt + '</option>'; });
+      fieldHtml += '</select>';
+    }
+    fieldHtml += '</div>';
+    body.innerHTML += fieldHtml;
+  });
+
+  card.appendChild(header);
+  card.appendChild(body);
+  return card;
+}
+
+function removeMember(btn) {
+  var card = btn.closest('.member-card');
+  if (card) card.remove();
+  // Recount & re-label
+  memberCount = 0;
+  container.querySelectorAll('.member-card').forEach(function(c) {
+    memberCount++;
+    var title = c.querySelector('.member-card-title');
+    if (title) title.innerHTML = '<i class="bi bi-person"></i> Member ' + memberCount;
+  });
+  if (addBtn) addBtn.style.display = 'inline-flex';
+  if (teamError) teamError.style.display = 'none';
+}
+
+// ── Add member button ──
+if (addBtn && container && enableTeamMembers) {
+  // Add first member card on load
+  container.appendChild(buildMemberCard(0));
+
+  addBtn.addEventListener('click', function() {
+    var current = container.querySelectorAll('.member-card').length;
+    if (current >= maxTeamSize) {
+      if (teamError) teamError.style.display = 'block';
+      return;
+    }
+    if (teamError) teamError.style.display = 'none';
+    container.appendChild(buildMemberCard(current));
+    if (current + 1 >= maxTeamSize) addBtn.style.display = 'none';
+  });
+}
+
+// ── File name display ──
+function showFileName(input) {
+  var id = input.id.replace('file-', 'filename-');
+  var el = document.getElementById(id);
+  if (el && input.files.length > 0) el.textContent = '✓ ' + input.files[0].name;
+}
+
+// ── Payment screenshot preview ──
+function handlePaymentUpload(input) {
+  if (!input.files || !input.files.length) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('paymentPreviewImg').src = e.target.result;
+    document.getElementById('paymentFileName').textContent = '✓ ' + file.name;
+    document.getElementById('paymentPreview').style.display = 'block';
+    document.getElementById('paymentDropzone').style.borderColor = 'var(--br)';
+    document.getElementById('paymentDropzone').style.background = 'rgba(166,124,82,0.04)';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Submit spinner ──
+var form = document.getElementById('registrationForm');
+if (form) {
+  form.addEventListener('submit', function() {
+    document.getElementById('submitText').style.display    = 'none';
+    document.getElementById('submitSpinner').style.display = 'inline';
+    document.getElementById('submitBtn').disabled          = true;
+    document.getElementById('submitBtn').style.opacity     = '0.8';
+  });
+}
 </script>
 
 <% } %>

@@ -145,7 +145,7 @@
   <!-- ═══════════════════════════════
        SECTION 2 — ADD NEW SUBEVENT
   ════════════════════════════════ -->
-<div class="edit-section-card" data-aos="fade-up" style="border-left:4px solid var(--br);">
+  <div class="edit-section-card" data-aos="fade-up" style="border-left:4px solid var(--br);">
     <div class="edit-section-header">
       <div class="edit-section-icon" style="background:rgba(166,124,82,0.15);">➕</div>
       <div>
@@ -167,7 +167,6 @@
           <textarea name="description" class="form-control-custom" rows="2"></textarea>
         </div>
 
-        <!-- Day / Date / Time row -->
         <div class="edit-field-group">
           <label class="form-label-custom">Day Number</label>
           <input type="number" name="dayNumber" class="form-control-custom" min="1" placeholder="e.g. 1, 2, 3">
@@ -227,19 +226,13 @@
           <input type="file" name="posterImage" class="form-control-custom" accept="image/*">
         </div>
 
-        <!-- ── NEW: External Registration Link ── -->
         <div class="edit-field-group" style="grid-column:1/-1;">
           <label class="form-label-custom">
             Google Form / Registration Link
             <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(optional — redirects users to external form)</span>
           </label>
-          <input
-            type="url"
-            name="externalRegistrationLink"
-            class="form-control-custom"
-            placeholder="https://forms.google.com/...">
+          <input type="url" name="externalRegistrationLink" class="form-control-custom" placeholder="https://forms.google.com/...">
         </div>
-        <!-- ── END NEW ── -->
 
       </div>
 
@@ -307,7 +300,6 @@
                 <textarea name="description" class="form-control-custom" rows="2"><%= sub.description || '' %></textarea>
               </div>
 
-              <!-- Day / Date / Time -->
               <div class="edit-field-group">
                 <label class="form-label-custom">Day Number</label>
                 <input type="number" name="dayNumber" class="form-control-custom" min="1"
@@ -406,7 +398,7 @@
             </div>
           </form>
 
-          <!-- Delete (separate form to avoid accidental submit) -->
+          <!-- Delete (separate form) -->
           <form action="/subevents/<%= sub._id %>/delete" method="POST"
             onsubmit="return confirm('Delete this sub-event and all its registrations?')"
             style="margin-top:10px;">
@@ -426,37 +418,114 @@
             ✓ Built-in fields always included: <strong>Participant Name</strong>, <strong>Email</strong>, <strong>Phone Number</strong>
           </div>
 
-          <!-- Existing custom fields -->
+          <!-- ── Existing custom fields ── -->
           <% if (sub.formFields && sub.formFields.length > 0) { %>
             <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
               <% sub.formFields.slice().sort(function(a,b){ return a.order-b.order; }).forEach(function(field) { %>
-                <div class="field-chip">
+
+                <!-- Field chip row -->
+                <div class="field-chip" id="field-chip-<%= field._id %>">
                   <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
                     <span class="field-type-badge field-type-<%= field.type %>"><%= field.type %></span>
                     <div style="min-width:0;">
                       <div style="font-weight:600;font-size:0.88rem;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                         <%= field.label %>
                         <% if (field.required) { %><span style="color:#c0392b;margin-left:3px;">*</span><% } %>
+                        <% if (field.askForMembers) { %>
+                          <span style="font-size:0.68rem;background:rgba(166,124,82,0.14);color:var(--br);padding:1px 7px;border-radius:20px;margin-left:5px;font-weight:700;">👥 per member</span>
+                        <% } %>
                       </div>
                       <% if (field.options && field.options.length > 0) { %>
                         <div style="font-size:0.72rem;color:var(--tx-muted);">Options: <%= field.options.join(' · ') %></div>
                       <% } %>
                     </div>
                   </div>
-                  <form action="/subevents/<%= sub._id %>/fields/<%= field._id %>/delete" method="POST" style="margin:0;">
-                    <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--tx-muted);padding:4px 6px;border-radius:var(--r-sm);transition:color 0.2s;"
-                      onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='var(--tx-muted)'">
-                      <i class="bi bi-x-lg"></i>
+                  <!-- ── Edit + Delete buttons ── -->
+                  <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                    <button type="button" onclick="toggleEditField('<%= field._id %>')" class="field-edit-btn">
+                      <i class="bi bi-pencil"></i> Edit
                     </button>
+                    <form action="/subevents/<%= sub._id %>/fields/<%= field._id %>/delete" method="POST" style="margin:0;">
+                      <button type="submit"
+                        style="background:none;border:none;cursor:pointer;color:var(--tx-muted);padding:4px 6px;border-radius:var(--r-sm);transition:color 0.2s;"
+                        onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='var(--tx-muted)'">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                <!-- ── Inline edit form (hidden by default) ── -->
+                <div id="edit-field-form-<%= field._id %>" class="inline-edit-form" style="display:none;">
+                  <form action="/subevents/<%= sub._id %>/fields/<%= field._id %>/edit" method="POST">
+                    <input type="hidden" name="_anchor" value="subevent-<%= sub._id %>">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+
+                      <div class="edit-field-group" style="grid-column:1/-1;">
+                        <label class="form-label-custom">Field Label <span style="color:#c0392b;">*</span></label>
+                        <input type="text" name="label" class="form-control-custom" value="<%= field.label %>" required>
+                      </div>
+
+                      <div class="edit-field-group">
+                        <label class="form-label-custom">Field Type <span style="color:#c0392b;">*</span></label>
+                        <select name="type" class="form-control-custom" id="editTypeSelect-<%= field._id %>" required>
+                          <option value="text"     <%= field.type==='text'     ? 'selected':'' %>>Text (single line)</option>
+                          <option value="textarea" <%= field.type==='textarea' ? 'selected':'' %>>Textarea (multi-line)</option>
+                          <option value="dropdown" <%= field.type==='dropdown' ? 'selected':'' %>>Dropdown</option>
+                          <option value="checkbox" <%= field.type==='checkbox' ? 'selected':'' %>>Checkbox (multi-select)</option>
+                          <option value="file"     <%= field.type==='file'     ? 'selected':'' %>>File Upload</option>
+                        </select>
+                      </div>
+
+                      <div class="edit-field-group">
+                        <label class="form-label-custom">Placeholder</label>
+                        <input type="text" name="placeholder" class="form-control-custom"
+                          value="<%= field.placeholder || '' %>" placeholder="Optional hint text">
+                      </div>
+
+                      <div class="edit-field-group" id="editOptionsBox-<%= field._id %>"
+                        style="<%= (field.type==='dropdown'||field.type==='checkbox') ? '' : 'display:none;' %>grid-column:1/-1;">
+                        <label class="form-label-custom">Options</label>
+                        <input type="text" name="options" class="form-control-custom"
+                          value="<%= (field.options||[]).join(', ') %>" placeholder="Option1, Option2, Option3">
+                        <div style="font-size:0.72rem;color:var(--tx-muted);margin-top:4px;">Separate options with commas</div>
+                      </div>
+                    </div>
+
+                    <!-- Toggles for edit -->
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;">
+                      <label class="toggle-pill">
+                        <input type="checkbox" name="required" <%= field.required ? 'checked' : '' %>>
+                        <span class="toggle-track"></span>
+                        Required field
+                      </label>
+                      <label class="toggle-pill" id="editAskMembersToggle-<%= field._id %>"
+                        style="<%= field.type==='file' ? 'display:none;' : '' %>">
+                        <input type="checkbox" name="askForMembers" <%= field.askForMembers ? 'checked' : '' %>>
+                        <span class="toggle-track"></span>
+                        Ask for each team member too
+                      </label>
+                    </div>
+
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                      <button type="submit" class="btn-register" style="padding:8px 18px;font-size:0.84rem;">
+                        <i class="bi bi-floppy"></i> Save Changes
+                      </button>
+                      <button type="button" onclick="toggleEditField('<%= field._id %>')"
+                        class="btn-details" style="font-size:0.84rem;padding:8px 14px;">
+                        Cancel
+                      </button>
+                    </div>
                   </form>
                 </div>
+
               <% }) %>
             </div>
           <% } else { %>
             <p style="font-size:0.85rem;color:var(--tx-muted);font-style:italic;margin-bottom:14px;">No extra fields yet — add below.</p>
           <% } %>
 
-          <!-- Add field form -->
+          <!-- ── Add field form ── -->
           <div class="add-field-box">
             <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--br);margin-bottom:12px;">
               <i class="bi bi-plus-circle"></i> Add New Field
@@ -488,11 +557,21 @@
                   <div style="font-size:0.72rem;color:var(--tx-muted);margin-top:4px;">Separate options with commas</div>
                 </div>
               </div>
-              <label class="toggle-pill" style="margin:10px 0 14px;">
-                <input type="checkbox" name="required">
-                <span class="toggle-track"></span>
-                Required field
-              </label>
+
+              <!-- ── Toggles for new field ── -->
+              <div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;">
+                <label class="toggle-pill">
+                  <input type="checkbox" name="required">
+                  <span class="toggle-track"></span>
+                  Required field
+                </label>
+                <label class="toggle-pill" id="askForMembersToggle-<%= sub._id %>">
+                  <input type="checkbox" name="askForMembers">
+                  <span class="toggle-track"></span>
+                  Ask for each team member too
+                </label>
+              </div>
+
               <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.85rem;">
                 <i class="bi bi-floppy"></i> Save Field
               </button>
@@ -510,77 +589,37 @@
 
 <style>
 /* ── Section cards ── */
-.edit-section-card {
-  background: var(--cream-alt);
-  border: 1px solid var(--border-l);
-  border-radius: var(--r-lg);
-  padding: clamp(20px,3vw,32px);
-  margin-bottom: 24px;
-}
-.edit-section-header {
-  display:flex; align-items:center; gap:14px;
-  margin-bottom:22px; padding-bottom:16px; border-bottom:1px solid var(--border-l);
-}
+.edit-section-card { background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-lg);padding:clamp(20px,3vw,32px);margin-bottom:24px; }
+.edit-section-header { display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--border-l); }
 .edit-section-icon { width:44px;height:44px;border-radius:var(--r-md);background:rgba(166,124,82,0.10);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0; }
 .edit-section-title { font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--tx); }
-.edit-section-sub   { font-size:0.78rem;color:var(--tx-muted);margin-top:2px; }
+.edit-section-sub { font-size:0.78rem;color:var(--tx-muted);margin-top:2px; }
 .edit-field-group { margin-bottom:14px; }
 .edit-field-group:last-child { margin-bottom:0; }
 
 /* ── Visibility radio ── */
-.visibility-radio { cursor:pointer; display:block; }
+.visibility-radio { cursor:pointer;display:block; }
 .visibility-radio input[type="radio"] { display:none; }
-.vis-pill {
-  display:flex; flex-direction:column;
-  padding:12px 20px; border-radius:var(--r-md); min-width:160px;
-  border:2px solid var(--border-l); background:var(--cream);
-  transition:all 0.24s ease; cursor:pointer;
-}
-.vis-pill i { font-size:1.1rem; margin-bottom:4px; }
-.vis-pill small { font-size:0.72rem; color:var(--tx-muted); font-weight:400; margin-top:2px; }
-.visibility-radio input:checked + .vis-public {
-  border-color:#27ae60; background:rgba(39,174,96,0.08);
-  color:#1a7a3e;
-}
+.vis-pill { display:flex;flex-direction:column;padding:12px 20px;border-radius:var(--r-md);min-width:160px;border:2px solid var(--border-l);background:var(--cream);transition:all 0.24s ease;cursor:pointer; }
+.vis-pill i { font-size:1.1rem;margin-bottom:4px; }
+.vis-pill small { font-size:0.72rem;color:var(--tx-muted);font-weight:400;margin-top:2px; }
+.visibility-radio input:checked + .vis-public { border-color:#27ae60;background:rgba(39,174,96,0.08);color:#1a7a3e; }
 .visibility-radio input:checked + .vis-public small { color:#27ae60; }
-.visibility-radio input:checked + .vis-private {
-  border-color:#c0392b; background:rgba(192,57,43,0.07);
-  color:#c0392b;
-}
+.visibility-radio input:checked + .vis-private { border-color:#c0392b;background:rgba(192,57,43,0.07);color:#c0392b; }
 .visibility-radio input:checked + .vis-private small { color:#c0392b; }
 body.dark-mode .vis-pill { background:var(--dk-surface); }
 
 /* ── Rich text editor ── */
-.richtext-toolbar {
-  display:flex; flex-wrap:wrap; gap:4px;
-  padding:6px 10px;
-  background:rgba(166,124,82,0.06);
-  border:1.5px solid var(--border-l);
-  border-bottom:none;
-  border-radius:var(--r-sm) var(--r-sm) 0 0;
-}
-.richtext-toolbar button {
-  padding:4px 10px; font-size:0.82rem;
-  border:1px solid var(--border-l);
-  border-radius:4px; background:var(--cream);
-  color:var(--tx-mid); cursor:pointer;
-  transition:all 0.18s ease; font-family:var(--font-body);
-}
-.richtext-toolbar button:hover { background:rgba(166,124,82,0.12); border-color:var(--br); color:var(--br); }
-.tb-sep { width:1px; background:var(--border-l); margin:2px 4px; }
-.richtext-editor {
-  min-height:120px; padding:12px 14px;
-  border:1.5px solid var(--border-l);
-  border-radius:0 0 var(--r-sm) var(--r-sm);
-  background:var(--cream); color:var(--tx);
-  font-family:var(--font-body); font-size:0.95rem;
-  line-height:1.75; outline:none;
-}
-.richtext-editor:focus { border-color:var(--br); box-shadow:0 0 0 3px rgba(166,124,82,0.14); }
-.richtext-editor ul, .richtext-editor ol { padding-left:20px; }
-body.dark-mode .richtext-editor { background:var(--dk-elevate); color:var(--dk-text); border-color:var(--border-d); }
-body.dark-mode .richtext-toolbar { background:rgba(210,180,140,0.06); border-color:var(--border-d); }
-body.dark-mode .richtext-toolbar button { background:var(--dk-surface); color:var(--dk-muted); border-color:var(--border-d); }
+.richtext-toolbar { display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px;background:rgba(166,124,82,0.06);border:1.5px solid var(--border-l);border-bottom:none;border-radius:var(--r-sm) var(--r-sm) 0 0; }
+.richtext-toolbar button { padding:4px 10px;font-size:0.82rem;border:1px solid var(--border-l);border-radius:4px;background:var(--cream);color:var(--tx-mid);cursor:pointer;transition:all 0.18s ease;font-family:var(--font-body); }
+.richtext-toolbar button:hover { background:rgba(166,124,82,0.12);border-color:var(--br);color:var(--br); }
+.tb-sep { width:1px;background:var(--border-l);margin:2px 4px; }
+.richtext-editor { min-height:120px;padding:12px 14px;border:1.5px solid var(--border-l);border-radius:0 0 var(--r-sm) var(--r-sm);background:var(--cream);color:var(--tx);font-family:var(--font-body);font-size:0.95rem;line-height:1.75;outline:none; }
+.richtext-editor:focus { border-color:var(--br);box-shadow:0 0 0 3px rgba(166,124,82,0.14); }
+.richtext-editor ul,.richtext-editor ol { padding-left:20px; }
+body.dark-mode .richtext-editor { background:var(--dk-elevate);color:var(--dk-text);border-color:var(--border-d); }
+body.dark-mode .richtext-toolbar { background:rgba(210,180,140,0.06);border-color:var(--border-d); }
+body.dark-mode .richtext-toolbar button { background:var(--dk-surface);color:var(--dk-muted);border-color:var(--border-d); }
 
 /* ── Sub-event master card ── */
 .subevent-master-card { background:var(--cream-alt);border:2px solid var(--br);border-radius:var(--r-lg);overflow:hidden;margin-bottom:28px;box-shadow:0 4px 20px rgba(166,124,82,0.10); }
@@ -591,14 +630,41 @@ body.dark-mode .richtext-toolbar button { background:var(--dk-surface); color:va
 .subevent-part-label { font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--br);margin-bottom:14px;display:flex;align-items:center;gap:6px; }
 
 /* ── Field chips ── */
-.field-chip { display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--cream);border:1px solid var(--border-l);border-radius:var(--r-md);transition:border-color 0.2s; }
+.field-chip { display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--cream);border:1px solid var(--border-l);border-radius:var(--r-md);transition:border-color 0.2s,border-radius 0.15s; }
 .field-chip:hover { border-color:var(--br); }
+.field-chip.is-editing { border-color:var(--br);border-bottom-left-radius:0;border-bottom-right-radius:0; }
 .field-type-badge { padding:2px 8px;border-radius:var(--r-sm);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;flex-shrink:0; }
 .field-type-text     { background:rgba(102,126,234,0.12);color:#4a5bbf; }
 .field-type-textarea { background:rgba(102,126,234,0.12);color:#4a5bbf; }
 .field-type-dropdown { background:rgba(166,124,82,0.12);color:var(--br); }
-.field-type-checkbox { background:rgba(39,174,96,0.12); color:#27ae60; }
-.field-type-file     { background:rgba(192,57,43,0.10); color:#c0392b; }
+.field-type-checkbox { background:rgba(39,174,96,0.12);color:#27ae60; }
+.field-type-file     { background:rgba(192,57,43,0.10);color:#c0392b; }
+
+/* ── NEW: Edit button on field chip ── */
+.field-edit-btn {
+  background: rgba(166,124,82,0.10);
+  border: 1px solid rgba(166,124,82,0.25);
+  cursor: pointer;
+  color: var(--br);
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.field-edit-btn:hover { background: rgba(166,124,82,0.22); }
+
+/* ── NEW: Inline edit form ── */
+.inline-edit-form {
+  background: rgba(166,124,82,0.04);
+  border: 1.5px solid rgba(166,124,82,0.25);
+  border-top: none;
+  border-bottom-left-radius: var(--r-md);
+  border-bottom-right-radius: var(--r-md);
+  padding: 16px;
+  margin-top: -4px;
+}
+
 .add-field-box { background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.30);border-radius:var(--r-md);padding:18px; }
 
 /* ── Toggle pill ── */
@@ -616,6 +682,7 @@ body.dark-mode .subevent-master-card { background:var(--dk-surface);border-color
 body.dark-mode .add-field-box { background:rgba(255,255,255,0.03); }
 body.dark-mode .field-chip { background:var(--dk-base); }
 body.dark-mode .toggle-pill { background:var(--dk-surface); }
+body.dark-mode .inline-edit-form { background:rgba(255,255,255,0.03);border-color:var(--border-d); }
 </style>
 
 
@@ -633,7 +700,6 @@ function syncEditors() {
   document.getElementById('aboutHidden').value       = aboutEditor.innerHTML;
 }
 
-// Also sync on any form submit inside this page
 document.querySelectorAll('form').forEach(function(f) {
   f.addEventListener('submit', function() {
     if (f.contains(descEditor)) {
@@ -643,21 +709,48 @@ document.querySelectorAll('form').forEach(function(f) {
   });
 });
 
-/* ── Dynamic field type → show options box ── */
+/* ── Toggle inline edit form open/close ── */
+function toggleEditField(fieldId) {
+  var form = document.getElementById('edit-field-form-' + fieldId);
+  var chip = document.getElementById('field-chip-' + fieldId);
+  if (!form) return;
+  var isOpen = form.style.display !== 'none';
+  form.style.display = isOpen ? 'none' : 'block';
+  if (chip) chip.classList.toggle('is-editing', !isOpen);
+}
+
+/* ── Add field: show options box when dropdown/checkbox selected ── */
 document.querySelectorAll('[id^="typeSelect-"]').forEach(function(select) {
-  var subId = select.id.replace('typeSelect-', '');
-  var box   = document.getElementById('optionsBox-' + subId);
+  var subId     = select.id.replace('typeSelect-', '');
+  var box       = document.getElementById('optionsBox-' + subId);
+  var askToggle = document.getElementById('askForMembersToggle-' + subId);
   function toggleOptions() {
     var show = select.value === 'dropdown' || select.value === 'checkbox';
     box.style.display = show ? 'block' : 'none';
     if (show) box.style.gridColumn = '1/-1';
+    // Hide "ask for each member" toggle for file type (files can't repeat per-member)
+    if (askToggle) askToggle.style.display = select.value === 'file' ? 'none' : 'inline-flex';
   }
   select.addEventListener('change', toggleOptions);
   toggleOptions();
 });
 
-/* ── Scroll anchor restoration after field add ── */
-document.querySelectorAll('.add-field-box form').forEach(function(form) {
+/* ── Edit field inline: show options box and manage askForMembers for file type ── */
+document.querySelectorAll('[id^="editTypeSelect-"]').forEach(function(select) {
+  var fieldId   = select.id.replace('editTypeSelect-', '');
+  var box       = document.getElementById('editOptionsBox-' + fieldId);
+  var askToggle = document.getElementById('editAskMembersToggle-' + fieldId);
+  function toggleEditOptions() {
+    var show = select.value === 'dropdown' || select.value === 'checkbox';
+    if (box) { box.style.display = show ? 'block' : 'none'; if (show) box.style.gridColumn = '1/-1'; }
+    if (askToggle) askToggle.style.display = select.value === 'file' ? 'none' : 'inline-flex';
+  }
+  select.addEventListener('change', toggleEditOptions);
+  toggleEditOptions(); // run once on load to set correct initial state
+});
+
+/* ── Scroll anchor: jump back to the right subevent after add/edit ── */
+document.querySelectorAll('.add-field-box form, .inline-edit-form form').forEach(function(form) {
   form.addEventListener('submit', function() {
     var anchor = form.querySelector('[name="_anchor"]');
     if (anchor) sessionStorage.setItem('editScrollAnchor', anchor.value);
