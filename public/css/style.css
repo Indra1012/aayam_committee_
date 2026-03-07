@@ -1432,3 +1432,28 @@ body.dark-mode .form-control:focus, body.dark-mode .form-select:focus { backgrou
   .title-highlight::after { transform: scaleX(1); }
   * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* ── MOBILE HERO TOP GAP FIX ── */
+@media (max-width: 991px) {
+  main.flex-fill {
+    padding-top: 10px !important;
+    margin-top: 10px !important;
+  }
+
+  .hs-hero {
+    padding-top: 10px !important;
+    margin-top: 10px !important;
+    min-height: unset !important;
+    height: auto !important;
+    align-items: flex-start !important;
+    padding-bottom: clamp(40px, 6vh, 70px) !important;
+  }
+
+  .hs-hero-inner {
+    padding-top: clamp(16px, 4vw, 32px) !important;
+  }
+
+  .hero-scroll-hint {
+    display: none !important;
+  }
+}

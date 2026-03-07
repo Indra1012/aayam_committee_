@@ -16,7 +16,7 @@ exports.submitReachOutForm = async (req, res) => {
   try {
     console.log("REQ BODY:", req.body); // TEMP DEBUG
 
-    const { name, email, contact, purpose, message } = req.body;
+    const { name, email, contact, purpose, subject, heardFrom, message } = req.body;
 
     if (!name || !email || !purpose || !message) {
       return res.redirect("/reachout");
@@ -27,6 +27,8 @@ exports.submitReachOutForm = async (req, res) => {
       email,
       contact,
       purpose,
+      subject, 
+      heardFrom,
       message,
     });
 

@@ -299,7 +299,7 @@
             <div class="gup-file-area" onclick="document.getElementById('speakerFileInput').click()">
               <div class="gup-file-icon">🎤</div>
               <div class="gup-file-label">Click to select speaker images</div>
-              <div class="gup-file-hint">JPG, PNG, WEBP · Multiple files allowed · Max 15</div>
+              <div class="gup-file-hint">JPG, PNG, WEBP · Multiple files allowed · Max 30</div>
               <input type="file" id="speakerFileInput" name="speakerImages" multiple accept="image/*"
                 style="display:none;" required onchange="showSpeakerFiles(this)">
               <div id="speakerFileNames" style="margin-top:10px;font-size:0.8rem;color:var(--br);font-weight:600;"></div>
@@ -372,7 +372,7 @@
             <div class="section-label" style="margin-bottom:16px;"><i class="bi bi-cloud-upload"></i> Upload Gallery Images</div>
             <div class="gallery-upload-fields">
               <div class="gup-field">
-                <label class="gup-label">Speaker / Person Name <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
+                <label class="gup-label">Event Name <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;">(optional)</span></label>
                 <input type="text" name="speakerName" class="form-control-custom" placeholder="e.g. Dr. Raj Mehta">
               </div>
               <div class="gup-field">
@@ -383,7 +383,7 @@
             <div class="gup-file-area" onclick="document.getElementById('galleryFileInput').click()">
               <div class="gup-file-icon">📷</div>
               <div class="gup-file-label">Click to select images</div>
-              <div class="gup-file-hint">JPG, PNG, WEBP · Multiple files allowed · Max 15</div>
+              <div class="gup-file-hint">JPG, PNG, WEBP · Multiple files allowed · Max 30</div>
               <input type="file" id="galleryFileInput" name="galleryImages" multiple accept="image/*"
                 style="display:none;" required onchange="showGalleryFiles(this)">
               <div id="galleryFileNames" style="margin-top:10px;font-size:0.8rem;color:var(--br);font-weight:600;"></div>
@@ -797,6 +797,27 @@ body.dark-mode .gallery-item-new.no-caption-card { background: transparent; bord
 .gup-file-label { font-size:0.88rem; font-weight:600; color:var(--tx-mid); margin-bottom:3px; }
 .gup-file-hint  { font-size:0.75rem; color:var(--tx-muted); }
 body.dark-mode .admin-gallery-upload-form { background:var(--dk-surface); }
+
+/* ── Gallery: 4 columns on desktop, 2 on mobile ── */
+.gallery-grid-new {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+  .gallery-grid-new {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .gallery-grid-new {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* ── Gallery caption — center aligned ── */
+.gallery-caption-below {
+  text-align: center;
+}
 </style>
 
 

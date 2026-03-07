@@ -22,6 +22,7 @@ const reachOutSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+   
 
     /* ===============================
        MESSAGE CONTENT
@@ -38,6 +39,8 @@ const reachOutSchema = new mongoose.Schema(
         "General Query",
       ],
     },
+     subject:    { type: String, trim: true },
+    heardFrom:  { type: String, trim: true },
 
     message: {
       type: String,

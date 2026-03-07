@@ -1,5 +1,6 @@
 <!-- views/reachout/index.ejs -->
 <div class="reachout-wrapper container">
+
   <div class="page-header text-center" data-aos="fade-down">
     <div class="section-label">Connect With Us</div>
     <h1 class="page-title">Reach Out</h1>
@@ -14,54 +15,265 @@
     </div>
   <% } %>
 
-  <div class="form-card" data-aos="fade-up" data-aos-delay="100">
+  <!-- Info chips -->
+  <div class="ro-info-chips" data-aos="fade-up" data-aos-delay="60">
+    <div class="ro-chip">
+      <i class="bi bi-lightning-charge-fill" style="color:var(--gold);"></i>
+      Quick response within 24–48 hrs
+    </div>
+    <div class="ro-chip">
+      <i class="bi bi-shield-check-fill" style="color:#27ae60;"></i>
+      Your info stays private
+    </div>
+    <div class="ro-chip">
+      <i class="bi bi-people-fill" style="color:var(--br);"></i>
+      Open to evneryone
+    </div>
+  </div>
+
+  <div class="form-card ro-form-card" data-aos="fade-up" data-aos-delay="120">
     <div class="contact-card-band" aria-hidden="true"></div>
 
     <% if (success) { %>
-      <div class="success-alert" role="alert">
-        ✅ Your message was sent successfully. We'll get back to you soon!
+      <div class="ro-success-banner" role="alert" data-aos="fade-down">
+        <span class="ro-success-icon">🎉</span>
+        <div>
+          <div style="font-weight:700;font-size:0.97rem;margin-bottom:2px;">Message sent successfully!</div>
+          <div style="font-size:0.83rem;opacity:0.85;">We've received your submission and will get back to you soon.</div>
+        </div>
       </div>
     <% } %>
 
-    <form action="/reachout" method="POST">
+    <!-- Form heading -->
+    <div class="ro-form-header">
+      <div class="ro-form-icon"><i class="bi bi-send-fill"></i></div>
+      <div>
+        <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--tx);">Send Us a Message</div>
+        <div style="font-size:0.8rem;color:var(--tx-muted);margin-top:2px;">Fill in the details below and we'll be in touch.</div>
+      </div>
+    </div>
 
-      <div class="row g-3">
-        <div class="col-md-6 form-group-custom">
-          <label class="form-label-custom">Name *</label>
-          <input type="text" name="name" class="form-control-custom" placeholder="Your full name" required>
+    <form action="/reachout" method="POST" id="reachoutForm" novalidate>
+
+      <!-- Row 1: Name + Email -->
+      <div class="ro-grid-2">
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="ro-name">
+            <i class="bi bi-person"></i> Full Name <span style="color:#c0392b;">*</span>
+          </label>
+          <input type="text" id="ro-name" name="name" class="form-control-custom"
+            placeholder="Your full name" required autocomplete="name">
         </div>
-        <div class="col-md-6 form-group-custom">
-          <label class="form-label-custom">Email *</label>
-          <input type="email" name="email" class="form-control-custom" placeholder="your@email.com" required>
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="ro-email">
+            <i class="bi bi-envelope"></i> Email Address <span style="color:#c0392b;">*</span>
+          </label>
+          <input type="email" id="ro-email" name="email" class="form-control-custom"
+            placeholder="you@example.com" required autocomplete="email">
         </div>
       </div>
 
-      <div class="row g-3">
-        <div class="col-md-6 form-group-custom">
-          <label class="form-label-custom">Contact</label>
-          <input type="text" name="contact" class="form-control-custom" placeholder="Phone number (optional)">
+      <!-- Row 2: Contact + Purpose -->
+      <div class="ro-grid-2">
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="ro-contact">
+            <i class="bi bi-telephone"></i> Phone Number
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.75rem;color:var(--tx-muted);margin-left:4px;">(optional)</span>
+          </label>
+          <input type="tel" id="ro-contact" name="contact" class="form-control-custom"
+            placeholder="+91 XXXXX XXXXX" autocomplete="tel">
         </div>
-        <div class="col-md-6 form-group-custom">
-          <label class="form-label-custom">Purpose *</label>
-          <select name="purpose" class="form-control-custom" required>
-            <option value="">Select a purpose...</option>
-            <option value="Event Feedback">Event Feedback</option>
-            <option value="Event Idea">Event Idea</option>
-            <option value="Collaboration">Collaboration</option>
-            <option value="General Query">General Query</option>
+        <div class="form-group-custom">
+          <label class="form-label-custom" for="ro-purpose">
+            <i class="bi bi-tag"></i> Purpose <span style="color:#c0392b;">*</span>
+          </label>
+          <select id="ro-purpose" name="purpose" class="form-control-custom" required style="cursor:pointer;">
+            <option value="">— Select a purpose —</option>
+            <option value="Event Feedback">💬 Event Feedback</option>
+            <option value="Event Idea">💡 Event Idea</option>
+            <option value="Collaboration">🤝 Collaboration</option>
+            <option value="Sponsorship">💼 Sponsorship</option>
+            <option value="Volunteer">🙋 Volunteer</option>
+            <option value="General Query">❓ General Query</option>
           </select>
         </div>
       </div>
 
+      <!-- Subject line -->
       <div class="form-group-custom">
-        <label class="form-label-custom">Message *</label>
-        <textarea name="message" class="form-control-custom" rows="5" placeholder="Tell us what's on your mind..." required style="resize:vertical;min-height:120px;"></textarea>
+        <label class="form-label-custom" for="ro-subject">
+          <i class="bi bi-chat-square-text"></i> Subject
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.75rem;color:var(--tx-muted);margin-left:4px;">(optional)</span>
+        </label>
+        <input type="text" id="ro-subject" name="subject" class="form-control-custom"
+          placeholder="Brief subject of your message">
       </div>
 
-      <button type="submit" class="form-submit-btn">
-        🚀 Send Message
+      <!-- Message -->
+      <div class="form-group-custom">
+        <label class="form-label-custom" for="ro-message">
+          <i class="bi bi-pencil-square"></i> Message <span style="color:#c0392b;">*</span>
+        </label>
+        <textarea id="ro-message" name="message" class="form-control-custom" rows="5"
+          placeholder="Tell us what's on your mind — the more detail, the better!"
+          required style="resize:vertical;min-height:130px;" oninput="updateCharCount(this)"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+          <span style="font-size:0.73rem;color:var(--tx-muted);">Be as specific as possible — it helps us respond better.</span>
+          <span id="charCount" style="font-size:0.72rem;color:var(--tx-muted);font-weight:600;">0 / 1000</span>
+        </div>
+      </div>
+
+      <!-- How did you hear -->
+      <div class="form-group-custom" style="margin-bottom:26px;">
+        <label class="form-label-custom">
+          <i class="bi bi-megaphone"></i> How did you hear about us?
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.75rem;color:var(--tx-muted);margin-left:4px;">(optional)</span>
+        </label>
+        <div class="ro-hear-chips" id="hearChips">
+          <% ['Instagram', 'WhatsApp', 'Word of Mouth', 'Notice Board', 'Faculty', 'Other'].forEach(function(opt){ %>
+            <label class="ro-hear-chip">
+              <input type="radio" name="heardFrom" value="<%= opt %>" style="display:none;" onchange="selectChip(this)">
+              <span><%= opt %></span>
+            </label>
+          <% }); %>
+        </div>
+      </div>
+
+      <button type="submit" class="form-submit-btn" id="roSubmitBtn">
+        <span id="roSubmitText"><i class="bi bi-send"></i>&nbsp; Send Message</span>
+        <span id="roSubmitSpinner" style="display:none;">
+          <span style="display:inline-block;animation:spin 0.7s linear infinite;">⟳</span>
+          Sending...
+        </span>
       </button>
 
     </form>
   </div>
 </div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Info chips ── */
+.ro-info-chips {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.ro-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  background: rgba(166,124,82,0.06);
+  border: 1px solid rgba(166,124,82,0.16);
+  border-radius: var(--r-full);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tx-mid);
+}
+body.dark-mode .ro-chip { background: rgba(210,180,140,0.06); border-color: var(--border-d); color: var(--dk-muted); }
+
+/* ── Form card extras ── */
+.ro-form-card { max-width: 680px; margin: 0 auto; }
+.ro-form-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-l);
+}
+body.dark-mode .ro-form-header { border-bottom-color: var(--border-d); }
+.ro-form-icon {
+  width: 46px; height: 46px;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--br), var(--br-deep));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  box-shadow: 0 6px 18px rgba(166,124,82,0.28);
+}
+body.dark-mode .ro-form-header div:last-child > div:first-child { color: var(--dk-text); }
+
+/* ── 2-col grid ── */
+.ro-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 576px) { .ro-grid-2 { grid-template-columns: 1fr; gap: 0; } }
+
+/* ── Success banner ── */
+.ro-success-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: rgba(39,174,96,0.09);
+  border: 1px solid rgba(39,174,96,0.24);
+  border-radius: var(--r-md);
+  margin-bottom: 24px;
+  color: #27ae60;
+}
+.ro-success-icon { font-size: 1.8rem; flex-shrink: 0; }
+
+/* ── Hear-from chips ── */
+.ro-hear-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ro-hear-chip {
+  cursor: pointer;
+}
+.ro-hear-chip span {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: var(--r-full);
+  border: 1.5px solid var(--border-l);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tx-muted);
+  transition: all 0.22s ease;
+  user-select: none;
+}
+.ro-hear-chip input:checked + span {
+  border-color: var(--br);
+  color: var(--br);
+  background: rgba(166,124,82,0.08);
+}
+.ro-hear-chip:hover span { border-color: var(--br); color: var(--br); }
+body.dark-mode .ro-hear-chip span { border-color: var(--border-d); color: var(--dk-muted); }
+body.dark-mode .ro-hear-chip input:checked + span { background: rgba(210,180,140,0.10); color: var(--br-light); border-color: var(--br-light); }
+</style>
+
+<script>
+function updateCharCount(el) {
+  var count = el.value.length;
+  var counter = document.getElementById('charCount');
+  if (counter) {
+    counter.textContent = count + ' / 1000';
+    counter.style.color = count > 900 ? '#c0392b' : 'var(--tx-muted)';
+  }
+  if (count > 1000) el.value = el.value.substring(0, 1000);
+}
+
+function selectChip(input) {
+  // Visual feedback already handled by CSS :checked
+}
+
+var roForm = document.getElementById('reachoutForm');
+if (roForm) {
+  roForm.addEventListener('submit', function() {
+    document.getElementById('roSubmitText').style.display    = 'none';
+    document.getElementById('roSubmitSpinner').style.display = 'inline';
+    document.getElementById('roSubmitBtn').disabled          = true;
+    document.getElementById('roSubmitBtn').style.opacity     = '0.8';
+  });
+}
+</script>
