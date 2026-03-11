@@ -4,6 +4,7 @@ const Review = require("../models/Review");
 const SubEvent = require("../models/SubEvent");
 const Registration = require("../models/Registration");
 const { uploadDocToCloud } = require("../middlewares/uploadEvent");
+const ExcelJS = require("exceljs");
 
 
 /* ── helpers ── */
@@ -12,7 +13,6 @@ function parseTime12(str) {
   return str.trim();
 }
 
-/* ── Helper: convert "09:30 AM" / "12:00 PM" etc. → total minutes (0–1439) for sorting ── */
 function timeToMinutes(str) {
   if (!str || str.trim() === "") return 9999;
   const match = str.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
@@ -28,7 +28,6 @@ function timeToMinutes(str) {
   return hours * 60 + mins;
 }
 
-/* ── Helper: fix image URL (handle old local paths) ── */
 function fixImageUrl(url) {
   if (!url) return null;
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
@@ -36,7 +35,6 @@ function fixImageUrl(url) {
   return url;
 }
 
-/* ── Helper: group & sort subEvents by dayNumber then by startTime ── */
 function groupSubEventsByDay(subEvents) {
   const sorted = [...subEvents].sort((a, b) => {
     const dayA = a.dayNumber != null ? a.dayNumber : Infinity;
@@ -57,6 +55,12 @@ function groupSubEventsByDay(subEvents) {
     .map(k => ({ day: Number(k), subEvents: dayMap[k] }));
 }
 
+/* ── Check if registration is open for a sub-event ── */
+function isRegistrationOpen(sub) {
+  if (!sub.registrationDeadline) return true;
+  return new Date() <= new Date(sub.registrationDeadline);
+}
+
 
 /* ===============================
    EVENTS LIST PAGE
@@ -68,15 +72,8 @@ exports.getEventsPage = async (req, res) => {
       { type: "upcoming", endDate: { $lt: today } },
       { $set: { type: "past" } }
     );
-
-    await Event.updateMany(
-      { isPublic: { $exists: false } },
-      { $set: { isPublic: true } }
-    );
-    await Event.updateMany(
-      { isPublic: null },
-      { $set: { isPublic: true } }
-    );
+    await Event.updateMany({ isPublic: { $exists: false } }, { $set: { isPublic: true } });
+    await Event.updateMany({ isPublic: null }, { $set: { isPublic: true } });
 
     const upcomingEvents = await Event.find({ type: "upcoming" }).sort({ startDate: 1 }).lean();
     const pastEvents     = await Event.find({ type: "past" }).sort({ startDate: -1 }).lean();
@@ -104,6 +101,10 @@ exports.getEventDetail = async (req, res) => {
 
     event.bannerImage = fixImageUrl(event.bannerImage);
 
+    if (event.posterSlides && event.posterSlides.length > 0) {
+      event.posterSlides = event.posterSlides.map(fixImageUrl);
+    }
+
     if (event.galleryImages && event.galleryImages.length > 0) {
       event.galleryImages = event.galleryImages.map(img => ({
         ...img,
@@ -130,7 +131,17 @@ exports.getEventDetail = async (req, res) => {
       return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
     });
 
+    // Attach registration open/closed status
+    subEvents.forEach(sub => {
+      sub.registrationOpen = isRegistrationOpen(sub);
+    });
+
     const groupedSubEvents = groupSubEventsByDay(subEvents);
+
+    // Sort schedule cards by order
+    if (event.scheduleCards) {
+      event.scheduleCards.sort((a, b) => a.order - b.order);
+    }
 
     res.render("events/show", { event, isPast, reviews, subEvents, groupedSubEvents });
   } catch (error) {
@@ -155,6 +166,7 @@ exports.getSubEventsPage = async (req, res) => {
 
     for (let sub of subEventsRaw) {
       sub.registrationCount = await Registration.countDocuments({ subEventId: sub._id });
+      sub.registrationOpen  = isRegistrationOpen(sub);
       if (sub.qrImage)     sub.qrImage     = fixImageUrl(sub.qrImage);
       if (sub.posterImage) sub.posterImage = fixImageUrl(sub.posterImage);
     }
@@ -167,6 +179,10 @@ exports.getSubEventsPage = async (req, res) => {
     });
 
     const groupedSubEvents = groupSubEventsByDay(subEvents);
+
+    if (event.scheduleCards) {
+      event.scheduleCards.sort((a, b) => a.order - b.order);
+    }
 
     res.render("events/subevents", { event, subEvents, groupedSubEvents });
   } catch (error) {
@@ -182,17 +198,10 @@ exports.getSubEventsPage = async (req, res) => {
 exports.addEvent = async (req, res) => {
   try {
     const { type, title, shortDescription, description, about, startDate, endDate, registrationLink, isPublic } = req.body;
-
     if (!title || !startDate || !endDate || !req.file) return res.redirect("/events");
 
     await Event.create({
-      type,
-      title,
-      shortDescription,
-      description,
-      about,
-      startDate,
-      endDate,
+      type, title, shortDescription, description, about, startDate, endDate,
       bannerImage: req.file.path,
       registrationLink: registrationLink ? registrationLink.trim() : "",
       isPublic: isPublic !== "false",
@@ -215,6 +224,7 @@ exports.getEditEvent = async (req, res) => {
     if (!event) return res.redirect("/events");
 
     event.bannerImage = fixImageUrl(event.bannerImage);
+    if (event.posterSlides) event.posterSlides = event.posterSlides.map(fixImageUrl);
 
     const subEventsRaw = await SubEvent.find({ eventId: event._id }).lean();
     const subEvents = [...subEventsRaw].sort((a, b) => {
@@ -228,6 +238,8 @@ exports.getEditEvent = async (req, res) => {
       if (sub.qrImage)     sub.qrImage     = fixImageUrl(sub.qrImage);
       if (sub.posterImage) sub.posterImage = fixImageUrl(sub.posterImage);
     });
+
+    if (event.scheduleCards) event.scheduleCards.sort((a, b) => a.order - b.order);
 
     res.render("events/edit", { event, subEvents });
   } catch (error) {
@@ -243,20 +255,12 @@ exports.getEditEvent = async (req, res) => {
 exports.updateEvent = async (req, res) => {
   try {
     const { title, shortDescription, description, about, startDate, endDate, registrationLink } = req.body;
-
     const updateData = {
-      title,
-      shortDescription,
-      description,
-      about,
-      startDate,
-      endDate,
+      title, shortDescription, description, about, startDate, endDate,
       registrationLink: registrationLink ? registrationLink.trim() : "",
       isPublic: req.body.isPublic !== "false",
     };
-
     if (req.file) updateData.bannerImage = req.file.path;
-
     await Event.findByIdAndUpdate(req.params.id, updateData);
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
@@ -318,6 +322,42 @@ exports.moveEventToPast = async (req, res) => {
 
 
 /* ===============================
+   ADD POSTER SLIDE (ADMIN)
+================================ */
+exports.addPosterSlides = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) return res.redirect(`/events/edit/${req.params.id}`);
+    const urls = req.files.map(f => f.path);
+    await Event.findByIdAndUpdate(req.params.id, {
+      $push: { posterSlides: { $each: urls } },
+    });
+    res.redirect(`/events/edit/${req.params.id}`);
+  } catch (error) {
+    console.error("Add Poster Slides Error:", error.message);
+    res.redirect("/events");
+  }
+};
+
+
+/* ===============================
+   DELETE POSTER SLIDE (ADMIN)
+================================ */
+exports.deletePosterSlide = async (req, res) => {
+  try {
+    const { id, index } = req.params;
+    const event = await Event.findById(id);
+    if (!event) return res.redirect("/events");
+    event.posterSlides.splice(parseInt(index), 1);
+    await event.save();
+    res.redirect(`/events/edit/${id}`);
+  } catch (error) {
+    console.error("Delete Poster Slide Error:", error.message);
+    res.redirect("/events");
+  }
+};
+
+
+/* ===============================
    ADD REVIEW (PUBLIC)
 ================================ */
 exports.addReview = async (req, res) => {
@@ -364,24 +404,20 @@ exports.deleteBannerImage = async (req, res) => {
 
 
 /* ===============================
-   ADD GALLERY IMAGE (with speaker + detail)
+   ADD GALLERY IMAGE
 ================================ */
 exports.addGalleryImages = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) return res.redirect(`/events/${req.params.id}`);
-
     const { speakerName, detail } = req.body;
-
     const images = req.files.map((file, i) => ({
       url: file.path,
       speakerName: Array.isArray(speakerName) ? (speakerName[i] || "") : (speakerName || ""),
       detail: Array.isArray(detail) ? (detail[i] || "") : (detail || ""),
     }));
-
     await Event.findByIdAndUpdate(req.params.id, {
       $push: { galleryImages: { $each: images } },
     });
-
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
     console.error("Add Gallery Error:", error.message);
@@ -397,12 +433,10 @@ exports.updateGalleryImageMeta = async (req, res) => {
   try {
     const { eventId, imageId } = req.params;
     const { speakerName, detail } = req.body;
-
     await Event.findOneAndUpdate(
       { _id: eventId, "galleryImages._id": imageId },
       { $set: { "galleryImages.$.speakerName": speakerName || "", "galleryImages.$.detail": detail || "" } }
     );
-
     res.redirect(`/events/${eventId}`);
   } catch (error) {
     console.error("Update Gallery Meta Error:", error.message);
@@ -417,11 +451,9 @@ exports.updateGalleryImageMeta = async (req, res) => {
 exports.deleteGalleryImage = async (req, res) => {
   try {
     const { eventId, imageId } = req.params;
-
     await Event.findByIdAndUpdate(eventId, {
       $pull: { galleryImages: { _id: imageId } },
     });
-
     res.redirect(`/events/${eventId}`);
   } catch (error) {
     console.error("Delete Gallery Image Error:", error.message);
@@ -436,19 +468,15 @@ exports.deleteGalleryImage = async (req, res) => {
 exports.addSpeakerImages = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) return res.redirect(`/events/${req.params.id}`);
-
     const { speakerName, detail } = req.body;
-
     const images = req.files.map((file, i) => ({
       url: file.path,
       speakerName: Array.isArray(speakerName) ? (speakerName[i] || "") : (speakerName || ""),
       detail: Array.isArray(detail) ? (detail[i] || "") : (detail || ""),
     }));
-
     await Event.findByIdAndUpdate(req.params.id, {
       $push: { speakerImages: { $each: images } },
     });
-
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
     console.error("Add Speaker Image Error:", error.message);
@@ -460,12 +488,10 @@ exports.updateSpeakerImageMeta = async (req, res) => {
   try {
     const { eventId, imageId } = req.params;
     const { speakerName, detail } = req.body;
-
     await Event.findOneAndUpdate(
       { _id: eventId, "speakerImages._id": imageId },
       { $set: { "speakerImages.$.speakerName": speakerName || "", "speakerImages.$.detail": detail || "" } }
     );
-
     res.redirect(`/events/${eventId}`);
   } catch (error) {
     console.error("Update Speaker Meta Error:", error.message);
@@ -476,11 +502,9 @@ exports.updateSpeakerImageMeta = async (req, res) => {
 exports.deleteSpeakerImage = async (req, res) => {
   try {
     const { eventId, imageId } = req.params;
-
     await Event.findByIdAndUpdate(eventId, {
       $pull: { speakerImages: { _id: imageId } },
     });
-
     res.redirect(`/events/${eventId}`);
   } catch (error) {
     console.error("Delete Speaker Image Error:", error.message);
@@ -530,14 +554,10 @@ exports.addDocument = async (req, res) => {
   try {
     const { title, isPublic } = req.body;
     if (!req.file || !title) return res.redirect(`/events/${req.params.id}`);
-
-    // FIXED: pass mimetype so Cloudinary appends correct extension
     const fileUrl = await uploadDocToCloud(req.file.buffer, req.file.originalname, req.file.mimetype);
-
     await Event.findByIdAndUpdate(req.params.id, {
       $push: { documents: { title, file: fileUrl, isPublic: isPublic === "on" } },
     });
-
     res.redirect(`/events/${req.params.id}`);
   } catch (error) {
     console.error("Add Document Error:", error.message);
@@ -565,6 +585,56 @@ exports.deleteDocument = async (req, res) => {
 
 
 /* =================================
+   SCHEDULE CARDS CRUD (ADMIN)
+================================= */
+
+exports.addScheduleCard = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { heading, body } = req.body;
+    if (!heading) return res.redirect(`/events/edit/${id}`);
+    const event = await Event.findById(id);
+    if (!event) return res.redirect("/events");
+    const order = (event.scheduleCards || []).length;
+    event.scheduleCards.push({ heading, body: body || "", order });
+    await event.save();
+    res.redirect(`/events/edit/${id}`);
+  } catch (error) {
+    console.error("Add Schedule Card Error:", error.message);
+    res.redirect("/events");
+  }
+};
+
+exports.updateScheduleCard = async (req, res) => {
+  try {
+    const { id, cardId } = req.params;
+    const { heading, body } = req.body;
+    await Event.findOneAndUpdate(
+      { _id: id, "scheduleCards._id": cardId },
+      { $set: { "scheduleCards.$.heading": heading || "", "scheduleCards.$.body": body || "" } }
+    );
+    res.redirect(`/events/edit/${id}`);
+  } catch (error) {
+    console.error("Update Schedule Card Error:", error.message);
+    res.redirect("/events");
+  }
+};
+
+exports.deleteScheduleCard = async (req, res) => {
+  try {
+    const { id, cardId } = req.params;
+    await Event.findByIdAndUpdate(id, {
+      $pull: { scheduleCards: { _id: cardId } },
+    });
+    res.redirect(`/events/edit/${id}`);
+  } catch (error) {
+    console.error("Delete Schedule Card Error:", error.message);
+    res.redirect("/events");
+  }
+};
+
+
+/* =================================
    SUBEVENT CRUD (ADMIN)
 ================================= */
 
@@ -575,6 +645,7 @@ exports.createSubEvent = async (req, res) => {
       title, description, maxParticipants,
       isGroupEvent, minTeamSize, maxTeamSize,
       dayNumber, eventDate, startTime, endTime,
+      registrationDeadline,
     } = req.body;
 
     const files = req.files || {};
@@ -582,9 +653,7 @@ exports.createSubEvent = async (req, res) => {
     const posterImage = files.posterImage ? files.posterImage[0].path : null;
 
     await SubEvent.create({
-      title,
-      description,
-      eventId,
+      title, description, eventId,
       maxParticipants: maxParticipants || null,
       isGroupEvent: isGroupEvent === "true",
       minTeamSize: minTeamSize || 1,
@@ -593,8 +662,8 @@ exports.createSubEvent = async (req, res) => {
       eventDate: eventDate || null,
       startTime: startTime || "",
       endTime: endTime || "",
-      qrImage,
-      posterImage,
+      registrationDeadline: registrationDeadline || null,
+      qrImage, posterImage,
       enableTeamMembers: false,
       requirePaymentScreenshot: false,
       externalRegistrationLink: req.body.externalRegistrationLink || "",
@@ -625,6 +694,7 @@ exports.updateSubEvent = async (req, res) => {
       eventDate: req.body.eventDate || null,
       startTime: req.body.startTime || "",
       endTime: req.body.endTime || "",
+      registrationDeadline: req.body.registrationDeadline || null,
       externalRegistrationLink: req.body.externalRegistrationLink || "",
     };
 
@@ -632,7 +702,14 @@ exports.updateSubEvent = async (req, res) => {
     if (files.posterImage) updateData.posterImage = files.posterImage[0].path;
 
     const updated = await SubEvent.findByIdAndUpdate(id, updateData, { new: true });
-    res.redirect(`/events/edit/${updated.eventId}`);
+
+    // Redirect back to where the request came from
+    const referer = req.body._referer || "edit";
+    if (referer === "show") {
+      res.redirect(`/events/${updated.eventId}`);
+    } else {
+      res.redirect(`/events/edit/${updated.eventId}`);
+    }
   } catch (error) {
     console.error("Update SubEvent Error:", error.message);
     res.redirect("/events");
@@ -654,6 +731,31 @@ exports.deleteSubEvent = async (req, res) => {
 };
 
 
+/* ── NEW: Delete QR image from sub-event ── */
+exports.deleteSubEventQr = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sub = await SubEvent.findByIdAndUpdate(id, { $set: { qrImage: null } }, { new: true });
+    res.redirect(`/events/edit/${sub.eventId}`);
+  } catch (error) {
+    console.error("Delete QR Error:", error.message);
+    res.redirect("/events");
+  }
+};
+
+/* ── NEW: Delete poster image from sub-event ── */
+exports.deleteSubEventPoster = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sub = await SubEvent.findByIdAndUpdate(id, { $set: { posterImage: null } }, { new: true });
+    res.redirect(`/events/edit/${sub.eventId}`);
+  } catch (error) {
+    console.error("Delete Poster Error:", error.message);
+    res.redirect("/events");
+  }
+};
+
+
 /* =================================
    FORM BUILDER
 ================================= */
@@ -662,23 +764,18 @@ exports.addFormField = async (req, res) => {
   try {
     const { id } = req.params;
     const { label, type, options, required, placeholder, askForMembers } = req.body;
-
     const subEvent = await SubEvent.findById(id);
     if (!subEvent) return res.redirect("/events");
-
     const newField = {
-      label,
-      type,
+      label, type,
       required:      required === "on",
       placeholder:   placeholder || "",
       askForMembers: askForMembers === "on" && type !== "file",
-      options:
-        type === "dropdown" || type === "checkbox"
-          ? options ? options.split(",").map(o => o.trim()) : []
-          : [],
+      options: type === "dropdown" || type === "checkbox"
+        ? options ? options.split(",").map(o => o.trim()) : []
+        : [],
       order: subEvent.formFields.length,
     };
-
     subEvent.formFields.push(newField);
     await subEvent.save();
     res.redirect(`/events/edit/${subEvent.eventId}`);
@@ -692,23 +789,18 @@ exports.updateFormField = async (req, res) => {
   try {
     const { id, fieldId } = req.params;
     const { label, type, options, required, placeholder, askForMembers } = req.body;
-
     const subEvent = await SubEvent.findById(id);
     if (!subEvent) return res.redirect("/events");
-
     const field = subEvent.formFields.id(fieldId);
     if (!field) return res.redirect(`/events/edit/${subEvent.eventId}`);
-
     field.label         = label;
     field.type          = type;
     field.required      = required === "on";
     field.placeholder   = placeholder || "";
     field.askForMembers = askForMembers === "on" && type !== "file";
-    field.options =
-      type === "dropdown" || type === "checkbox"
-        ? options ? options.split(",").map(o => o.trim()) : []
-        : [];
-
+    field.options = type === "dropdown" || type === "checkbox"
+      ? options ? options.split(",").map(o => o.trim()) : []
+      : [];
     await subEvent.save();
     res.redirect(`/events/edit/${subEvent.eventId}`);
   } catch (error) {
@@ -722,11 +814,7 @@ exports.deleteFormField = async (req, res) => {
     const { id, fieldId } = req.params;
     const subEvent = await SubEvent.findById(id);
     if (!subEvent) return res.redirect("/events");
-
-    subEvent.formFields = subEvent.formFields.filter(
-      f => f._id.toString() !== fieldId
-    );
-
+    subEvent.formFields = subEvent.formFields.filter(f => f._id.toString() !== fieldId);
     await subEvent.save();
     res.redirect(`/events/edit/${subEvent.eventId}`);
   } catch (error) {
@@ -750,6 +838,11 @@ exports.showRegistrationForm = async (req, res) => {
       return res.redirect(`/events/${subEvent.eventId._id}`);
     }
 
+    // Check registration deadline
+    if (!isRegistrationOpen(subEvent)) {
+      return res.redirect(`/register/${subEventId}?error=deadline`);
+    }
+
     if (subEvent.qrImage)     subEvent.qrImage     = fixImageUrl(subEvent.qrImage);
     if (subEvent.posterImage) subEvent.posterImage = fixImageUrl(subEvent.posterImage);
 
@@ -769,7 +862,12 @@ exports.submitRegistration = async (req, res) => {
     const subEvent = await SubEvent.findById(subEventId).lean();
     if (!subEvent) return res.redirect("/events");
 
-    // ── Capacity check ──
+    // Deadline check
+    if (!isRegistrationOpen(subEvent)) {
+      return res.redirect(`/register/${subEventId}?error=deadline`);
+    }
+
+    // Capacity check
     if (subEvent.maxParticipants) {
       const count = await Registration.countDocuments({ subEventId });
       if (count >= subEvent.maxParticipants) {
@@ -777,7 +875,6 @@ exports.submitRegistration = async (req, res) => {
       }
     }
 
-    // ── Leader built-in fields ──
     const participantName  = (req.body.participantName  || "").trim();
     const participantEmail = (req.body.participantEmail || "").trim();
     const participantPhone = (req.body.participantPhone || "").trim();
@@ -786,13 +883,11 @@ exports.submitRegistration = async (req, res) => {
       return res.redirect(`/register/${subEventId}?error=required`);
     }
 
-    // ── Uploaded files map ──
     const uploadedFiles = {};
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => { uploadedFiles[file.fieldname] = file; });
     }
 
-    // ── Leader custom field responses ──
     const responses = [];
     if (req.body.responses) {
       for (const [fieldId, value] of Object.entries(req.body.responses)) {
@@ -806,7 +901,6 @@ exports.submitRegistration = async (req, res) => {
       }
     }
 
-    // Catch any file-type responses not already in responses array
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => {
         if (file.fieldname === "paymentScreenshot") return;
@@ -821,7 +915,6 @@ exports.submitRegistration = async (req, res) => {
       });
     }
 
-    // ── Validate required leader fields ──
     for (const field of subEvent.formFields) {
       if (!field.required) continue;
       const found = responses.find(r => r.fieldId.toString() === field._id.toString());
@@ -831,13 +924,11 @@ exports.submitRegistration = async (req, res) => {
       }
     }
 
-    // ── Team members (structured: name + email + phone + custom responses) ──
     let teamMembers = [];
     if (subEvent.enableTeamMembers && req.body.members) {
       const membersRaw = Array.isArray(req.body.members)
         ? req.body.members
         : Object.values(req.body.members);
-
       teamMembers = membersRaw
         .filter(m => m && (m.name || "").trim() !== "")
         .map(m => {
@@ -860,7 +951,6 @@ exports.submitRegistration = async (req, res) => {
         });
     }
 
-    // ── Payment screenshot ──
     let paymentScreenshot = null;
     if (subEvent.requirePaymentScreenshot) {
       const screenshotFile = uploadedFiles["paymentScreenshot"];
@@ -869,14 +959,8 @@ exports.submitRegistration = async (req, res) => {
     }
 
     await Registration.create({
-      subEventId,
-      participantName,
-      participantEmail,
-      participantPhone,
-      responses,
-      teamMembers,
-      paymentScreenshot,
-      status: "pending",
+      subEventId, participantName, participantEmail, participantPhone,
+      responses, teamMembers, paymentScreenshot, status: "pending",
     });
 
     res.redirect(`/register/${subEventId}/success`);
@@ -908,11 +992,9 @@ exports.getRegistrationsForSubEvent = async (req, res) => {
     const { id } = req.params;
     const subEvent = await SubEvent.findById(id).lean();
     if (!subEvent) return res.redirect("/events");
-
     const registrations = await Registration.find({ subEventId: id })
       .sort({ createdAt: -1 })
       .lean();
-
     res.render("admin/registrations", { subEvent, registrations });
   } catch (error) {
     console.error("Get Registrations Error:", error.message);
@@ -964,7 +1046,7 @@ exports.deleteRegistration = async (req, res) => {
 
 
 /* ===============================
-   EXPORT REGISTRATIONS CSV
+   EXPORT REGISTRATIONS CSV (single sub-event) — UNCHANGED
 ================================ */
 exports.exportRegistrationsCSV = async (req, res) => {
   try {
@@ -976,17 +1058,12 @@ exports.exportRegistrationsCSV = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // ── Helpers ──
-    const q  = (s) => `"${String(s || "").replace(/"/g, '""')}"`;   // wrap in CSV quotes
-    const qt = (s) => `"'${String(s || "").replace(/"/g, '""')}"`;  // force text (phones)
+    const q  = (s) => `"${String(s || "").replace(/"/g, '""')}"`;
+    const qt = (s) => `"'${String(s || "").replace(/"/g, '""')}"`;
 
-    // ── Sorted custom fields ──
     const sortedFields = (subEvent.formFields || []).slice().sort((a, b) => a.order - b.order);
-
-    // ── Fields that repeat per member ──
     const memberCustomFields = sortedFields.filter(f => f.askForMembers && f.type !== "file");
 
-    // ── Find max member count across all registrations ──
     let maxMembers = 0;
     if (subEvent.enableTeamMembers) {
       registrations.forEach(r => {
@@ -995,15 +1072,9 @@ exports.exportRegistrationsCSV = async (req, res) => {
       });
     }
 
-    // ══════════════════════════════
-    //  BUILD HEADER ROW
-    // ══════════════════════════════
     const headerCols = ['"#"', '"Leader Name"', '"Leader Email"', '"Leader Phone"'];
-
-    // Leader custom fields
     sortedFields.forEach(f => headerCols.push(q(f.label)));
 
-    // One block of columns per member slot
     if (subEvent.enableTeamMembers) {
       for (let m = 1; m <= maxMembers; m++) {
         headerCols.push(q(`Member ${m} — Name`));
@@ -1015,64 +1086,42 @@ exports.exportRegistrationsCSV = async (req, res) => {
 
     headerCols.push('"Status"', '"Day"', '"Event Date"', '"Start Time"', '"End Time"', '"Registered At"');
 
-    // ══════════════════════════════
-    //  BUILD DATA ROWS
-    // ══════════════════════════════
     const rows = registrations.map((reg, i) => {
       const cols = [];
-
-      // Index
       cols.push(i + 1);
-
-      // Leader basics
       cols.push(q(reg.participantName));
       cols.push(q(reg.participantEmail));
-      cols.push(qt(reg.participantPhone));   // force text so Excel doesn't mangle phone
+      cols.push(qt(reg.participantPhone));
 
-      // Leader custom field responses
       sortedFields.forEach(field => {
         const resp = (reg.responses || []).find(
           r => r.fieldId && r.fieldId.toString() === field._id.toString()
         );
-        if (!resp || resp.value === null || resp.value === undefined) {
-          cols.push('""'); return;
-        }
-        if (field.type === "file") {
-          cols.push(q(resp.value)); return;
-        }
+        if (!resp || resp.value === null || resp.value === undefined) { cols.push('""'); return; }
+        if (field.type === "file") { cols.push(q(resp.value)); return; }
         const val = Array.isArray(resp.value) ? resp.value.join("; ") : resp.value;
         cols.push(q(val));
       });
 
-      // Team members — one block per slot up to maxMembers
       if (subEvent.enableTeamMembers) {
         const members = (reg.teamMembers || []).map(m =>
           typeof m === "string" ? { name: m, email: "", phone: "", responses: [] } : m
         );
-
         for (let mi = 0; mi < maxMembers; mi++) {
           const member = members[mi] || null;
           cols.push(member ? q(member.name)  : '""');
           cols.push(member ? q(member.email) : '""');
           cols.push(member && member.phone ? qt(member.phone) : '""');
-
           memberCustomFields.forEach(field => {
-            if (!member || !member.responses || member.responses.length === 0) {
-              cols.push('""'); return;
-            }
-            const mr = member.responses.find(
-              r => r.fieldId && r.fieldId.toString() === field._id.toString()
-            );
-            if (!mr || mr.value === null || mr.value === undefined) {
-              cols.push('""'); return;
-            }
+            if (!member || !member.responses || member.responses.length === 0) { cols.push('""'); return; }
+            const mr = member.responses.find(r => r.fieldId && r.fieldId.toString() === field._id.toString());
+            if (!mr || mr.value === null || mr.value === undefined) { cols.push('""'); return; }
             const mv = Array.isArray(mr.value) ? mr.value.join("; ") : mr.value;
             cols.push(q(mv));
           });
         }
       }
 
-      // Meta
       cols.push(q(reg.status));
       cols.push(q(subEvent.dayNumber || ""));
       cols.push(q(subEvent.eventDate ? new Date(subEvent.eventDate).toLocaleDateString("en-IN") : ""));
@@ -1087,13 +1136,300 @@ exports.exportRegistrationsCSV = async (req, res) => {
     const filename = `${subEvent.title.replace(/\s+/g, "_")}_registrations.csv`;
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    // UTF-8 BOM so Excel opens with correct encoding
     res.send("\uFEFF" + csv);
   } catch (error) {
     console.error("Export CSV Error:", error.message);
     res.redirect("/events");
   }
 };
+
+
+/* ===============================
+   EXPORT ALL REGISTRATIONS — multi-sheet XLSX
+   Sheet 1: "All Events" summary
+   Then one sheet per sub-event named after sub-event title
+================================ */
+exports.exportAllRegistrationsCSV = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const event  = await Event.findById(id).lean();
+    if (!event) return res.redirect("/events");
+
+    const subEvents = await SubEvent.find({ eventId: id })
+      .sort({ dayNumber: 1, startTime: 1 })
+      .lean();
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "Aayam";
+    wb.created = new Date();
+
+    /* ── colour palette ── */
+    const BRAND_BG   = "FFA67C52"; // brown header bg
+    const BRAND_FG   = "FFFFFFFF";
+    const ALT_ROW    = "FFFFF8F2";
+    const HEADER_BG  = "FF6B3F1A";
+
+    const headerStyle = {
+      font:      { bold: true, color: { argb: BRAND_FG }, name: "Arial", size: 10 },
+      fill:      { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } },
+      alignment: { horizontal: "center", vertical: "middle", wrapText: true },
+      border: {
+        bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
+        right:  { style: "thin", color: { argb: "FFCCCCCC" } },
+      },
+    };
+
+    const titleStyle = {
+      font:      { bold: true, color: { argb: BRAND_FG }, name: "Arial", size: 11 },
+      fill:      { type: "pattern", pattern: "solid", fgColor: { argb: BRAND_BG } },
+      alignment: { horizontal: "left", vertical: "middle" },
+    };
+
+    /* ════════════════════════════════════
+       SHEET 1 — Summary across all sub-events
+    ════════════════════════════════════ */
+    const summarySheet = wb.addWorksheet("Summary", {
+      views: [{ state: "frozen", ySplit: 3 }],
+    });
+
+    // Event title banner
+    summarySheet.mergeCells("A1:F1");
+    const titleCell = summarySheet.getCell("A1");
+    titleCell.value = `${event.title} — All Registrations Summary`;
+    Object.assign(titleCell, titleStyle);
+    summarySheet.getRow(1).height = 28;
+
+    // Sub-header
+    summarySheet.mergeCells("A2:F2");
+    const subTitleCell = summarySheet.getCell("A2");
+    subTitleCell.value = `Generated: ${new Date().toLocaleString("en-IN")}   |   Total Sub-Events: ${subEvents.length}`;
+    subTitleCell.font  = { italic: true, color: { argb: "FF888888" }, size: 9 };
+    summarySheet.getRow(2).height = 18;
+
+    const summaryHeaders = ["#", "Sub-Event", "Day", "Date", "Time", "Registrations"];
+    const summaryHeaderRow = summarySheet.addRow(summaryHeaders);
+    summaryHeaderRow.height = 22;
+    summaryHeaderRow.eachCell(cell => Object.assign(cell, headerStyle));
+
+    let summaryTotal = 0;
+    for (let si = 0; si < subEvents.length; si++) {
+      const sub   = subEvents[si];
+      const count = await Registration.countDocuments({ subEventId: sub._id });
+      summaryTotal += count;
+      const row = summarySheet.addRow([
+        si + 1,
+        sub.title,
+        sub.dayNumber || "",
+        sub.eventDate ? new Date(sub.eventDate).toLocaleDateString("en-IN") : "",
+        [sub.startTime, sub.endTime].filter(Boolean).join(" – "),
+        count,
+      ]);
+      if (si % 2 === 1) {
+        row.eachCell(cell => {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ALT_ROW } };
+        });
+      }
+      row.getCell(6).font = { bold: true };
+    }
+
+    // Total row
+    const totalRow = summarySheet.addRow(["", "TOTAL", "", "", "", summaryTotal]);
+    totalRow.getCell(2).font = { bold: true };
+    totalRow.getCell(6).font = { bold: true };
+    totalRow.eachCell(cell => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF0E0" } };
+      cell.border = { top: { style: "medium", color: { argb: BRAND_BG } } };
+    });
+
+    summarySheet.columns = [
+      { width: 5 }, { width: 36 }, { width: 8 }, { width: 16 }, { width: 20 }, { width: 16 },
+    ];
+
+    /* ════════════════════════════════════
+       ONE SHEET PER SUB-EVENT
+    ════════════════════════════════════ */
+    for (const subEvent of subEvents) {
+      const registrations = await Registration.find({ subEventId: subEvent._id })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const sortedFields      = (subEvent.formFields || []).slice().sort((a, b) => a.order - b.order);
+      const memberCustomFields = sortedFields.filter(f => f.askForMembers && f.type !== "file");
+
+      let maxMembers = 0;
+      if (subEvent.enableTeamMembers) {
+        registrations.forEach(r => {
+          const n = (r.teamMembers || []).length;
+          if (n > maxMembers) maxMembers = n;
+        });
+      }
+
+      // Sheet name: max 31 chars, no special chars
+      const rawName   = subEvent.title.replace(/[\\\/\*\?\[\]\:]/g, " ").trim();
+      const sheetName = rawName.length > 31 ? rawName.substring(0, 28) + "..." : rawName;
+
+      const ws = wb.addWorksheet(sheetName, {
+        views: [{ state: "frozen", ySplit: 3 }],
+      });
+
+      /* Title row */
+      const dayLabel  = subEvent.dayNumber ? `Day ${subEvent.dayNumber}  ·  ` : "";
+      const dateLabel = subEvent.eventDate  ? new Date(subEvent.eventDate).toLocaleDateString("en-IN") + "  ·  " : "";
+      const timeLabel = subEvent.startTime  ? subEvent.startTime + (subEvent.endTime ? " – " + subEvent.endTime : "") : "";
+      const titleText = `${subEvent.title}    |    ${dayLabel}${dateLabel}${timeLabel}    |    ${registrations.length} Registrations`;
+
+      /* Build header columns list first so we know merge width */
+      const colDefs = [
+        { header: "#",              key: "num",    width: 5  },
+        { header: "Name",           key: "name",   width: 22 },
+        { header: "Email",          key: "email",  width: 28 },
+        { header: "Phone",          key: "phone",  width: 16 },
+      ];
+      sortedFields.forEach(f => {
+        colDefs.push({ header: f.label, key: `field_${f._id}`, width: 20 });
+      });
+      if (subEvent.enableTeamMembers) {
+        for (let m = 1; m <= maxMembers; m++) {
+          colDefs.push({ header: `Member ${m} — Name`,  key: `m${m}_name`,  width: 20 });
+          colDefs.push({ header: `Member ${m} — Email`, key: `m${m}_email`, width: 24 });
+          colDefs.push({ header: `Member ${m} — Phone`, key: `m${m}_phone`, width: 16 });
+          memberCustomFields.forEach(f => {
+            colDefs.push({ header: `M${m} — ${f.label}`, key: `m${m}_f_${f._id}`, width: 18 });
+          });
+        }
+      }
+      colDefs.push(
+        { header: "Status",        key: "status", width: 12 },
+        { header: "Registered At", key: "regAt",  width: 22 },
+      );
+
+      const lastCol = colDefs.length;
+
+      /* Set column widths FIRST (before any merges) */
+      colDefs.forEach((col, idx) => {
+        ws.getColumn(idx + 1).width = col.width;
+        ws.getColumn(idx + 1).key   = col.key;
+      });
+
+      /* Title banner — row 1 */
+      ws.mergeCells(1, 1, 1, lastCol);
+      const tc = ws.getCell("A1");
+      tc.value = titleText;
+      Object.assign(tc, titleStyle);
+      ws.getRow(1).height = 26;
+
+      /* Generated date sub-row — row 2 */
+      ws.mergeCells(2, 1, 2, lastCol);
+      const sc = ws.getCell("A2");
+      sc.value = `Event: ${event.title}   |   Exported: ${new Date().toLocaleString("en-IN")}`;
+      sc.font  = { italic: true, color: { argb: "FF888888" }, size: 9 };
+      ws.getRow(2).height = 16;
+
+      /* Column header row — row 3 */
+      const headerRow = ws.getRow(3);
+      colDefs.forEach((col, idx) => {
+        headerRow.getCell(idx + 1).value = col.header;
+      });
+      headerRow.height = 24;
+      headerRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        if (colNum <= lastCol) Object.assign(cell, headerStyle);
+      });
+
+      /* Data rows */
+      registrations.forEach((reg, i) => {
+        const rowValues = [];
+
+        rowValues.push(i + 1);                          // #
+        rowValues.push(reg.participantName  || "");     // Name
+        rowValues.push(reg.participantEmail || "");     // Email
+        rowValues.push(reg.participantPhone ? `'${reg.participantPhone}` : ""); // Phone
+
+        sortedFields.forEach(field => {
+          const resp = (reg.responses || []).find(
+            r => r.fieldId && r.fieldId.toString() === field._id.toString()
+          );
+          const val = resp && resp.value != null
+            ? (field.type === "file" ? resp.value : (Array.isArray(resp.value) ? resp.value.join("; ") : String(resp.value)))
+            : "";
+          rowValues.push(val);
+        });
+
+        if (subEvent.enableTeamMembers) {
+          const members = (reg.teamMembers || []).map(m =>
+            typeof m === "string" ? { name: m, email: "", phone: "", responses: [] } : m
+          );
+          for (let mi = 0; mi < maxMembers; mi++) {
+            const member = members[mi] || null;
+            rowValues.push(member ? (member.name  || "") : "");
+            rowValues.push(member ? (member.email || "") : "");
+            rowValues.push((member && member.phone) ? `'${member.phone}` : "");
+            memberCustomFields.forEach(field => {
+              const mr = member && member.responses
+                ? member.responses.find(r => r.fieldId && r.fieldId.toString() === field._id.toString())
+                : null;
+              rowValues.push(mr && mr.value != null
+                ? (Array.isArray(mr.value) ? mr.value.join("; ") : String(mr.value))
+                : "");
+            });
+          }
+        }
+
+        rowValues.push(reg.status || "");   // Status
+        rowValues.push(reg.createdAt ? new Date(reg.createdAt).toLocaleString("en-IN") : ""); // Registered At
+
+        const dataRow = ws.addRow(rowValues);
+        dataRow.height = 18;
+
+        // Alternate row shading
+        if (i % 2 === 1) {
+          dataRow.eachCell({ includeEmpty: true }, cell => {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ALT_ROW } };
+          });
+        }
+
+        // Status colour — status is the 2nd-to-last column
+        const statusColIdx = rowValues.length - 1; // 1-based: length
+        const statusCell = dataRow.getCell(statusColIdx);
+        if (reg.status === "verified") {
+          statusCell.font = { bold: true, color: { argb: "FF27AE60" } };
+        } else if (reg.status === "rejected") {
+          statusCell.font = { bold: true, color: { argb: "FFC0392B" } };
+        } else {
+          statusCell.font = { color: { argb: "FFA67C52" } };
+        }
+
+        // Light border
+        dataRow.eachCell({ includeEmpty: true }, cell => {
+          cell.border = { bottom: { style: "hair", color: { argb: "FFEEEEEE" } } };
+        });
+      });
+
+      // Empty state
+      if (registrations.length === 0) {
+        const emptyRow = ws.addRow(["", "No registrations yet."]);
+        emptyRow.getCell(2).font = { italic: true, color: { argb: "FF999999" } };
+      }
+
+      // Auto-filter on header row
+      ws.autoFilter = { from: { row: 3, column: 1 }, to: { row: 3, column: lastCol } };
+    }
+
+    /* ── Stream to response ── */
+    const safeName = event.title.replace(/[^a-zA-Z0-9_\- ]/g, "_").replace(/\s+/g, "_");
+    const filename = `${safeName}_ALL_registrations.xlsx`;
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Cache-Control", "no-cache");
+    await wb.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Export All XLSX Error:", error.message, error.stack);
+    if (!res.headersSent) {
+      res.status(500).send(`Export failed: ${error.message}. Make sure 'exceljs' is installed: npm install exceljs`);
+    }
+  }
+};
+
 
 exports.getSubEventsByEvent = async (eventId) => {
   return await SubEvent.find({ eventId }).lean();

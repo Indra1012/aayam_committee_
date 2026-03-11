@@ -6,10 +6,15 @@ const galleryItemSchema = new mongoose.Schema({
   detail: { type: String, default: "" },
 }, { _id: true });
 
+/* ── NEW: Schedule card schema ── */
+const scheduleCardSchema = new mongoose.Schema({
+  heading:     { type: String, required: true },   // e.g. "Day 1 — 18 March 2026"
+  body:        { type: String, default: "" },       // rich-text HTML
+  order:       { type: Number, default: 0 },
+}, { _id: true });
+
 const eventSchema = new mongoose.Schema(
   {
-    // ── Visibility: true = fully public, false = private (admin only) ──
-    // DEFAULT IS TRUE — every new event is public unless admin explicitly changes it
     isPublic: {
       type: Boolean,
       default: true,
@@ -31,11 +36,12 @@ const eventSchema = new mongoose.Schema(
 
     bannerImage: { type: String, required: true },
 
+    /* ── NEW: Extra poster slides (in addition to bannerImage) ── */
+    posterSlides: [{ type: String }],
+
     registrationLink: { type: String, default: "", trim: true },
 
     galleryImages: [galleryItemSchema],
-
-    // ── Speaker images — same structure as galleryImages ──
     speakerImages: [galleryItemSchema],
 
     conductedBy: [{ name: String, email: String }],
@@ -48,6 +54,9 @@ const eventSchema = new mongoose.Schema(
         isPublic: { type: Boolean, default: false },
       },
     ],
+
+    /* ── NEW: Admin-authored schedule / info cards ── */
+    scheduleCards: [scheduleCardSchema],
   },
   { timestamps: true }
 );

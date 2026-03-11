@@ -27,7 +27,46 @@
     <% } %>
   </div>
 
-  <!-- External event-level link (if set) -->
+  <!-- ══════════════════════════
+       SCHEDULE CARDS (NEW)
+  ══════════════════════════ -->
+  <% if (event.scheduleCards && event.scheduleCards.length > 0) { %>
+    <div style="margin-bottom:26px;" data-aos="fade-up">
+      <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--br);margin-bottom:12px;">
+        <i class="bi bi-calendar-week"></i> Event Schedule
+      </div>
+      <div class="sched-btn-row">
+        <% event.scheduleCards.forEach(function(card, ci) { %>
+          <button
+            type="button"
+            class="sched-pill-btn"
+            onclick="openSchedModal('<%= card._id %>')"
+            data-aos="fade-up"
+            data-aos-delay="<%= ci * 50 %>"
+          >
+            <i class="bi bi-calendar-week"></i>
+            <%= card.heading %>
+            <i class="bi bi-chevron-right" style="margin-left:4px;font-size:0.7rem;opacity:0.7;"></i>
+          </button>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Schedule Modals -->
+    <% event.scheduleCards.forEach(function(card) { %>
+      <div class="sched-modal-overlay" id="sched-modal-<%= card._id %>" onclick="closeSchedModal(event, '<%= card._id %>')">
+        <div class="sched-modal-card" role="dialog" aria-modal="true">
+          <button class="sched-modal-close" onclick="closeSchedModalById('<%= card._id %>')" aria-label="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          <div class="sched-modal-heading"><i class="bi bi-calendar-week" style="color:var(--br);margin-right:8px;"></i><%= card.heading %></div>
+          <div class="sched-modal-body event-description-body"><%- card.body || '<em style="opacity:0.5;">No details added yet.</em>' %></div>
+        </div>
+      </div>
+    <% }) %>
+  <% } %>
+
+  <!-- External event-level link -->
   <% if (event.registrationLink && event.registrationLink.trim() !== '') { %>
     <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;background:rgba(166,124,82,0.06);border:1px solid rgba(166,124,82,0.20);border-radius:var(--r-md);margin-bottom:22px;flex-wrap:wrap;" data-aos="fade-up">
       <div style="flex:1;font-size:0.85rem;font-weight:600;color:var(--tx-mid);">
@@ -69,11 +108,13 @@
         <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:10px;">
           <% group.subEvents.forEach(function(sub, si) { %>
             <%
-              var isFull = sub.maxParticipants && sub.registrationCount >= sub.maxParticipants;
+              var isFull    = sub.maxParticipants && sub.registrationCount >= sub.maxParticipants;
+              var regOpen   = sub.registrationOpen !== false;
+              var isClosed  = !regOpen;
               var hasExternal = sub.externalRegistrationLink && sub.externalRegistrationLink.trim() !== '';
             %>
 
-            <div class="sub-reg-card <%= isFull ? 'sub-reg-card-full' : '' %>" data-aos="fade-up" data-aos-delay="<%= Math.min(si * 50, 200) %>">
+            <div class="sub-reg-card <%= (isFull || isClosed) ? 'sub-reg-card-full' : '' %>" data-aos="fade-up" data-aos-delay="<%= Math.min(si * 50, 200) %>">
 
               <div class="sub-reg-top">
                 <div class="sub-reg-left">
@@ -83,6 +124,8 @@
                     <%= sub.title %>
                     <% if (isFull) { %>
                       <span style="font-size:0.7rem;font-weight:700;background:rgba(192,57,43,0.10);color:#c0392b;padding:2px 8px;border-radius:var(--r-full);margin-left:8px;vertical-align:middle;">FULL</span>
+                    <% } else if (isClosed) { %>
+                      <span style="font-size:0.7rem;font-weight:700;background:rgba(192,57,43,0.10);color:#c0392b;padding:2px 8px;border-radius:var(--r-full);margin-left:8px;vertical-align:middle;">CLOSED</span>
                     <% } %>
                   </div>
 
@@ -110,6 +153,16 @@
                     <% if (hasExternal) { %>
                       <span class="spill spill-ext"><i class="bi bi-box-arrow-up-right"></i> External Form</span>
                     <% } %>
+                    <% if (sub.registrationDeadline) { %>
+                      <%
+                        var dlDate = new Date(sub.registrationDeadline);
+                        var dlStr  = dlDate.toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+                      %>
+                      <span class="spill <%= isClosed ? 'spill-closed' : 'spill-deadline' %>">
+                        <i class="bi bi-alarm"></i>
+                        <%= isClosed ? 'Registration Closed' : ('Closes ' + dlStr) %>
+                      </span>
+                    <% } %>
                   </div>
 
                   <!-- Description -->
@@ -123,9 +176,9 @@
 
                 <!-- CTA button -->
                 <div class="sub-reg-cta">
-                  <% if (isFull) { %>
+                  <% if (isFull || isClosed) { %>
                     <span class="btn-details" style="opacity:0.5;cursor:not-allowed;font-size:0.85rem;padding:9px 18px;">
-                      <i class="bi bi-lock"></i> Full
+                      <i class="bi bi-lock"></i> <%= isFull ? 'Full' : 'Closed' %>
                     </span>
                   <% } else if (hasExternal) { %>
                     <a href="<%= sub.externalRegistrationLink %>" target="_blank" rel="noopener noreferrer"
@@ -144,7 +197,7 @@
               <!-- Capacity bar -->
               <% if (sub.maxParticipants) { %>
                 <%
-                  var pct    = Math.min(100, Math.round((sub.registrationCount / sub.maxParticipants) * 100));
+                  var pct = Math.min(100, Math.round((sub.registrationCount / sub.maxParticipants) * 100));
                 %>
                 <div style="padding:0 clamp(14px,2vw,20px) clamp(12px,1.5vw,16px);">
                   <div style="height:5px;border-radius:5px;background:rgba(166,124,82,0.12);overflow:hidden;">
@@ -153,7 +206,7 @@
                 </div>
               <% } %>
 
-              <!-- Poster (centred below) -->
+              <!-- Poster -->
               <% if (sub.posterImage) { %>
                 <div style="display:flex;justify-content:center;padding:0 clamp(14px,2vw,20px) clamp(12px,2vw,18px);border-top:1px solid var(--border-l);padding-top:clamp(12px,2vw,16px);">
                   <img src="<%= sub.posterImage %>" alt="<%= sub.title %> Poster"
@@ -174,60 +227,112 @@
 
 
 <style>
-/* ── Session card ── */
-.sub-reg-card {
-  background: var(--cream-alt);
-  border: 1.5px solid var(--border-l);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  transition: border-color 0.22s, box-shadow 0.22s;
-}
-.sub-reg-card:hover {
-  border-color: var(--br);
-  box-shadow: 0 6px 24px rgba(166,124,82,0.12);
-}
-.sub-reg-card-full {
-  opacity: 0.75;
-}
-.sub-reg-card-full:hover {
-  border-color: rgba(192,57,43,0.35);
-  box-shadow: 0 4px 14px rgba(192,57,43,0.07);
-}
+/* Session card */
+.sub-reg-card { background:var(--cream-alt);border:1.5px solid var(--border-l);border-radius:var(--r-lg);overflow:hidden;transition:border-color 0.22s,box-shadow 0.22s; }
+.sub-reg-card:hover { border-color:var(--br);box-shadow:0 6px 24px rgba(166,124,82,0.12); }
+.sub-reg-card-full { opacity:0.75; }
+.sub-reg-card-full:hover { border-color:rgba(192,57,43,0.35);box-shadow:0 4px 14px rgba(192,57,43,0.07); }
+.sub-reg-top { display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:clamp(14px,2vw,20px);flex-wrap:wrap; }
+.sub-reg-left { flex:1;min-width:0; }
+.sub-reg-title { font-family:var(--font-display);font-weight:700;font-size:clamp(0.98rem,1.8vw,1.1rem);color:var(--tx);line-height:1.3; }
+.sub-reg-cta { flex-shrink:0;display:flex;align-items:flex-start; }
 
-.sub-reg-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: clamp(14px,2vw,20px);
-  flex-wrap: wrap;
-}
-.sub-reg-left { flex: 1; min-width: 0; }
-.sub-reg-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(0.98rem,1.8vw,1.1rem);
-  color: var(--tx);
-  line-height: 1.3;
-}
-.sub-reg-cta {
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-}
-
-/* pills (re-use from show.ejs) */
+/* pills */
 .show-sub-pills { display:flex;flex-wrap:wrap;gap:5px; }
 .spill { display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:var(--r-full);font-size:0.71rem;font-weight:700;white-space:nowrap;border:1px solid transparent; }
 .spill-time { background:rgba(201,168,76,0.10);border-color:rgba(201,168,76,0.26);color:#8a6914; }
-.spill-type { background:rgba(166,124,82,0.08);border-color:rgba(166,124,82,0.20);color:var(--br); }
-.spill-cap  { background:rgba(166,124,82,0.08);border-color:rgba(166,124,82,0.20);color:var(--br); }
-.spill-pay  { background:rgba(39,174,96,0.08);border-color:rgba(39,174,96,0.22);color:#27ae60; }
-.spill-ext  { background:rgba(39,174,96,0.08);border-color:rgba(39,174,96,0.22);color:#27ae60; }
+.spill-type,.spill-cap { background:rgba(166,124,82,0.08);border-color:rgba(166,124,82,0.20);color:var(--br); }
+.spill-pay,.spill-ext { background:rgba(39,174,96,0.08);border-color:rgba(39,174,96,0.22);color:#27ae60; }
+.spill-deadline { background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.35);color:#8a6914; }
+.spill-closed { background:rgba(192,57,43,0.10);border-color:rgba(192,57,43,0.28);color:#c0392b; }
+
+/* Schedule pills — brown */
+.sched-btn-row { display:flex;flex-wrap:wrap;gap:10px; }
+.sched-pill-btn {
+  display:inline-flex;align-items:center;gap:9px;padding:11px 22px;border-radius:var(--r-full);
+  border:2px solid rgba(166,124,82,0.35);background:rgba(166,124,82,0.08);color:var(--tx);
+  font-family:var(--font-display);font-weight:700;font-size:clamp(0.82rem,1.5vw,0.95rem);cursor:pointer;
+  transition: background 0.30s cubic-bezier(0.34,1.56,0.64,1),
+              border-color 0.25s ease,
+              transform 0.28s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.30s ease,
+              color 0.2s ease;
+  will-change: transform;
+}
+.sched-pill-btn:hover {
+  background:rgba(166,124,82,0.16);border-color:var(--br);
+  transform:translateY(-3px) scale(1.02);box-shadow:0 6px 22px rgba(166,124,82,0.22);color:var(--br);
+}
+.sched-pill-btn:active { transform:translateY(-1px) scale(0.99); }
+.sched-pill-btn i { color:var(--br);transition:transform 0.25s ease; }
+.sched-pill-btn:hover i.bi-chevron-right { transform:translateX(3px); }
+
+/* Schedule modal — brown, smooth */
+.sched-modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.52);z-index:9000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px); }
+.sched-modal-overlay.open { display:flex;animation:scModalFadeIn 0.22s ease both; }
+@keyframes scModalFadeIn { from{opacity:0} to{opacity:1} }
+.sched-modal-card {
+  background:var(--cream-alt);border-radius:var(--r-xl);max-width:620px;width:100%;max-height:85vh;overflow-y:auto;
+  padding:clamp(24px,4vw,40px);position:relative;
+  box-shadow:0 28px 70px rgba(0,0,0,0.22),0 0 0 1px rgba(166,124,82,0.12);
+  animation:scModalSlideUp 0.36s cubic-bezier(0.22,1,0.36,1) both;
+  border-top:4px solid var(--br);
+}
+@keyframes scModalSlideUp { from{opacity:0;transform:translateY(40px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+.sched-modal-close {
+  position:absolute;top:14px;right:16px;background:rgba(166,124,82,0.10);border:1px solid var(--border-l);
+  border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--tx-muted);transition:background 0.2s,color 0.2s,transform 0.2s;font-size:0.82rem;
+}
+.sched-modal-close:hover { background:rgba(192,57,43,0.10);color:#c0392b;transform:scale(1.12); }
+.sched-modal-heading { font-family:var(--font-display);font-size:clamp(1.1rem,3vw,1.5rem);font-weight:800;color:var(--tx);margin-bottom:18px;padding-right:30px;line-height:1.3; }
+.sched-modal-heading i { color:var(--br) !important; }
+.sched-modal-body { font-size:clamp(0.88rem,1.5vw,1rem);color:var(--tx-mid);line-height:1.85; }
+.sched-modal-body ul,.sched-modal-body ol { padding-left:20px;margin-bottom:10px; }
+.sched-modal-body li { margin-bottom:5px; }
+.event-description-body ul,.event-description-body ol { padding-left:20px;margin-bottom:10px; }
 
 .gallery-empty { text-align:center;padding:40px 20px;background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-lg); }
 .gallery-empty-icon { font-size:2.5rem;margin-bottom:10px;opacity:0.5; }
 .gallery-empty p { color:var(--tx-muted);font-size:0.92rem;margin:0; }
 
 body.dark-mode .sub-reg-card { background:var(--dk-surface);border-color:var(--border-d); }
+body.dark-mode .sched-pill-btn { border-color:rgba(210,180,140,0.28);background:rgba(210,180,140,0.07);color:var(--dk-text); }
+body.dark-mode .sched-pill-btn:hover { background:rgba(210,180,140,0.14);color:#d4b896; }
+body.dark-mode .sched-modal-card { background:var(--dk-surface); }
+body.dark-mode .sched-modal-heading { color:var(--dk-text); }
+
+@media (max-width:576px) {
+  .sched-pill-btn { font-size:0.78rem;padding:8px 14px; }
+  .sub-reg-top { flex-direction:column; }
+  .sub-reg-cta { width:100%; }
+  .sub-reg-cta a,.sub-reg-cta span { width:100%;justify-content:center; }
+}
 </style>
+
+
+<script>
+function openSchedModal(id) {
+  var overlay = document.getElementById('sched-modal-' + id);
+  if (!overlay) return;
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSchedModalById(id) {
+  var overlay = document.getElementById('sched-modal-' + id);
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeSchedModal(e, id) {
+  if (e.target === document.getElementById('sched-modal-' + id)) {
+    closeSchedModalById(id);
+  }
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.sched-modal-overlay.open').forEach(function(el){ el.classList.remove('open'); });
+    document.body.style.overflow = '';
+  }
+});
+</script>

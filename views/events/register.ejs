@@ -50,9 +50,10 @@
     <!-- ── Error banners ── -->
     <% if (typeof query !== 'undefined' && query && query.error) { %>
       <%
-        const errMsg = query.error === 'full'    ? '⚠ Sorry, registrations for this session are full.'
-                     : query.error === 'payment' ? '⚠ Please upload your payment screenshot.'
-                     :                             '⚠ Please fill in all required fields.';
+       const errMsg = query.error === 'full'     ? '⚠ Sorry, registrations for this session are full.'
+                     : query.error === 'payment'  ? '⚠ Please upload your payment screenshot.'
+                     : query.error === 'deadline' ? '⚠ Registration for this session has closed (deadline passed).'
+                     :                              '⚠ Please fill in all required fields.';
       %>
       <div style="background:rgba(192,57,43,0.09);border:1px solid rgba(192,57,43,0.24);border-radius:var(--r-md);padding:14px 18px;margin-bottom:22px;color:#c0392b;font-weight:600;font-size:0.9rem;" data-aos="fade-up">
         <%= errMsg %>

@@ -15,7 +15,6 @@ const formFieldSchema = new mongoose.Schema(
     required:    { type: Boolean, default: false },
     order:       { type: Number, default: 0 },
     placeholder: { type: String },
-    // ── NEW: if true, this field also appears for every team member ──
     askForMembers: { type: Boolean, default: false },
   },
   { _id: true }
@@ -40,6 +39,9 @@ const subEventSchema = new mongoose.Schema(
     eventDate:  { type: Date,   default: null },
     startTime:  { type: String, default: "" },
     endTime:    { type: String, default: "" },
+
+    // ── NEW: Registration deadline ──
+    registrationDeadline: { type: Date, default: null },
 
     // ── Capacity ──
     maxParticipants: { type: Number, default: null },

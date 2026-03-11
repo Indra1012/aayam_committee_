@@ -29,6 +29,24 @@ router.post("/events/move-to-past/:id", isAdmin, eventController.moveEventToPast
 router.post("/events/toggle-visibility/:id", isAdmin, eventController.toggleEventVisibility);
 
 /* ===============================
+   POSTER SLIDES (NEW)
+================================ */
+router.post(
+  "/events/:id/poster-slides",
+  isAdmin,
+  uploadImage.array("posterSlides", 20),
+  eventController.addPosterSlides
+);
+router.post("/events/:id/poster-slides/:index/delete", isAdmin, eventController.deletePosterSlide);
+
+/* ===============================
+   SCHEDULE CARDS (NEW)
+================================ */
+router.post("/events/:id/schedule-cards/add",              isAdmin, eventController.addScheduleCard);
+router.post("/events/:id/schedule-cards/:cardId/edit",     isAdmin, eventController.updateScheduleCard);
+router.post("/events/:id/schedule-cards/:cardId/delete",   isAdmin, eventController.deleteScheduleCard);
+
+/* ===============================
    GALLERY (with speaker + detail)
 ================================ */
 router.post(
@@ -75,6 +93,10 @@ router.post(
 );
 router.post("/subevents/:id/delete", isAdmin, eventController.deleteSubEvent);
 
+/* ── NEW: Delete QR / Poster image ── */
+router.post("/subevents/:id/qr/delete",     isAdmin, eventController.deleteSubEventQr);
+router.post("/subevents/:id/poster/delete", isAdmin, eventController.deleteSubEventPoster);
+
 /* ===============================
    FORM BUILDER
 ================================ */
@@ -99,5 +121,8 @@ router.post("/registrations/:id/pending",                 isAdmin, eventControll
 router.post("/registrations/:id/reject",                  isAdmin, eventController.rejectRegistration);
 router.post("/registrations/:id/delete",                  isAdmin, eventController.deleteRegistration);
 router.get( "/admin/subevents/:id/registrations/export",  isAdmin, eventController.exportRegistrationsCSV);
+
+/* ── NEW: Export ALL registrations for an event ── */
+router.get("/admin/events/:id/registrations/export-all", isAdmin, eventController.exportAllRegistrationsCSV);
 
 module.exports = router;
