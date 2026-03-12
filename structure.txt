@@ -33,6 +33,7 @@ C:.
 +---models
 |       Event.js
 |       HomeGallery.js
+|       HomePromo.js
 |       ReachOut.js
 |       Registration.js
 |       Review.js

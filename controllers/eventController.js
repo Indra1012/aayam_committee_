@@ -61,6 +61,12 @@ function isRegistrationOpen(sub) {
   return new Date() <= new Date(sub.registrationDeadline);
 }
 
+/* ── Safely parse a checkbox value that may be a string or array ── */
+function parseCheckbox(val) {
+  if (Array.isArray(val)) return val.includes("on");
+  return val === "on";
+}
+
 
 /* ===============================
    EVENTS LIST PAGE
@@ -591,12 +597,39 @@ exports.deleteDocument = async (req, res) => {
 exports.addScheduleCard = async (req, res) => {
   try {
     const { id } = req.params;
-    const { heading, body } = req.body;
+    const { heading, body, tableColumns, tableRows } = req.body;
     if (!heading) return res.redirect(`/events/edit/${id}`);
+
     const event = await Event.findById(id);
     if (!event) return res.redirect("/events");
+
     const order = (event.scheduleCards || []).length;
-    event.scheduleCards.push({ heading, body: body || "", order });
+
+    // Build tableData if columns were provided
+    let tableData = undefined;
+    if (tableColumns) {
+      const cols = Array.isArray(tableColumns)
+        ? tableColumns.map(c => (c || "").trim()).filter(Boolean)
+        : String(tableColumns).split(",").map(c => c.trim()).filter(Boolean);
+
+      if (cols.length > 0) {
+        // tableRows is submitted as tableRows[0][0], tableRows[0][1], etc.
+        const rows = [];
+        if (tableRows && Array.isArray(tableRows)) {
+          tableRows.forEach(function(row) {
+            if (Array.isArray(row)) {
+              rows.push(row.map(cell => (cell || "").trim()));
+            }
+          });
+        }
+        tableData = { columns: cols, rows };
+      }
+    }
+
+    const cardData = { heading, body: body || "", order };
+    if (tableData) cardData.tableData = tableData;
+
+    event.scheduleCards.push(cardData);
     await event.save();
     res.redirect(`/events/edit/${id}`);
   } catch (error) {
@@ -608,11 +641,38 @@ exports.addScheduleCard = async (req, res) => {
 exports.updateScheduleCard = async (req, res) => {
   try {
     const { id, cardId } = req.params;
-    const { heading, body } = req.body;
-    await Event.findOneAndUpdate(
-      { _id: id, "scheduleCards._id": cardId },
-      { $set: { "scheduleCards.$.heading": heading || "", "scheduleCards.$.body": body || "" } }
-    );
+    const { heading, body, tableColumns, tableRows, clearTable } = req.body;
+
+    const event = await Event.findById(id);
+    if (!event) return res.redirect("/events");
+
+    const card = event.scheduleCards.id(cardId);
+    if (!card) return res.redirect(`/events/edit/${id}`);
+
+    card.heading = heading || "";
+    card.body    = body    || "";
+
+    if (clearTable === "1") {
+      card.tableData = { columns: [], rows: [] };
+    } else if (tableColumns) {
+      const cols = Array.isArray(tableColumns)
+        ? tableColumns.map(c => (c || "").trim()).filter(Boolean)
+        : String(tableColumns).split(",").map(c => c.trim()).filter(Boolean);
+
+      if (cols.length > 0) {
+        const rows = [];
+        if (tableRows && Array.isArray(tableRows)) {
+          tableRows.forEach(function(row) {
+            if (Array.isArray(row)) {
+              rows.push(row.map(cell => (cell || "").trim()));
+            }
+          });
+        }
+        card.tableData = { columns: cols, rows };
+      }
+    }
+
+    await event.save();
     res.redirect(`/events/edit/${id}`);
   } catch (error) {
     console.error("Update Schedule Card Error:", error.message);
@@ -623,16 +683,19 @@ exports.updateScheduleCard = async (req, res) => {
 exports.deleteScheduleCard = async (req, res) => {
   try {
     const { id, cardId } = req.params;
-    await Event.findByIdAndUpdate(id, {
-      $pull: { scheduleCards: { _id: cardId } },
-    });
+    const event = await Event.findById(id);
+    if (!event) return res.redirect("/events");
+
+    event.scheduleCards = event.scheduleCards.filter(
+      c => c._id.toString() !== cardId
+    );
+    await event.save();
     res.redirect(`/events/edit/${id}`);
   } catch (error) {
     console.error("Delete Schedule Card Error:", error.message);
     res.redirect("/events");
   }
 };
-
 
 /* =================================
    SUBEVENT CRUD (ADMIN)
@@ -681,29 +744,73 @@ exports.updateSubEvent = async (req, res) => {
     const { id } = req.params;
     const files = req.files || {};
 
-    const updateData = {
-      title: req.body.title,
-      description: req.body.description,
-      maxParticipants: req.body.maxParticipants || null,
-      isGroupEvent: req.body.isGroupEvent === "true",
-      minTeamSize: req.body.minTeamSize || 1,
-      maxTeamSize: req.body.maxTeamSize || 1,
-      enableTeamMembers: req.body.enableTeamMembers === "on",
-      requirePaymentScreenshot: req.body.requirePaymentScreenshot === "on",
-      dayNumber: req.body.dayNumber ? parseInt(req.body.dayNumber) : null,
-      eventDate: req.body.eventDate || null,
-      startTime: req.body.startTime || "",
-      endTime: req.body.endTime || "",
-      registrationDeadline: req.body.registrationDeadline || null,
-      externalRegistrationLink: req.body.externalRegistrationLink || "",
-    };
+    // Build update object — only include fields that were actually submitted
+    const updateData = {};
 
-    if (files.qrImage)     updateData.qrImage     = files.qrImage[0].path;
-    if (files.posterImage) updateData.posterImage = files.posterImage[0].path;
+    if (req.body.title       !== undefined) updateData.title       = req.body.title;
+    if (req.body.description !== undefined) updateData.description = req.body.description;
 
-    const updated = await SubEvent.findByIdAndUpdate(id, updateData, { new: true });
+    if (req.body.maxParticipants !== undefined)
+      updateData.maxParticipants = req.body.maxParticipants ? parseInt(req.body.maxParticipants) : null;
 
-    // Redirect back to where the request came from
+    if (req.body.isGroupEvent !== undefined)
+      updateData.isGroupEvent = req.body.isGroupEvent === "true";
+
+    if (req.body.minTeamSize !== undefined)
+      updateData.minTeamSize = parseInt(req.body.minTeamSize) || 1;
+
+    if (req.body.maxTeamSize !== undefined)
+      updateData.maxTeamSize = parseInt(req.body.maxTeamSize) || 1;
+
+    // ── TOGGLE FIX ──────────────────────────────────────────────────────────
+    // The EJS sends a hidden input ("") + checkbox ("on") with the same name.
+    // When checked:   req.body.X = ["", "on"]  (array)
+    // When unchecked: req.body.X = ""          (string — only the hidden)
+    // parseCheckbox() handles both cases correctly.
+    // ────────────────────────────────────────────────────────────────────────
+    if (req.body.enableTeamMembers !== undefined)
+      updateData.enableTeamMembers = parseCheckbox(req.body.enableTeamMembers);
+
+    if (req.body.requirePaymentScreenshot !== undefined)
+      updateData.requirePaymentScreenshot = parseCheckbox(req.body.requirePaymentScreenshot);
+
+    if (req.body.dayNumber !== undefined)
+      updateData.dayNumber = req.body.dayNumber ? parseInt(req.body.dayNumber) : null;
+
+    if (req.body.eventDate !== undefined)
+      updateData.eventDate = req.body.eventDate || null;
+
+    if (req.body.startTime !== undefined)
+      updateData.startTime = req.body.startTime || "";
+
+    if (req.body.endTime !== undefined)
+      updateData.endTime = req.body.endTime || "";
+
+    // Empty string means "clear it", a value means "set it"
+    if (req.body.registrationDeadline !== undefined) {
+      const dl = req.body.registrationDeadline.trim();
+      if (dl) {
+        updateData.registrationDeadline = new Date(dl);
+      }
+      // if dl is empty, we do NOT touch registrationDeadline at all
+      // so the existing value in the DB is preserved
+    }
+
+    if (req.body.externalRegistrationLink !== undefined)
+      updateData.externalRegistrationLink = req.body.externalRegistrationLink || "";
+
+    // Images — only update if a new file was uploaded
+    if (files.qrImage     && files.qrImage[0])     updateData.qrImage     = files.qrImage[0].path;
+    if (files.posterImage && files.posterImage[0]) updateData.posterImage = files.posterImage[0].path;
+
+    const updated = await SubEvent.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    );
+
+    if (!updated) return res.redirect("/events");
+
     const referer = req.body._referer || "edit";
     if (referer === "show") {
       res.redirect(`/events/${updated.eventId}`);
@@ -768,9 +875,9 @@ exports.addFormField = async (req, res) => {
     if (!subEvent) return res.redirect("/events");
     const newField = {
       label, type,
-      required:      required === "on",
+      required:      parseCheckbox(required),
       placeholder:   placeholder || "",
-      askForMembers: askForMembers === "on" && type !== "file",
+      askForMembers: parseCheckbox(askForMembers) && type !== "file",
       options: type === "dropdown" || type === "checkbox"
         ? options ? options.split(",").map(o => o.trim()) : []
         : [],
@@ -795,9 +902,9 @@ exports.updateFormField = async (req, res) => {
     if (!field) return res.redirect(`/events/edit/${subEvent.eventId}`);
     field.label         = label;
     field.type          = type;
-    field.required      = required === "on";
+    field.required      = parseCheckbox(required);
     field.placeholder   = placeholder || "";
-    field.askForMembers = askForMembers === "on" && type !== "file";
+    field.askForMembers = parseCheckbox(askForMembers) && type !== "file";
     field.options = type === "dropdown" || type === "checkbox"
       ? options ? options.split(",").map(o => o.trim()) : []
       : [];

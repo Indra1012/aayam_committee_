@@ -38,15 +38,11 @@ const docFilter = (req, file, cb) => {
 };
 
 // ─── Manual Cloudinary upload for documents ───────────────────────────────────
-// resource_type stays "raw" — correct for PDFs/docs.
-// public_id must NOT include the extension — Cloudinary appends it automatically for raw uploads,
-// which was causing the double .pdf.pdf bug.
 const uploadDocToCloud = (buffer, originalname) => {
   return new Promise((resolve, reject) => {
-    // Strip extension from public_id — Cloudinary re-appends it for raw type
     const nameWithoutExt = originalname
-      .replace(/\s+/g, "_")       // spaces → underscores
-      .replace(/\.[^/.]+$/, "");  // strip last extension (.pdf, .docx, etc.)
+      .replace(/\s+/g, "_")
+      .replace(/\.[^/.]+$/, "");
 
     const stream = cloudinary.uploader.upload_stream(
       {
@@ -63,13 +59,28 @@ const uploadDocToCloud = (buffer, originalname) => {
   });
 };
 
+// ─── Standard image uploader (banner, gallery, speakers, slides) ──────────────
 const uploadImage = multer({ storage: imageStorage, fileFilter: imageFilter });
-const uploadDoc   = multer({ storage: docMemoryStorage, fileFilter: docFilter });
 
-// Multi-field uploader for subevents (qrImage + posterImage)
-const uploadSubEventImages = multer({ storage: imageStorage, fileFilter: imageFilter }).fields([
+// ─── Document uploader ────────────────────────────────────────────────────────
+const uploadDoc = multer({ storage: docMemoryStorage, fileFilter: docFilter });
+
+// ─── Sub-event image uploader (qrImage + posterImage) ────────────────────────
+// Wrapped in error-handling so if Cloudinary fails or no file is uploaded,
+// the request still continues and text fields + toggles are saved normally.
+const _subEventMulter = multer({ storage: imageStorage, fileFilter: imageFilter }).fields([
   { name: "qrImage",     maxCount: 1 },
   { name: "posterImage", maxCount: 1 },
 ]);
+
+const uploadSubEventImages = (req, res, next) => {
+  _subEventMulter(req, res, (err) => {
+    if (err) {
+      console.error("SubEvent image upload error (non-fatal):", err.message);
+      if (!req.files) req.files = {};
+    }
+    next();
+  });
+};
 
 module.exports = { uploadImage, uploadDoc, uploadDocToCloud, uploadSubEventImages };

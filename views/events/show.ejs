@@ -1,9 +1,23 @@
+<%
+function generateTimeOptions(selected) {
+  var out = '';
+  for (var h = 0; h < 24; h++) {
+    for (var m = 0; m < 60; m += 30) {
+      var suffix = h < 12 ? 'AM' : 'PM';
+      var h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      var label = (h12 < 10 ? '0' : '') + h12 + ':' + (m === 0 ? '00' : '30') + ' ' + suffix;
+      out += '<option value="' + label + '"' + (label === selected ? ' selected' : '') + '>' + label + '</option>';
+    }
+  }
+  return out;
+}
+%>
 <!-- views/events/show.ejs -->
 <div class="container my-5">
   <div class="event-detail-content">
 
     <!-- ══════════════════════════
-         POSTER SLIDESHOW (NEW)
+         POSTER SLIDESHOW
     ══════════════════════════ -->
     <%
       var allSlides = [];
@@ -13,11 +27,11 @@
       }
     %>
     <% if (allSlides.length > 0) { %>
-      <div class="slideshow-wrap" data-aos="fade-down" style="margin-bottom:32px;">
+      <div class="slideshow-wrap" data-aos="fade-down">
         <div class="slideshow-track" id="slideshowTrack">
           <% allSlides.forEach(function(slide, si) { %>
-            <div class="slide-item <%= si === 0 ? 'active' : '' %>">
-              <img src="<%= slide %>" alt="<%= event.title %> poster <%= si+1 %>" class="slide-img">
+            <div class="slide-item" style="display:<%= si === 0 ? 'block' : 'none' %>;">
+              <img src="<%= slide %>" alt="<%= event.title %> poster <%= si+1 %>" class="slide-img" loading="<%= si === 0 ? 'eager' : 'lazy' %>">
               <% if (si === 0 && isPast) { %>
                 <div style="position:absolute;top:16px;right:16px;">
                   <span class="badge-completed" style="font-size:0.8rem;padding:6px 14px;">Completed</span>
@@ -52,8 +66,8 @@
         <a href="/events/edit/<%= event._id %>" class="btn-details admin-bar-btn">
           <i class="bi bi-pencil-square"></i> Edit Event
         </a>
-        <form action="/events/toggle-visibility/<%= event._id %>" method="POST" style="margin:0;">
-          <button type="submit" class="<%= event.isPublic === false ? 'btn-register' : 'btn-admin-warn' %> admin-bar-btn" style="font-size:0.82rem;">
+        <form action="/events/toggle-visibility/<%= event._id %>" method="POST" style="margin:0;flex:1 1 auto;">
+          <button type="submit" class="<%= event.isPublic === false ? 'btn-register' : 'btn-admin-warn' %> admin-bar-btn" style="font-size:0.82rem;width:100%;">
             <%= event.isPublic === false ? '🌐 Make Public' : '🔒 Make Private' %>
           </button>
         </form>
@@ -89,7 +103,7 @@
 
 
     <!-- ══════════════════════════
-         SCHEDULE CARDS (NEW)
+         SCHEDULE CARDS
     ══════════════════════════ -->
     <% if (event.scheduleCards && event.scheduleCards.length > 0) { %>
       <div class="detail-section" data-aos="fade-up">
@@ -120,8 +134,37 @@
             <button class="sched-modal-close" onclick="closeSchedModalById('<%= card._id %>')" aria-label="Close">
               <i class="bi bi-x-lg"></i>
             </button>
-            <div class="sched-modal-heading"><i class="bi bi-calendar-week" style="color:var(--br);margin-right:8px;"></i><%= card.heading %></div>
-            <div class="sched-modal-body event-description-body"><%- card.body || '<em style=\"opacity:0.5;\">No details added yet.</em>' %></div>
+            <div class="sched-modal-heading">
+              <i class="bi bi-calendar-week" style="color:var(--br);margin-right:8px;"></i><%= card.heading %>
+            </div>
+            <% if (card.body && card.body.trim() !== '') { %>
+              <div class="sched-modal-body event-description-body"><%- card.body %></div>
+            <% } %>
+            <% if (card.tableData && card.tableData.columns && card.tableData.columns.length > 0) { %>
+              <div class="sched-table-wrap">
+                <table class="sched-table">
+                  <thead>
+                    <tr>
+                      <% card.tableData.columns.forEach(function(col) { %>
+                        <th><%= col %></th>
+                      <% }) %>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% (card.tableData.rows || []).forEach(function(row) { %>
+                      <tr>
+                        <% card.tableData.columns.forEach(function(col, ci) { %>
+                          <td><%= row[ci] || '' %></td>
+                        <% }) %>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+            <% if ((!card.body || card.body.trim() === '') && (!card.tableData || !card.tableData.columns || card.tableData.columns.length === 0)) { %>
+              <div class="sched-modal-body"><em style="opacity:0.5;">No details added yet.</em></div>
+            <% } %>
           </div>
         </div>
       <% }) %>
@@ -157,7 +200,6 @@
       <% } else if (hasSubEvents) { %>
         <div class="detail-section" data-aos="fade-up">
 
-          <!-- Section title row with Export All button for admin -->
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid rgba(166,124,82,0.18);">
             <h2 class="detail-section-title" style="margin-bottom:0;border-bottom:none;padding-bottom:0;">
               <%= isPast ? 'Sessions & Registrations' : 'Register for Sessions' %>
@@ -198,7 +240,7 @@
                     var regOpen = sub.registrationOpen !== false;
                     var isClosed = !regOpen;
                   %>
-                  <div class="show-sub-card" data-aos="fade-up">
+                  <div class="show-sub-card" data-aos="fade-up" id="show-sub-<%= sub._id %>">
 
                     <div class="show-sub-top">
                       <div class="show-sub-left">
@@ -259,13 +301,9 @@
                           <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem;padding:6px 12px;white-space:nowrap;">
                             <i class="bi bi-people"></i> Registrations
                           </a>
-                          <!-- QUICK EDIT BUTTON (NEW Feature 6) -->
-                          <button type="button"
-                            class="field-edit-btn"
-                            style="font-size:0.72rem;padding:4px 10px;"
-                            onclick="toggleQuickEdit('<%= sub._id %>')">
-                            <i class="bi bi-pencil"></i> Quick Edit
-                          </button>
+                          <a href="/events/edit/<%= event._id %>#subevent-<%= sub._id %>" class="field-edit-btn" style="font-size:0.72rem;padding:4px 10px;text-decoration:none;">
+                            <i class="bi bi-pencil"></i> Edit
+                          </a>
                         <% } %>
                       </div>
                     </div>
@@ -277,117 +315,6 @@
                     <% if (sub.posterImage) { %>
                       <div class="show-sub-poster-wrap">
                         <img src="<%= sub.posterImage %>" alt="<%= sub.title %> Poster" class="show-sub-poster-img">
-                      </div>
-                    <% } %>
-
-                    <!-- ══ QUICK EDIT PANEL (NEW Feature 6) ══ -->
-                    <% if (isAdmin) { %>
-                      <div id="quick-edit-<%= sub._id %>" class="quick-edit-panel" style="display:none;">
-                        <div class="quick-edit-header">
-                          <span><i class="bi bi-pencil-square"></i> Quick Edit — <%= sub.title %></span>
-                          <button type="button" onclick="toggleQuickEdit('<%= sub._id %>')" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.8);font-size:1rem;">✕</button>
-                        </div>
-                        <div class="quick-edit-body">
-                          <form action="/subevents/<%= sub._id %>/edit" method="POST" enctype="multipart/form-data">
-                            <input type="hidden" name="_referer" value="show">
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-
-                              <div class="edit-field-group" style="grid-column:1/-1;">
-                                <label class="form-label-custom">Title</label>
-                                <input type="text" name="title" class="form-control-custom" value="<%= sub.title %>" required>
-                              </div>
-
-                              <div class="edit-field-group" style="grid-column:1/-1;">
-                                <label class="form-label-custom">Description</label>
-                                <textarea name="description" class="form-control-custom" rows="2"><%= sub.description || '' %></textarea>
-                              </div>
-
-                              <div class="edit-field-group">
-                                <label class="form-label-custom">Day Number</label>
-                                <input type="number" name="dayNumber" class="form-control-custom" min="1" value="<%= sub.dayNumber || '' %>">
-                              </div>
-
-                              <div class="edit-field-group">
-                                <label class="form-label-custom">Event Date</label>
-                                <input type="date" name="eventDate" class="form-control-custom"
-                                  value="<%= sub.eventDate ? new Date(sub.eventDate).toISOString().split('T')[0] : '' %>">
-                              </div>
-
-                              <div class="edit-field-group">
-                                <label class="form-label-custom">Start Time</label>
-                                <select name="startTime" class="form-control-custom">
-                                  <option value="">— Select —</option>
-                                  <%- generateTimeOptions(sub.startTime || '') %>
-                                </select>
-                              </div>
-
-                              <div class="edit-field-group">
-                                <label class="form-label-custom">End Time</label>
-                                <select name="endTime" class="form-control-custom">
-                                  <option value="">— Select —</option>
-                                  <%- generateTimeOptions(sub.endTime || '') %>
-                                </select>
-                              </div>
-
-                              <div class="edit-field-group" style="grid-column:1/-1;">
-                                <label class="form-label-custom">Registration Deadline
-                                  <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(leave blank = no deadline)</span>
-                                </label>
-                                <input type="datetime-local" name="registrationDeadline" class="form-control-custom"
-                                  value="<%= sub.registrationDeadline ? new Date(sub.registrationDeadline).toISOString().slice(0,16) : '' %>">
-                              </div>
-
-                              <div class="edit-field-group">
-                                <label class="form-label-custom">Max Participants</label>
-                                <input type="number" name="maxParticipants" class="form-control-custom" value="<%= sub.maxParticipants || '' %>" placeholder="Unlimited">
-                              </div>
-
-                              <div class="edit-field-group">
-                                <label class="form-label-custom">Event Type</label>
-                                <select name="isGroupEvent" class="form-control-custom">
-                                  <option value="false" <%= !sub.isGroupEvent ? 'selected' : '' %>>👤 Individual</option>
-                                  <option value="true" <%= sub.isGroupEvent ? 'selected' : '' %>>👥 Team / Group</option>
-                                </select>
-                              </div>
-
-                              <div class="edit-field-group">
-                                <label class="form-label-custom">Min Team Size</label>
-                                <input type="number" name="minTeamSize" class="form-control-custom" value="<%= sub.minTeamSize || 1 %>" min="1">
-                              </div>
-
-                              <div class="edit-field-group">
-                                <label class="form-label-custom">Max Team Size</label>
-                                <input type="number" name="maxTeamSize" class="form-control-custom" value="<%= sub.maxTeamSize || 1 %>" min="1">
-                              </div>
-
-                              <div class="edit-field-group" style="grid-column:1/-1;">
-                                <label class="form-label-custom">Google Form / Registration Link <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(optional)</span></label>
-                                <input type="url" name="externalRegistrationLink" class="form-control-custom"
-                                  value="<%= sub.externalRegistrationLink || '' %>" placeholder="https://forms.google.com/...">
-                              </div>
-                            </div>
-
-                            <div style="display:flex;flex-wrap:wrap;gap:12px;margin:12px 0;">
-                              <label class="toggle-pill">
-                                <input type="checkbox" name="enableTeamMembers" <%= sub.enableTeamMembers ? 'checked' : '' %>>
-                                <span class="toggle-track"></span> Enable Team Member Input
-                              </label>
-                              <label class="toggle-pill">
-                                <input type="checkbox" name="requirePaymentScreenshot" <%= sub.requirePaymentScreenshot ? 'checked' : '' %>>
-                                <span class="toggle-track"></span> Require Payment Screenshot
-                              </label>
-                            </div>
-
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
-                              <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.88rem;">
-                                <i class="bi bi-floppy"></i> Save Changes
-                              </button>
-                              <a href="/events/edit/<%= event._id %>" class="btn-details" style="font-size:0.85rem;">
-                                <i class="bi bi-pencil-square"></i> Full Edit
-                              </a>
-                            </div>
-                          </form>
-                        </div>
                       </div>
                     <% } %>
 
@@ -566,7 +493,6 @@
               </div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <a href="https://docs.google.com/viewer?url=<%= encodeURIComponent(doc.file) %>&embedded=false" target="_blank" rel="noopener noreferrer" class="btn-details" style="font-size:0.82rem;padding:6px 14px;">👁 View</a>
-                <!-- <a href="<%= doc.file %>" target="_blank" rel="noopener noreferrer" class="btn-details" style="font-size:0.82rem;padding:6px 14px;">⬇ Download</a> -->
                 <% if (isAdmin) { %>
                   <form action="/events/<%= event._id %>/documents/<%= i %>/delete" method="POST" onsubmit="return confirm('Delete?')">
                     <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
@@ -629,188 +555,103 @@
 
 
 <style>
-/* ── Page wrapper ── */
 .event-detail-content { max-width:900px; margin:0 auto; }
 
-/* ══════════════════════════════
-   POSTER SLIDESHOW
-══════════════════════════════ */
 .slideshow-wrap {
   position: relative;
   border-radius: var(--r-lg);
   overflow: hidden;
-  background: #000;
+  background: var(--cream-alt, #f5f0e8);
   box-shadow: var(--sh-lg);
   user-select: none;
-}
-.slideshow-track { position: relative; width: 100%; }
-.slide-item {
-  display: none;
-  position: relative;
   width: 100%;
+  max-width: 600px;
+  margin: 0 auto 32px;
 }
-.slide-item.active { display: block; }
+body.dark-mode .slideshow-wrap { background: #1a1a1a; }
+.slideshow-track { position: relative; width: 100%; }
+.slide-item { width: 100%; position: relative; }
 .slide-img {
   width: 100%;
-  max-height: 480px;
-  object-fit: cover;
+  height: auto;
+  max-height: 520px;
+  object-fit: contain;
+  object-position: center;
   display: block;
-  transition: opacity 0.45s ease;
-  pointer-events: none; /* ← prevents tap/click on image changing slide */
+  background: var(--cream-alt, #f5f0e8);
+  pointer-events: none;
   -webkit-user-drag: none;
-  user-drag: none;
 }
-/* Arrow buttons */
+body.dark-mode .slide-img { background: #1a1a1a; }
+@media (max-width: 768px) { .slideshow-wrap { max-width: 480px; } .slide-img { max-height: 440px; } }
+@media (max-width: 576px) { .slideshow-wrap { width: 100%; max-width: 100%; } .slide-img { max-height: 70vw; } }
+
 .slide-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(0,0,0,0.52);
-  border: none;
-  color: #fff;
-  font-size: 2rem;
-  line-height: 1;
-  padding: 6px 14px;
-  cursor: pointer;
-  border-radius: var(--r-sm);
-  backdrop-filter: blur(4px);
-  transition: background 0.2s;
-  z-index: 10;
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(0,0,0,0.45); border: none; color: #fff;
+  font-size: 2rem; line-height: 1; padding: 6px 14px; cursor: pointer;
+  border-radius: var(--r-sm); backdrop-filter: blur(4px); transition: background 0.2s; z-index: 10;
 }
-.slide-btn:hover { background: rgba(0,0,0,0.78); }
+.slide-btn:hover { background: rgba(0,0,0,0.72); }
 .slide-prev { left: 12px; }
 .slide-next { right: 12px; }
-/* Dots */
+
 .slide-dots {
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 7px;
-  z-index: 10;
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 7px; z-index: 10;
 }
 .slide-dot {
-  width: 9px; height: 9px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.45);
-  cursor: pointer;
-  border: 1.5px solid rgba(255,255,255,0.6);
-  transition: background 0.22s, transform 0.22s;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(255,255,255,0.45); cursor: pointer;
+  border: 1.5px solid rgba(255,255,255,0.6); transition: background 0.22s, transform 0.22s;
 }
-.slide-dot.active {
-  background: #fff;
-  transform: scale(1.25);
-}
+.slide-dot.active { background: var(--br, #8B5E3C); transform: scale(1.25); }
 
-/* ══════════════════════════════
-   SCHEDULE PILL BUTTONS — brown theme
-══════════════════════════════ */
-.sched-btn-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
+.sched-btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
 .sched-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 22px;
-  border-radius: var(--r-full);
-  border: 2px solid rgba(166,124,82,0.35);
-  background: rgba(166,124,82,0.08);
-  color: var(--tx);
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(0.82rem,1.5vw,0.95rem);
+  display: inline-flex; align-items: center; gap: 9px; padding: 11px 22px;
+  border-radius: var(--r-full); border: 2px solid rgba(166,124,82,0.35);
+  background: rgba(166,124,82,0.08); color: var(--tx);
+  font-family: var(--font-display); font-weight: 700; font-size: clamp(0.82rem,1.5vw,0.95rem);
   cursor: pointer;
-  transition: background 0.30s cubic-bezier(0.34,1.56,0.64,1),
-              border-color 0.25s ease,
-              transform 0.28s cubic-bezier(0.34,1.56,0.64,1),
-              box-shadow 0.30s ease,
-              color 0.2s ease;
+  transition: background 0.30s cubic-bezier(0.34,1.56,0.64,1), border-color 0.25s ease,
+              transform 0.28s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.30s ease, color 0.2s ease;
   will-change: transform;
 }
 .sched-pill-btn:hover {
-  background: rgba(166,124,82,0.16);
-  border-color: var(--br);
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 6px 22px rgba(166,124,82,0.22);
-  color: var(--br);
+  background: rgba(166,124,82,0.16); border-color: var(--br);
+  transform: translateY(-3px) scale(1.02); box-shadow: 0 6px 22px rgba(166,124,82,0.22); color: var(--br);
 }
-.sched-pill-btn:active {
-  transform: translateY(-1px) scale(0.99);
-}
+.sched-pill-btn:active { transform: translateY(-1px) scale(0.99); }
 .sched-pill-btn i { color: var(--br); transition: transform 0.25s ease; }
 .sched-pill-btn:hover i.bi-chevron-right { transform: translateX(3px); }
 body.dark-mode .sched-pill-btn { border-color:rgba(210,180,140,0.28);background:rgba(210,180,140,0.07);color:var(--dk-text); }
 body.dark-mode .sched-pill-btn:hover { background:rgba(210,180,140,0.14);color:#d4b896; }
 
-/* ══════════════════════════════
-   SCHEDULE MODAL — brown theme, smoother animation
-══════════════════════════════ */
 .sched-modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.52);
-  z-index: 9000;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.52);
+  z-index: 9000; align-items: center; justify-content: center; padding: 16px;
+  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
 }
-.sched-modal-overlay.open {
-  display: flex;
-  animation: scModalFadeIn 0.22s ease both;
-}
-@keyframes scModalFadeIn {
-  from { opacity:0; }
-  to   { opacity:1; }
-}
+.sched-modal-overlay.open { display: flex; animation: scModalFadeIn 0.22s ease both; }
+@keyframes scModalFadeIn { from{opacity:0}to{opacity:1} }
 .sched-modal-card {
-  background: var(--cream-alt);
-  border-radius: var(--r-xl);
-  max-width: 620px;
-  width: 100%;
-  max-height: 85vh;
-  overflow-y: auto;
-  padding: clamp(24px,4vw,40px);
-  position: relative;
+  background: var(--cream-alt); border-radius: var(--r-xl); max-width: 680px; width: 100%;
+  max-height: 88vh; overflow-y: auto; padding: clamp(24px,4vw,40px); position: relative;
   box-shadow: 0 28px 70px rgba(0,0,0,0.22), 0 0 0 1px rgba(166,124,82,0.12);
-  animation: scModalSlideUp 0.36s cubic-bezier(0.22,1,0.36,1) both;
-  border-top: 4px solid var(--br);
+  animation: scModalSlideUp 0.36s cubic-bezier(0.22,1,0.36,1) both; border-top: 4px solid var(--br);
 }
-@keyframes scModalSlideUp {
-  from { opacity:0; transform: translateY(40px) scale(0.95); }
-  to   { opacity:1; transform: translateY(0)    scale(1); }
-}
+@keyframes scModalSlideUp { from{opacity:0;transform:translateY(40px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
 .sched-modal-close {
-  position: absolute;
-  top: 14px; right: 16px;
-  background: rgba(166,124,82,0.10);
-  border: 1px solid var(--border-l);
-  border-radius: 50%;
-  width: 34px; height: 34px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  color: var(--tx-muted);
-  transition: background 0.2s, color 0.2s, transform 0.2s;
-  font-size: 0.82rem;
+  position: absolute; top: 14px; right: 16px; background: rgba(166,124,82,0.10);
+  border: 1px solid var(--border-l); border-radius: 50%; width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  color: var(--tx-muted); transition: background 0.2s, color 0.2s, transform 0.2s; font-size: 0.82rem;
 }
 .sched-modal-close:hover { background: rgba(192,57,43,0.10); color: #c0392b; transform: scale(1.12); }
-.sched-modal-heading {
-  font-family: var(--font-display);
-  font-size: clamp(1.1rem,3vw,1.5rem);
-  font-weight: 800;
-  color: var(--tx);
-  margin-bottom: 18px;
-  padding-right: 30px;
-  line-height: 1.3;
-}
+.sched-modal-heading { font-family:var(--font-display);font-size:clamp(1.1rem,3vw,1.5rem);font-weight:800;color:var(--tx);margin-bottom:18px;padding-right:30px;line-height:1.3; }
 .sched-modal-heading i { color: var(--br) !important; }
-.sched-modal-body { font-size:clamp(0.88rem,1.5vw,1rem); color:var(--tx-mid); line-height:1.85; }
+.sched-modal-body { font-size:clamp(0.88rem,1.5vw,1rem);color:var(--tx-mid);line-height:1.85; }
 .sched-modal-body ul,.sched-modal-body ol { padding-left:20px;margin-bottom:10px; }
 .sched-modal-body li { margin-bottom:5px; }
 .sched-modal-body h3,.sched-modal-body h4 { font-family:var(--font-display);color:var(--tx);font-weight:700;margin:14px 0 6px; }
@@ -818,33 +659,22 @@ body.dark-mode .sched-modal-card { background:var(--dk-surface); }
 body.dark-mode .sched-modal-heading { color:var(--dk-text); }
 body.dark-mode .sched-modal-body { color:var(--dk-muted); }
 
-/* Dead-line pill variants */
+.sched-table-wrap { overflow-x:auto;margin-top:16px;border-radius:var(--r-md);border:1px solid rgba(166,124,82,0.25); }
+.sched-table { width:100%;border-collapse:collapse;font-size:clamp(0.78rem,1.4vw,0.92rem);min-width:320px; }
+.sched-table thead tr { background:linear-gradient(135deg,var(--br),#6b3f1a); }
+.sched-table thead th { padding:10px 14px;color:#fff;font-weight:700;text-align:left;white-space:nowrap;border-right:1px solid rgba(255,255,255,0.12); }
+.sched-table thead th:last-child { border-right:none; }
+.sched-table tbody tr { border-bottom:1px solid rgba(166,124,82,0.12); }
+.sched-table tbody tr:nth-child(even) { background:rgba(166,124,82,0.05); }
+.sched-table tbody tr:hover { background:rgba(166,124,82,0.10); }
+.sched-table tbody td { padding:9px 14px;color:var(--tx-mid);border-right:1px solid rgba(166,124,82,0.08);line-height:1.5; }
+.sched-table tbody td:last-child { border-right:none; }
+body.dark-mode .sched-table tbody td { color:var(--dk-muted); }
+body.dark-mode .sched-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.03); }
+
 .spill-deadline { background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.35);color:#8a6914; }
 .spill-closed   { background:rgba(192,57,43,0.10);border-color:rgba(192,57,43,0.28);color:#c0392b; }
 
-/* ══════════════════════════════
-   QUICK EDIT PANEL
-══════════════════════════════ */
-.quick-edit-panel {
-  border-top: 2px solid var(--br);
-  background: rgba(166,124,82,0.03);
-}
-.quick-edit-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  background: linear-gradient(135deg,var(--br),var(--br-deep));
-  color: #fff;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-.quick-edit-body {
-  padding: clamp(14px,2vw,22px);
-}
-body.dark-mode .quick-edit-panel { background:rgba(255,255,255,0.02); }
-
-/* ── Description body ── */
 .event-description-body { font-size:clamp(0.95rem,1.5vw,1.08rem);color:var(--tx-mid);line-height:1.9;max-width:780px; }
 .event-description-body p { margin-bottom:14px; }
 .event-description-body ul,.event-description-body ol { padding-left:22px;margin-bottom:14px; }
@@ -853,28 +683,23 @@ body.dark-mode .quick-edit-panel { background:rgba(255,255,255,0.02); }
 .event-description-body strong { color:var(--tx); }
 body.dark-mode .event-description-body { color:var(--dk-muted); }
 
-/* ── Sections ── */
 .detail-section { margin-bottom:38px;padding-bottom:32px;border-bottom:1px solid var(--border-l); }
 .detail-section:last-child { border-bottom:none; }
 .detail-section-title { font-family:var(--font-display);font-size:1.15rem;font-weight:800;color:var(--tx);margin-bottom:18px;padding-bottom:10px;border-bottom:2px solid rgba(166,124,82,0.18); }
 
-/* ── Person / doc row ── */
 .person-item { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);margin-bottom:10px;flex-wrap:wrap; }
 .person-name { font-weight:700;font-size:0.95rem;color:var(--tx); }
 .person-email { font-size:0.8rem;color:var(--tx-muted);margin-top:2px; }
 
-/* ── Reviews ── */
 .review-card { background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);padding:16px 18px;margin-bottom:12px; }
 .review-name { font-weight:700;font-size:0.9rem;color:var(--br);margin-bottom:6px; }
 .review-body { font-size:0.9rem;color:var(--tx-mid);line-height:1.7;margin:0; }
 
-/* ── Gallery ── */
 .gallery-empty { text-align:center;padding:40px 20px;background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-lg);margin-bottom:20px; }
 .gallery-empty-icon { font-size:2.5rem;margin-bottom:10px;opacity:0.5; }
 .gallery-empty p { color:var(--tx-muted);font-size:0.92rem;margin:0; }
 .admin-add-form { background:rgba(166,124,82,0.04);border:1.5px dashed rgba(166,124,82,0.22);border-radius:var(--r-md);padding:18px 20px; }
 
-/* Sub event cards */
 .show-sub-card { background:var(--cream-alt);border:1px solid var(--border-l);border-radius:var(--r-md);overflow:hidden;transition:border-color 0.22s,box-shadow 0.22s; }
 .show-sub-card:hover { border-color:var(--br);box-shadow:0 4px 18px rgba(166,124,82,0.10); }
 .show-sub-top { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:clamp(12px,1.8vw,18px) clamp(14px,2vw,20px) clamp(10px,1.5vw,14px);flex-wrap:wrap; }
@@ -892,7 +717,6 @@ body.dark-mode .event-description-body { color:var(--dk-muted); }
 .field-edit-btn { background:rgba(166,124,82,0.10);border:1px solid rgba(166,124,82,0.25);cursor:pointer;color:var(--br);padding:4px 10px;border-radius:var(--r-sm);font-size:0.75rem;font-weight:600;transition:background 0.2s; }
 .field-edit-btn:hover { background:rgba(166,124,82,0.22); }
 
-/* Gallery grid */
 .gallery-grid-new { display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px; }
 .gallery-item-new { display:flex;flex-direction:column;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--border-l);background:var(--cream-alt);transition:box-shadow 0.24s,transform 0.24s; }
 .gallery-item-new:hover { box-shadow:0 6px 24px rgba(166,124,82,0.14);transform:translateY(-2px); }
@@ -915,38 +739,9 @@ body.dark-mode .event-description-body { color:var(--dk-muted); }
 .gup-file-label { font-size:0.88rem;font-weight:600;color:var(--tx-mid);margin-bottom:3px; }
 .gup-file-hint { font-size:0.75rem;color:var(--tx-muted); }
 
-/* Toggle pill (needed in quick-edit) */
-.toggle-pill { display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;font-weight:500;color:var(--tx-mid);padding:6px 12px;border-radius:var(--r-full);border:1px solid var(--border-l);background:var(--cream);user-select:none;transition:border-color 0.2s,background 0.2s; }
-.toggle-pill:has(input:checked) { border-color:var(--br);background:rgba(166,124,82,0.07);color:var(--br); }
-.toggle-pill input { display:none; }
-.toggle-track { width:28px;height:16px;border-radius:8px;background:var(--border-l);position:relative;flex-shrink:0;transition:background 0.2s; }
-.toggle-track::after { content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2); }
-.toggle-pill:has(input:checked) .toggle-track { background:var(--br); }
-.toggle-pill:has(input:checked) .toggle-track::after { transform:translateX(12px); }
-
-/* Edit field group in quick edit */
-.edit-field-group { margin-bottom:12px; }
-
-/* ── Admin action bar — mobile safe ── */
-.admin-action-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 18px;
-  align-items: center;
-}
-.admin-bar-btn {
-  flex: 1 1 auto;
-  min-width: 130px;
-  text-align: center;
-  justify-content: center;
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-@media (max-width: 400px) {
-  .admin-action-bar { flex-direction: column; }
-  .admin-bar-btn { width: 100%; min-width: 0; }
-}
+.admin-action-bar { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;align-items:center; }
+.admin-bar-btn { flex:1 1 auto;min-width:130px;text-align:center;justify-content:center;white-space:nowrap;box-sizing:border-box; }
+@media (max-width: 400px) { .admin-action-bar { flex-direction:column; } .admin-bar-btn { width:100%;min-width:0; } }
 
 body.dark-mode .person-item,.dark-mode .review-card { background:var(--dk-surface);border-color:var(--border-d); }
 body.dark-mode .show-sub-card { background:var(--dk-surface);border-color:var(--border-d); }
@@ -954,8 +749,6 @@ body.dark-mode .gallery-item-new { background:var(--dk-surface);border-color:var
 body.dark-mode .gallery-caption-below { background:var(--dk-surface);border-color:var(--border-d); }
 body.dark-mode .admin-gallery-upload-form { background:var(--dk-surface); }
 body.dark-mode .show-sub-poster-wrap { border-color:var(--border-d); }
-body.dark-mode .toggle-pill { background:var(--dk-surface); }
-body.dark-mode .quick-edit-panel { background:rgba(255,255,255,0.02); }
 
 @media (max-width:900px) { .gallery-grid-new { grid-template-columns:repeat(2,1fr);gap:12px; } .gallery-upload-fields { grid-template-columns:1fr; } }
 @media (max-width:576px) {
@@ -970,59 +763,43 @@ body.dark-mode .quick-edit-panel { background:rgba(255,255,255,0.02); }
 
 <script>
 /* ══════════════════════
-   SLIDESHOW — arrows only, no auto on hover/tap
+   SLIDESHOW
 ══════════════════════ */
 var slideIndex  = 0;
 var slideTimer  = null;
-var slides      = document.querySelectorAll('.slide-item');
-var dots        = document.querySelectorAll('.slide-dot');
+var slides      = Array.prototype.slice.call(document.querySelectorAll('.slide-item'));
+var dots        = Array.prototype.slice.call(document.querySelectorAll('.slide-dot'));
 var slideshowEl = document.querySelector('.slideshow-wrap');
 
 function slideTo(n) {
   if (!slides.length) return;
-  slides.forEach(function(s){ s.classList.remove('active'); });
-  dots.forEach(function(d){ d.classList.remove('active'); });
+  slides[slideIndex].style.display = 'none';
+  if (dots[slideIndex]) dots[slideIndex].classList.remove('active');
   slideIndex = (n + slides.length) % slides.length;
-  slides[slideIndex].classList.add('active');
+  slides[slideIndex].style.display = 'block';
   if (dots[slideIndex]) dots[slideIndex].classList.add('active');
 }
+function slideMove(dir) { slideTo(slideIndex + dir); resetAutoTimer(); }
+function startAutoTimer() { if (slides.length <= 1) return; slideTimer = setInterval(function(){ slideTo(slideIndex + 1); }, 3000); }
+function resetAutoTimer() { clearInterval(slideTimer); startAutoTimer(); }
+function stopAutoTimer() { clearInterval(slideTimer); }
 
-function slideMove(dir) {
-  slideTo(slideIndex + dir);
-  resetAutoTimer(); // restart timer after manual arrow click
-}
-
-function startAutoTimer() {
-  if (slides.length <= 1) return;
-  slideTimer = setInterval(function(){ slideTo(slideIndex + 1); }, 2500);
-}
-
-function resetAutoTimer() {
-  clearInterval(slideTimer);
+if (slides.length > 0) {
+  slides.forEach(function(s, i){ s.style.display = i === 0 ? 'block' : 'none'; });
   startAutoTimer();
 }
-
-function stopAutoTimer() {
-  clearInterval(slideTimer);
-}
-
-// Only auto-advance when nothing is being interacted with
-startAutoTimer();
-
-// Pause auto when user hovers (desktop) or touches (mobile) the WRAPPER — NOT the image
 if (slideshowEl) {
   slideshowEl.addEventListener('mouseenter', stopAutoTimer);
   slideshowEl.addEventListener('mouseleave', startAutoTimer);
-  // Touch: arrows already call slideMove → resetAutoTimer
-  // Prevent accidental swipe / tap on the image from changing slide
-  slideshowEl.addEventListener('touchstart', function(e) {
-    // only block if target is the image, not the buttons
-    if (e.target.classList.contains('slide-img')) {
-      e.preventDefault();
-    }
-  }, { passive: false });
 }
-
+var touchStartX = 0;
+if (slideshowEl) {
+  slideshowEl.addEventListener('touchstart', function(e){ touchStartX = e.touches[0].clientX; }, { passive: true });
+  slideshowEl.addEventListener('touchend', function(e){
+    var diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) { slideMove(diff > 0 ? 1 : -1); }
+  }, { passive: true });
+}
 
 /* ══════════════════════
    SCHEDULE MODAL
@@ -1033,47 +810,21 @@ function openSchedModal(id) {
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
-
 function closeSchedModalById(id) {
   var overlay = document.getElementById('sched-modal-' + id);
   if (!overlay) return;
   overlay.classList.remove('open');
   document.body.style.overflow = '';
 }
-
 function closeSchedModal(e, id) {
-  // Only close if clicking the overlay itself, not the card
-  if (e.target === document.getElementById('sched-modal-' + id)) {
-    closeSchedModalById(id);
-  }
+  if (e.target === document.getElementById('sched-modal-' + id)) { closeSchedModalById(id); }
 }
-
-// Close on Escape key
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.sched-modal-overlay.open').forEach(function(el) {
-      el.classList.remove('open');
-    });
+    document.querySelectorAll('.sched-modal-overlay.open').forEach(function(el) { el.classList.remove('open'); });
     document.body.style.overflow = '';
   }
 });
-
-
-/* ══════════════════════
-   QUICK EDIT TOGGLE
-══════════════════════ */
-function toggleQuickEdit(subId) {
-  var panel = document.getElementById('quick-edit-' + subId);
-  if (!panel) return;
-  var isOpen = panel.style.display !== 'none';
-  panel.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) {
-    setTimeout(function() {
-      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 60);
-  }
-}
-
 
 /* ══════════════════════
    GALLERY FILE NAMES
@@ -1084,7 +835,6 @@ function showGalleryFiles(input) {
   el.textContent = '✓ ' + input.files.length + ' file(s): ' + Array.from(input.files).map(function(f){ return f.name; }).join(', ');
   input.closest('.gup-file-area').style.borderColor = 'var(--br)';
 }
-
 function showSpeakerFiles(input) {
   var el = document.getElementById('speakerFileNames');
   if (!el || !input.files.length) return;
@@ -1092,18 +842,3 @@ function showSpeakerFiles(input) {
   input.closest('.gup-file-area').style.borderColor = 'var(--br)';
 }
 </script>
-
-<%
-function generateTimeOptions(selected) {
-  var out = '';
-  for (var h = 0; h < 24; h++) {
-    for (var m = 0; m < 60; m += 30) {
-      var suffix = h < 12 ? 'AM' : 'PM';
-      var h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-      var label = (h12 < 10 ? '0' : '') + h12 + ':' + (m === 0 ? '00' : '30') + ' ' + suffix;
-      out += '<option value="' + label + '"' + (label === selected ? ' selected' : '') + '>' + label + '</option>';
-    }
-  }
-  return out;
-}
-%>

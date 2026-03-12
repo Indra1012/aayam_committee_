@@ -1,3 +1,19 @@
+<%
+function generateTimeOptions(selected) {
+  var out = '';
+  for (var h = 0; h < 24; h++) {
+    for (var m = 0; m < 60; m += 30) {
+      var suffix = h < 12 ? 'AM' : 'PM';
+      var h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      var mm = m === 0 ? '00' : '30';
+      var hh = h12 < 10 ? '0' + h12 : '' + h12;
+      var label = hh + ':' + mm + ' ' + suffix;
+      out += '<option value="' + label + '"' + (label === selected ? ' selected' : '') + '>' + label + '</option>';
+    }
+  }
+  return out;
+}
+%>
 <!-- views/events/edit.ejs -->
 <div class="container" style="max-width:900px; padding-bottom:100px;">
 
@@ -120,7 +136,7 @@
 
 
   <!-- ═══════════════════════════════
-       SECTION 1B — POSTER SLIDESHOW (NEW)
+       SECTION 1B — POSTER SLIDESHOW
   ════════════════════════════════ -->
   <div class="edit-section-card" data-aos="fade-up" style="border-left:4px solid #6c63ff;">
     <div class="edit-section-header">
@@ -167,14 +183,14 @@
 
 
   <!-- ═══════════════════════════════
-       SECTION 1C — SCHEDULE CARDS (NEW)
+       SECTION 1C — SCHEDULE CARDS
   ════════════════════════════════ -->
   <div class="edit-section-card" data-aos="fade-up" style="border-left:4px solid var(--br);">
     <div class="edit-section-header">
-      <div class="edit-section-icon" style="background:rgba(39,174,96,0.12);">📅</div>
+      <div class="edit-section-icon" style="background:rgba(166,124,82,0.12);">📅</div>
       <div>
         <div class="edit-section-title">Schedule / Info Cards</div>
-        <div class="edit-section-sub">Add Day 1, Day 2, etc. cards — viewers click them to see full schedule</div>
+        <div class="edit-section-sub">Add Day 1, Day 2, etc. cards — viewers click them to see full schedule. Each card can have rich text, a table, or both.</div>
       </div>
     </div>
 
@@ -186,15 +202,19 @@
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
               <div style="font-weight:700;font-size:0.95rem;color:var(--tx);flex:1;">
                 <i class="bi bi-calendar-week" style="color:var(--br);margin-right:6px;"></i><%= card.heading %>
+                <% if (card.tableData && card.tableData.columns && card.tableData.columns.length > 0) { %>
+                  <span style="font-size:0.68rem;background:rgba(166,124,82,0.14);color:var(--br);padding:1px 7px;border-radius:20px;margin-left:6px;font-weight:700;">📊 Table</span>
+                <% } %>
+                <% if (card.body && card.body.trim() !== '') { %>
+                  <span style="font-size:0.68rem;background:rgba(102,126,234,0.12);color:#4a5bbf;padding:1px 7px;border-radius:20px;margin-left:4px;font-weight:700;">📝 Text</span>
+                <% } %>
               </div>
               <div style="display:flex;gap:6px;">
                 <button type="button" onclick="toggleSchedEdit('<%= card._id %>')" class="field-edit-btn">
                   <i class="bi bi-pencil"></i> Edit
                 </button>
-                <form action="/events/<%= event._id %>/schedule-cards/<%= card._id %>/delete" method="POST"
-                  style="margin:0;" onsubmit="return confirm('Delete this card?')">
-                  <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--tx-muted);padding:4px 6px;border-radius:var(--r-sm);transition:color 0.2s;"
-                    onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='var(--tx-muted)'">
+                <form action="/events/<%= event._id %>/schedule-cards/<%= card._id %>/delete" method="POST" style="margin:0;" onsubmit="return confirm('Delete this card?')">
+                  <button type="submit" style="background:none;border:none;cursor:pointer;color:var(--tx-muted);padding:4px 6px;border-radius:var(--r-sm);transition:color 0.2s;" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='var(--tx-muted)'">
                     <i class="bi bi-x-lg"></i>
                   </button>
                 </form>
@@ -207,7 +227,15 @@
                   <label class="form-label-custom">Heading <span style="color:#c0392b;">*</span></label>
                   <input type="text" name="heading" class="form-control-custom" value="<%= card.heading %>" required placeholder="e.g. Day 1 — 18 March 2026">
                 </div>
-                <div class="edit-field-group" style="margin-bottom:10px;">
+
+                <!-- Tab switcher -->
+                <div class="sc-tab-row" id="sc-tabs-<%= card._id %>">
+                  <button type="button" class="sc-tab active" onclick="switchScTab('<%= card._id %>','text',this)">📝 Rich Text</button>
+                  <button type="button" class="sc-tab" onclick="switchScTab('<%= card._id %>','table',this)">📊 Table</button>
+                </div>
+
+                <!-- Rich text panel -->
+                <div id="sc-panel-text-<%= card._id %>" class="edit-field-group" style="margin-bottom:10px;">
                   <label class="form-label-custom">Content (Rich Text)</label>
                   <div class="richtext-toolbar">
                     <button type="button" onclick="scFmt('<%= card._id %>','bold')"><b>B</b></button>
@@ -220,18 +248,59 @@
                     <button type="button" onclick="scFmtBlock('<%= card._id %>','h3')">H3</button>
                     <button type="button" onclick="scFmtBlock('<%= card._id %>','p')">¶</button>
                   </div>
-                  <div id="sc-editor-<%= card._id %>" class="richtext-editor" contenteditable="true" style="min-height:100px;"><%- card.body || '' %></div>
+                  <div id="sc-editor-<%= card._id %>" class="richtext-editor" contenteditable="true" style="min-height:80px;"><%- card.body || '' %></div>
                   <input type="hidden" name="body" id="sc-hidden-<%= card._id %>">
                 </div>
+
+                <!-- Table builder panel -->
+                <div id="sc-panel-table-<%= card._id %>" class="edit-field-group" style="display:none;margin-bottom:10px;">
+                  <label class="form-label-custom">Table Builder</label>
+
+                  <% var existCols = (card.tableData && card.tableData.columns) ? card.tableData.columns : []; %>
+                  <% var existRows = (card.tableData && card.tableData.rows) ? card.tableData.rows : []; %>
+
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+                    <label class="form-label-custom" style="margin:0;white-space:nowrap;">Columns:</label>
+                    <input type="number" id="sc-colcount-<%= card._id %>" min="1" max="10" value="<%= existCols.length > 0 ? existCols.length : 3 %>" class="form-control-custom" style="width:80px;" onchange="buildScTable('<%= card._id %>')">
+                    <button type="button" class="field-edit-btn" onclick="buildScTable('<%= card._id %>')">
+                      <i class="bi bi-arrow-clockwise"></i> Rebuild Grid
+                    </button>
+                    <button type="button" class="field-edit-btn" onclick="addScRow('<%= card._id %>')">
+                      <i class="bi bi-plus-circle"></i> Add Row
+                    </button>
+                  </div>
+
+                  <div id="sc-table-builder-<%= card._id %>" class="sc-table-builder-wrap"></div>
+                  <div id="sc-table-hidden-<%= card._id %>"></div>
+
+                  <% if (existCols.length > 0) { %>
+                    <div style="font-size:0.72rem;color:var(--br);margin-top:6px;font-weight:600;">
+                      <i class="bi bi-info-circle"></i> Current: <%= existCols.length %> columns, <%= existRows.length %> rows
+                    </div>
+                    <label class="toggle-pill" style="margin-top:8px;">
+                      <input type="checkbox" name="clearTable" value="1" id="clearTable-<%= card._id %>">
+                      <span class="toggle-track"></span> Clear table data
+                    </label>
+                  <% } %>
+                </div>
+
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                   <button type="submit" class="btn-register" style="padding:8px 18px;font-size:0.84rem;"
-                    onclick="document.getElementById('sc-hidden-<%= card._id %>').value=document.getElementById('sc-editor-<%= card._id %>').innerHTML">
+                    onclick="syncScCard('<%= card._id %>')">
                     <i class="bi bi-floppy"></i> Save
                   </button>
                   <button type="button" onclick="toggleSchedEdit('<%= card._id %>')" class="btn-details" style="font-size:0.84rem;padding:8px 14px;">Cancel</button>
                 </div>
               </form>
             </div>
+
+            <!-- Init existing table data as JS vars -->
+            <script>
+              window['scExistData_<%= card._id %>'] = {
+                columns: <%- JSON.stringify(existCols) %>,
+                rows:    <%- JSON.stringify(existRows) %>
+              };
+            </script>
           </div>
         <% }) %>
       </div>
@@ -249,7 +318,13 @@
           <label class="form-label-custom">Heading <span style="color:#c0392b;">*</span></label>
           <input type="text" name="heading" class="form-control-custom" required placeholder="e.g. Day 1 — 18 March 2026">
         </div>
-        <div class="edit-field-group" style="margin-bottom:12px;">
+
+        <div class="sc-tab-row" id="sc-tabs-new">
+          <button type="button" class="sc-tab active" onclick="switchScTab('new','text',this)">📝 Rich Text</button>
+          <button type="button" class="sc-tab" onclick="switchScTab('new','table',this)">📊 Table</button>
+        </div>
+
+        <div id="sc-panel-text-new" class="edit-field-group" style="margin-bottom:12px;">
           <label class="form-label-custom">Content (Rich Text)</label>
           <div class="richtext-toolbar">
             <button type="button" onclick="newScFmt('bold')"><b>B</b></button>
@@ -262,16 +337,50 @@
             <button type="button" onclick="newScFmtBlock('h3')">H3</button>
             <button type="button" onclick="newScFmtBlock('p')">¶</button>
           </div>
-          <div id="newScEditor" class="richtext-editor" contenteditable="true" style="min-height:100px;" placeholder="Enter schedule details..."></div>
+          <div id="newScEditor" class="richtext-editor" contenteditable="true" style="min-height:80px;" placeholder="Enter schedule details..."></div>
           <input type="hidden" name="body" id="newScHidden">
         </div>
-        <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.85rem;"
-          onclick="document.getElementById('newScHidden').value=document.getElementById('newScEditor').innerHTML">
+
+        <div id="sc-panel-table-new" class="edit-field-group" style="display:none;margin-bottom:12px;">
+          <label class="form-label-custom">Table Builder</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+            <label class="form-label-custom" style="margin:0;white-space:nowrap;">Columns:</label>
+            <input type="number" id="sc-colcount-new" min="1" max="10" value="3" class="form-control-custom" style="width:80px;" onchange="buildScTable('new')">
+            <button type="button" class="field-edit-btn" onclick="buildScTable('new')"><i class="bi bi-arrow-clockwise"></i> Rebuild Grid</button>
+            <button type="button" class="field-edit-btn" onclick="addScRow('new')"><i class="bi bi-plus-circle"></i> Add Row</button>
+          </div>
+          <div id="sc-table-builder-new" class="sc-table-builder-wrap"></div>
+          <div id="sc-table-hidden-new"></div>
+        </div>
+
+        <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.85rem;" onclick="syncNewScCard()">
           <i class="bi bi-floppy"></i> Add Card
         </button>
       </form>
     </div>
   </div>
+
+
+  <!-- ═══════════════════════════════
+       TABLE BUILDER STYLES
+  ════════════════════════════════ -->
+  <style>
+  .sc-tab-row { display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid var(--border-l);padding-bottom:8px; }
+  .sc-tab { padding:5px 14px;border:1.5px solid var(--border-l);border-radius:var(--r-sm) var(--r-sm) 0 0;background:var(--cream);color:var(--tx-muted);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.18s; }
+  .sc-tab.active { background:rgba(166,124,82,0.12);border-color:var(--br);color:var(--br); }
+  .sc-tab:hover:not(.active) { background:rgba(166,124,82,0.06);color:var(--tx); }
+  .sc-table-builder-wrap { overflow-x:auto;border:1.5px solid rgba(166,124,82,0.25);border-radius:var(--r-md);margin-bottom:8px; }
+  .sc-build-table { width:100%;border-collapse:collapse;min-width:300px; }
+  .sc-build-table th,.sc-build-table td { padding:0;border:1px solid rgba(166,124,82,0.18); }
+  .sc-build-table thead tr { background:linear-gradient(135deg,rgba(166,124,82,0.15),rgba(166,124,82,0.08)); }
+  .sc-build-table thead input { width:100%;border:none;background:transparent;font-weight:700;font-size:0.82rem;color:var(--tx);padding:6px 8px;outline:none; }
+  .sc-build-table thead input:focus { background:rgba(166,124,82,0.08);border-radius:4px; }
+  .sc-build-table tbody input { width:100%;border:none;background:transparent;font-size:0.82rem;color:var(--tx-mid);padding:6px 8px;outline:none; }
+  .sc-build-table tbody input:focus { background:rgba(166,124,82,0.06); }
+  .sc-build-table .sc-row-del { width:28px;background:none;border:none;cursor:pointer;color:var(--tx-muted);font-size:0.7rem;padding:4px;transition:color 0.18s; }
+  .sc-build-table .sc-row-del:hover { color:#c0392b; }
+  body.dark-mode .sc-build-table thead input,body.dark-mode .sc-build-table tbody input { color:var(--dk-text); }
+  </style>
 
 
   <!-- ═══════════════════════════════
@@ -325,11 +434,9 @@
           </select>
         </div>
 
-        <!-- NEW: Registration Deadline -->
         <div class="edit-field-group" style="grid-column:1/-1;">
-          <label class="form-label-custom">
-            Registration Deadline
-            <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(optional — registration closes after this date & time)</span>
+          <label class="form-label-custom">Registration Deadline
+            <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(optional)</span>
           </label>
           <input type="datetime-local" name="registrationDeadline" class="form-control-custom">
         </div>
@@ -358,7 +465,7 @@
         </div>
 
         <div class="edit-field-group">
-          <label class="form-label-custom">QR Code Image <span style="font-weight:400;color:var(--tx-muted);font-size:0.75rem;">(for payment)</span></label>
+          <label class="form-label-custom">QR Code Image</label>
           <input type="file" name="qrImage" class="form-control-custom" accept="image/*">
         </div>
 
@@ -425,8 +532,12 @@
         <div class="subevent-part">
           <div class="subevent-part-label"><i class="bi bi-gear"></i> Settings</div>
 
-          <form action="/subevents/<%= sub._id %>/edit" method="POST" enctype="multipart/form-data">
+          <%# FIX: Normal POST form — no fetch. Images require a real multipart submit. %>
+          <%# The _anchor input makes the page scroll back to this card after save. %>
+          <form action="/subevents/<%= sub._id %>/edit" method="POST" enctype="multipart/form-data" id="settingsForm_<%= sub._id %>">
             <input type="hidden" name="_referer" value="edit">
+            <input type="hidden" name="_anchor" value="subevent-<%= sub._id %>">
+
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
 
               <div class="edit-field-group" style="grid-column:1/-1;">
@@ -441,8 +552,7 @@
 
               <div class="edit-field-group">
                 <label class="form-label-custom">Day Number</label>
-                <input type="number" name="dayNumber" class="form-control-custom" min="1"
-                  value="<%= sub.dayNumber || '' %>" placeholder="e.g. 1">
+                <input type="number" name="dayNumber" class="form-control-custom" min="1" value="<%= sub.dayNumber || '' %>" placeholder="e.g. 1">
               </div>
 
               <div class="edit-field-group">
@@ -467,10 +577,8 @@
                 </select>
               </div>
 
-              <!-- NEW: Registration Deadline -->
               <div class="edit-field-group" style="grid-column:1/-1;">
-                <label class="form-label-custom">
-                  Registration Deadline
+                <label class="form-label-custom">Registration Deadline
                   <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(leave blank for no deadline)</span>
                 </label>
                 <input type="datetime-local" name="registrationDeadline" class="form-control-custom"
@@ -510,15 +618,17 @@
               </div>
             </div>
 
-            <!-- Toggles -->
+            <%# Hidden fallback inputs ensure unchecked = false is sent to controller %>
             <div style="display:flex;flex-wrap:wrap;gap:12px;margin:14px 0;">
               <label class="toggle-pill">
-                <input type="checkbox" name="enableTeamMembers" <%= sub.enableTeamMembers ? 'checked' : '' %>>
+                <input type="hidden" name="enableTeamMembers" value="">
+                <input type="checkbox" name="enableTeamMembers" value="on" <%= sub.enableTeamMembers ? 'checked' : '' %>>
                 <span class="toggle-track"></span>
                 Enable Team Member Input
               </label>
               <label class="toggle-pill">
-                <input type="checkbox" name="requirePaymentScreenshot" <%= sub.requirePaymentScreenshot ? 'checked' : '' %>>
+                <input type="hidden" name="requirePaymentScreenshot" value="">
+                <input type="checkbox" name="requirePaymentScreenshot" value="on" <%= sub.requirePaymentScreenshot ? 'checked' : '' %>>
                 <span class="toggle-track"></span>
                 Require Payment Screenshot
               </label>
@@ -531,27 +641,31 @@
                 <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                   <img src="<%= sub.qrImage %>" style="width:56px;height:56px;object-fit:contain;border-radius:var(--r-sm);border:1px solid var(--border-l);">
                   <span style="font-size:0.78rem;color:#27ae60;font-weight:600;">✓ QR uploaded</span>
-                  <form action="/subevents/<%= sub._id %>/qr/delete" method="POST" style="margin:0;" onsubmit="return confirm('Delete QR image?')">
-                    <button type="submit" class="btn-admin-danger" style="font-size:0.72rem;padding:4px 10px;">🗑 Delete QR</button>
-                  </form>
+                  <button type="button" class="btn-admin-danger" style="font-size:0.72rem;padding:4px 10px;" onclick="submitDeleteForm('deleteQrForm_<%= sub._id %>')">🗑 Delete QR</button>
                 </div>
               <% } %>
-              <input type="file" name="qrImage" class="form-control-custom" accept="image/*">
+              <input type="file" name="qrImage" class="form-control-custom" accept="image/*"
+                onchange="markImageSelected('<%= sub._id %>', 'qrImage', this)">
+              <div id="qr-selected-<%= sub._id %>" style="display:none;font-size:0.75rem;color:var(--br);margin-top:4px;font-weight:600;">
+                📎 New QR selected — click Save Settings to upload
+              </div>
             </div>
 
             <!-- Poster Image -->
             <div class="edit-field-group">
-              <label class="form-label-custom">Sub-Event Poster <span style="font-weight:400;color:var(--tx-muted);font-size:0.75rem;">(shown when no QR)</span></label>
+              <label class="form-label-custom">Sub-Event Poster</label>
               <% if (sub.posterImage) { %>
                 <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                  <img src="<%= sub.posterImage %>" style="max-height:70px;border-radius:var(--r-sm);border:1px solid var(--border-l);">
+                  <img src="<%= sub.posterImage %>" style="max-height:70px;border-radius:var(--r-sm);border:1px solid var(--border-l);" id="poster-preview-<%= sub._id %>">
                   <span style="font-size:0.78rem;color:#27ae60;font-weight:600;">✓ Poster uploaded</span>
-                  <form action="/subevents/<%= sub._id %>/poster/delete" method="POST" style="margin:0;" onsubmit="return confirm('Delete poster image?')">
-                    <button type="submit" class="btn-admin-danger" style="font-size:0.72rem;padding:4px 10px;">🗑 Delete Poster</button>
-                  </form>
+                  <button type="button" class="btn-admin-danger" style="font-size:0.72rem;padding:4px 10px;" onclick="submitDeleteForm('deletePosterForm_<%= sub._id %>')">🗑 Delete Poster</button>
                 </div>
               <% } %>
-              <input type="file" name="posterImage" class="form-control-custom" accept="image/*">
+              <input type="file" name="posterImage" class="form-control-custom" accept="image/*"
+                onchange="markImageSelected('<%= sub._id %>', 'posterImage', this)">
+              <div id="poster-selected-<%= sub._id %>" style="display:none;font-size:0.75rem;color:var(--br);margin-top:4px;font-weight:600;">
+                📎 New poster selected — click Save Settings to upload
+              </div>
             </div>
 
             <!-- External Registration Link -->
@@ -568,14 +682,22 @@
               <% } %>
             </div>
 
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <%# ── SAVE BUTTON — always does a normal POST submit ── %>
+            <%# This is required for file uploads (multipart/form-data) to work correctly. %>
+            <%# fetch() was removed because it caused images to silently fail or not update the preview. %>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
               <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.88rem;">
                 <i class="bi bi-floppy"></i> Save Settings
               </button>
+              <span style="font-size:0.75rem;color:var(--tx-muted);">Page will reload and scroll back here</span>
             </div>
           </form>
 
-          <!-- Delete sub-event -->
+          <%# FIX: Standalone delete forms outside the settings form. Submitted by submitDeleteForm() JS. %>
+          <% if (sub.qrImage) { %><form id="deleteQrForm_<%= sub._id %>" action="/subevents/<%= sub._id %>/qr/delete" method="POST" style="display:none;"></form><% } %>
+          <% if (sub.posterImage) { %><form id="deletePosterForm_<%= sub._id %>" action="/subevents/<%= sub._id %>/poster/delete" method="POST" style="display:none;"></form><% } %>
+
+                    <!-- Delete sub-event -->
           <form action="/subevents/<%= sub._id %>/delete" method="POST"
             onsubmit="return confirm('Delete this sub-event and all its registrations?')"
             style="margin-top:10px;">
@@ -655,11 +777,13 @@
                     </div>
                     <div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;">
                       <label class="toggle-pill">
-                        <input type="checkbox" name="required" <%= field.required ? 'checked' : '' %>>
+                        <input type="hidden" name="required" value="">
+                        <input type="checkbox" name="required" value="on" <%= field.required ? 'checked' : '' %>>
                         <span class="toggle-track"></span> Required field
                       </label>
                       <label class="toggle-pill" id="editAskMembersToggle-<%= field._id %>" style="<%= field.type==='file' ? 'display:none;' : '' %>">
-                        <input type="checkbox" name="askForMembers" <%= field.askForMembers ? 'checked' : '' %>>
+                        <input type="hidden" name="askForMembers" value="">
+                        <input type="checkbox" name="askForMembers" value="on" <%= field.askForMembers ? 'checked' : '' %>>
                         <span class="toggle-track"></span> Ask for each team member too
                       </label>
                     </div>
@@ -707,11 +831,13 @@
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 14px;">
                 <label class="toggle-pill">
-                  <input type="checkbox" name="required">
+                  <input type="hidden" name="required" value="">
+                  <input type="checkbox" name="required" value="on">
                   <span class="toggle-track"></span> Required field
                 </label>
                 <label class="toggle-pill" id="askForMembersToggle-<%= sub._id %>">
-                  <input type="checkbox" name="askForMembers">
+                  <input type="hidden" name="askForMembers" value="">
+                  <input type="checkbox" name="askForMembers" value="on">
                   <span class="toggle-track"></span> Ask for each team member too
                 </label>
               </div>
@@ -787,12 +913,13 @@ body.dark-mode .richtext-toolbar button { background:var(--dk-surface);color:var
 
 /* Toggle pill */
 .toggle-pill { display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;font-weight:500;color:var(--tx-mid);padding:6px 12px;border-radius:var(--r-full);border:1px solid var(--border-l);background:var(--cream);user-select:none;transition:border-color 0.2s,background 0.2s; }
-.toggle-pill:has(input:checked) { border-color:var(--br);background:rgba(166,124,82,0.07);color:var(--br); }
-.toggle-pill input { display:none; }
+.toggle-pill input[type="checkbox"] { display:none; }
+.toggle-pill input[type="hidden"] { display:none; }
+.toggle-pill:has(input[type="checkbox"]:checked) { border-color:var(--br);background:rgba(166,124,82,0.07);color:var(--br); }
 .toggle-track { width:28px;height:16px;border-radius:8px;background:var(--border-l);position:relative;flex-shrink:0;transition:background 0.2s; }
 .toggle-track::after { content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2); }
-.toggle-pill:has(input:checked) .toggle-track { background:var(--br); }
-.toggle-pill:has(input:checked) .toggle-track::after { transform:translateX(12px); }
+.toggle-pill:has(input[type="checkbox"]:checked) .toggle-track { background:var(--br); }
+.toggle-pill:has(input[type="checkbox"]:checked) .toggle-track::after { transform:translateX(12px); }
 
 /* Gallery del btn */
 .gal-del-btn { width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.60);border:none;color:#fff;font-size:0.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background 0.2s;padding:0; }
@@ -858,7 +985,26 @@ function newScFmtBlock(tag) { if (newScEditorEl) { newScEditorEl.focus(); docume
 function toggleSchedEdit(cardId) {
   var form = document.getElementById('scard-edit-' + cardId);
   if (!form) return;
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  var isOpen = form.style.display !== 'none';
+  form.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    var existData = window['scExistData_' + cardId];
+    if (existData && existData.columns && existData.columns.length > 0) {
+      var textPanel  = document.getElementById('sc-panel-text-'  + cardId);
+      var tablePanel = document.getElementById('sc-panel-table-' + cardId);
+      var tabRow     = document.getElementById('sc-tabs-' + cardId);
+      var colCount = document.getElementById('sc-colcount-' + cardId);
+      if (colCount) colCount.value = existData.columns.length;
+      renderScTable(cardId, existData.columns, existData.rows);
+      if (tablePanel && tabRow) {
+        tablePanel.style.display = 'block';
+        if (textPanel) textPanel.style.display = 'none';
+        tabRow.querySelectorAll('.sc-tab').forEach(function(t){ t.classList.remove('active'); });
+        var tabs = tabRow.querySelectorAll('.sc-tab');
+        if (tabs[1]) tabs[1].classList.add('active');
+      }
+    }
+  }
 }
 
 /* ── Toggle inline edit field ── */
@@ -901,37 +1047,215 @@ document.querySelectorAll('[id^="editTypeSelect-"]').forEach(function(select) {
 /* ── Slide file names ── */
 function showSlideFiles(input) {
   var el = document.getElementById('slideFileNames');
-  if (el && input.files.length) el.textContent = '✓ ' + input.files.length + ' file(s): ' + Array.from(input.files).map(f=>f.name).join(', ');
+  if (el && input.files.length) el.textContent = '✓ ' + input.files.length + ' file(s): ' + Array.from(input.files).map(function(f){ return f.name; }).join(', ');
 }
 
-/* ── Scroll anchor ── */
-document.querySelectorAll('.add-field-box form, .inline-edit-form form').forEach(function(form) {
+/* ══════════════════════════════════
+   IMAGE SELECTION INDICATOR
+   Shows a hint message when admin picks a file,
+   so they know to click Save Settings to upload it.
+══════════════════════════════════ */
+function markImageSelected(subId, type, input) {
+  var hintId = type === 'qrImage' ? ('qr-selected-' + subId) : ('poster-selected-' + subId);
+  var hint = document.getElementById(hintId);
+  if (!hint) return;
+  if (input.files && input.files.length > 0) {
+    hint.style.display = 'block';
+    hint.textContent   = '📎 "' + input.files[0].name + '" selected — click Save Settings to upload';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+/* ══════════════════════════════════
+   SCROLL ANCHOR
+   Saves the subevent anchor before submit,
+   restores scroll position after page reloads.
+══════════════════════════════════ */
+document.querySelectorAll('form').forEach(function(form) {
   form.addEventListener('submit', function() {
     var anchor = form.querySelector('[name="_anchor"]');
-    if (anchor) sessionStorage.setItem('editScrollAnchor', anchor.value);
+    if (anchor && anchor.value) {
+      sessionStorage.setItem('editScrollAnchor', anchor.value);
+    }
   });
 });
+
 window.addEventListener('load', function() {
   var anchor = sessionStorage.getItem('editScrollAnchor');
   if (anchor) {
     sessionStorage.removeItem('editScrollAnchor');
     var el = document.getElementById(anchor);
-    if (el) setTimeout(function(){ el.scrollIntoView({behavior:'smooth',block:'start'}); }, 300);
-  }
-});
-</script>
-
-<%
-function generateTimeOptions(selected) {
-  var out = '';
-  for (var h = 0; h < 24; h++) {
-    for (var m = 0; m < 60; m += 30) {
-      var suffix = h < 12 ? 'AM' : 'PM';
-      var h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-      var label = (h12 < 10 ? '0' : '') + h12 + ':' + (m === 0 ? '00' : '30') + ' ' + suffix;
-      out += '<option value="' + label + '"' + (label === selected ? ' selected' : '') + '>' + label + '</option>';
+    if (el) {
+      setTimeout(function(){
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.style.transition = 'box-shadow 0.3s ease, border-color 0.3s ease';
+        el.style.boxShadow  = '0 0 0 3px rgba(39,174,96,0.50)';
+        el.style.borderColor = '#27ae60';
+        setTimeout(function(){
+          el.style.boxShadow   = '';
+          el.style.borderColor = '';
+        }, 1800);
+      }, 300);
     }
   }
-  return out;
+});
+
+/* ══════════════════════
+   TABLE BUILDER JS
+══════════════════════ */
+function switchScTab(id, tab, btn) {
+  var textPanel  = document.getElementById('sc-panel-text-'  + id);
+  var tablePanel = document.getElementById('sc-panel-table-' + id);
+  var tabRow     = document.getElementById('sc-tabs-' + id);
+  if (!textPanel || !tablePanel) return;
+  textPanel.style.display  = tab === 'text'  ? 'block' : 'none';
+  tablePanel.style.display = tab === 'table' ? 'block' : 'none';
+  if (tabRow) {
+    tabRow.querySelectorAll('.sc-tab').forEach(function(t){ t.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+  }
+  if (tab === 'table') {
+    var wrap = document.getElementById('sc-table-builder-' + id);
+    if (wrap && wrap.innerHTML.trim() === '') initScTable(id);
+  }
 }
-%>
+
+function initScTable(id) {
+  var existData = window['scExistData_' + id];
+  if (existData && existData.columns && existData.columns.length > 0) {
+    var colCount = document.getElementById('sc-colcount-' + id);
+    if (colCount) colCount.value = existData.columns.length;
+    renderScTable(id, existData.columns, existData.rows);
+  } else {
+    buildScTable(id);
+  }
+}
+
+function buildScTable(id) {
+  var colCountEl = document.getElementById('sc-colcount-' + id);
+  var n = colCountEl ? Math.max(1, Math.min(10, parseInt(colCountEl.value) || 3)) : 3;
+  var wrap = document.getElementById('sc-table-builder-' + id);
+  var existHeads = [];
+  if (wrap) wrap.querySelectorAll('thead input').forEach(function(inp){ existHeads.push(inp.value); });
+  var cols = [];
+  for (var i = 0; i < n; i++) cols.push(existHeads[i] || '');
+  renderScTable(id, cols, []);
+}
+
+function addScRow(id) {
+  var wrap = document.getElementById('sc-table-builder-' + id);
+  if (!wrap) return;
+  var table = wrap.querySelector('.sc-build-table');
+  if (!table) { buildScTable(id); return; }
+  var colCount = table.querySelectorAll('thead th:not(.sc-del-col)').length;
+  var tbody = table.querySelector('tbody');
+  if (!tbody) return;
+  var tr = document.createElement('tr');
+  for (var c = 0; c < colCount; c++) {
+    var td = document.createElement('td');
+    var inp = document.createElement('input');
+    inp.type = 'text'; inp.placeholder = 'Cell';
+    td.appendChild(inp); tr.appendChild(td);
+  }
+  var delTd = document.createElement('td');
+  var delBtn = document.createElement('button');
+  delBtn.type = 'button'; delBtn.className = 'sc-row-del'; delBtn.innerHTML = '✕';
+  delBtn.onclick = function(){ tr.parentNode.removeChild(tr); };
+  delTd.appendChild(delBtn); tr.appendChild(delTd);
+  tbody.appendChild(tr);
+}
+
+function renderScTable(id, cols, rows) {
+  var wrap = document.getElementById('sc-table-builder-' + id);
+  if (!wrap) return;
+  var html = '<table class="sc-build-table"><thead><tr>';
+  cols.forEach(function(col, ci) {
+    html += '<th><input type="text" value="' + escHtml(col) + '" placeholder="Column ' + (ci+1) + ' heading" style="font-weight:700;"></th>';
+  });
+  html += '<th class="sc-del-col" style="width:28px;"></th></tr></thead><tbody>';
+  (rows || []).forEach(function(row) {
+    html += '<tr>';
+    cols.forEach(function(col, ci) {
+      html += '<td><input type="text" value="' + escHtml((row && row[ci]) || '') + '" placeholder="Cell"></td>';
+    });
+    html += '<td><button type="button" class="sc-row-del" onclick="this.closest(\'tr\').remove()">✕</button></td></tr>';
+  });
+  if (!rows || rows.length === 0) {
+    html += '<tr>';
+    cols.forEach(function(){ html += '<td><input type="text" placeholder="Cell"></td>'; });
+    html += '<td><button type="button" class="sc-row-del" onclick="this.closest(\'tr\').remove()">✕</button></td></tr>';
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function syncScTableHidden(id) {
+  var hiddenWrap = document.getElementById('sc-table-hidden-' + id);
+  var tableWrap  = document.getElementById('sc-table-builder-' + id);
+  if (!hiddenWrap) return;
+  hiddenWrap.innerHTML = '';
+  var tablePanel = document.getElementById('sc-panel-table-' + id);
+  var clearBox   = document.getElementById('clearTable-' + id);
+  if (!tablePanel || tablePanel.style.display === 'none') return;
+  if (clearBox && clearBox.checked) return;
+  if (!tableWrap) return;
+  var table = tableWrap.querySelector('.sc-build-table');
+  if (!table) return;
+  var colInputs = table.querySelectorAll('thead input');
+  colInputs.forEach(function(inp, i) {
+    var hid = document.createElement('input');
+    hid.type = 'hidden'; hid.name = 'tableColumns';
+    hid.value = inp.value.trim() || ('Column ' + (i+1));
+    hiddenWrap.appendChild(hid);
+  });
+  var rows = table.querySelectorAll('tbody tr');
+  rows.forEach(function(tr, ri) {
+    var cells = tr.querySelectorAll('td input[type="text"]');
+    cells.forEach(function(cell, ci) {
+      var hid = document.createElement('input');
+      hid.type  = 'hidden';
+      hid.name  = 'tableRows[' + ri + '][' + ci + ']';
+      hid.value = cell.value.trim();
+      hiddenWrap.appendChild(hid);
+    });
+  });
+}
+
+function syncScCard(id) {
+  var editor = document.getElementById('sc-editor-' + id);
+  var hidden = document.getElementById('sc-hidden-' + id);
+  if (editor && hidden) hidden.value = editor.innerHTML;
+  syncScTableHidden(id);
+}
+
+function syncNewScCard() {
+  var editor = document.getElementById('newScEditor');
+  var hidden = document.getElementById('newScHidden');
+  if (editor && hidden) hidden.value = editor.innerHTML;
+  syncScTableHidden('new');
+}
+
+window['scExistData_new'] = null;
+
+/* ── submitDeleteForm: submits standalone hidden delete forms ──
+   QR/Poster delete buttons are type="button" (outside any form).
+   This avoids the nested-forms HTML bug that broke Save Settings. */
+function submitDeleteForm(formId) {
+  var label = formId.indexOf('Qr') !== -1 ? 'QR image' : 'poster image';
+  if (!confirm('Delete this ' + label + '? This cannot be undone.')) return;
+  var form = document.getElementById(formId);
+  if (form) {
+    var subId = formId.replace('deleteQrForm_', '').replace('deletePosterForm_', '');
+    sessionStorage.setItem('editScrollAnchor', 'subevent-' + subId);
+    form.submit();
+  } else {
+    alert('Delete form not found. Refresh and try again.');
+  }
+}
+
+</script>
