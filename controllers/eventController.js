@@ -798,7 +798,14 @@ exports.updateSubEvent = async (req, res) => {
 
     if (req.body.externalRegistrationLink !== undefined)
       updateData.externalRegistrationLink = req.body.externalRegistrationLink || "";
+    if (req.body.paymentAmount !== undefined)
+  updateData.paymentAmount = req.body.paymentAmount ? parseFloat(req.body.paymentAmount) : null;
 
+if (req.body.paymentUpiId !== undefined)
+  updateData.paymentUpiId = req.body.paymentUpiId || "";
+
+if (req.body.paymentInstructions !== undefined)
+  updateData.paymentInstructions = req.body.paymentInstructions || "";
     // Images — only update if a new file was uploaded
     if (files.qrImage     && files.qrImage[0])     updateData.qrImage     = files.qrImage[0].path;
     if (files.posterImage && files.posterImage[0]) updateData.posterImage = files.posterImage[0].path;

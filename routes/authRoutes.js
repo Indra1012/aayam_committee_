@@ -26,7 +26,11 @@ router.get(
 // Step 2 — Google callback
 router.get(
   "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/auth" }),
+  // ✅ Added failureMessage so stale/malformed OAuth codes don't crash the app
+  passport.authenticate("google", {
+    failureRedirect: "/auth?error=google_failed",
+    failureMessage: true,
+  }),
   (req, res) => {
     req.session.user = {
       id: req.user._id,

@@ -62,6 +62,11 @@ const subEventSchema = new mongoose.Schema(
     requirePaymentScreenshot: { type: Boolean, default: false },
     enableTeamMembers:        { type: Boolean, default: false },
 
+    // ── Payment details ──  ← ADD THESE 3
+    paymentAmount:       { type: Number, default: null },
+    paymentUpiId:        { type: String, default: "" },
+    paymentInstructions: { type: String, default: "" },
+
     // ── External registration link ──
     externalRegistrationLink: { type: String, default: "" },
   },

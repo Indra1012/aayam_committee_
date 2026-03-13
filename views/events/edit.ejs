@@ -528,186 +528,272 @@ function generateTimeOptions(selected) {
             <i class="bi bi-people"></i> Registrations
           </a>
         </div>
-
         <!-- ── Part A: Settings ── -->
-        <div class="subevent-part">
-          <div class="subevent-part-label"><i class="bi bi-gear"></i> Settings</div>
+<div class="subevent-part">
+  <div class="subevent-part-label"><i class="bi bi-gear"></i> Settings</div>
 
-          <%# FIX: Normal POST form — no fetch. Images require a real multipart submit. %>
-          <%# The _anchor input makes the page scroll back to this card after save. %>
-          <form action="/subevents/<%= sub._id %>/edit" method="POST" enctype="multipart/form-data" id="settingsForm_<%= sub._id %>">
-            <input type="hidden" name="_referer" value="edit">
-            <input type="hidden" name="_anchor" value="subevent-<%= sub._id %>">
+  <form action="/subevents/<%= sub._id %>/edit" method="POST" enctype="multipart/form-data" id="settingsForm_<%= sub._id %>">
+    <input type="hidden" name="_referer" value="edit">
+    <input type="hidden" name="_anchor" value="subevent-<%= sub._id %>">
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <!-- ── Basic Info ── -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
 
-              <div class="edit-field-group" style="grid-column:1/-1;">
-                <label class="form-label-custom">Title</label>
-                <input type="text" name="title" class="form-control-custom" value="<%= sub.title %>" required>
-              </div>
+      <div class="edit-field-group" style="grid-column:1/-1;">
+        <label class="form-label-custom">Title <span style="color:#c0392b;">*</span></label>
+        <input type="text" name="title" class="form-control-custom" value="<%= sub.title %>" required>
+      </div>
 
-              <div class="edit-field-group" style="grid-column:1/-1;">
-                <label class="form-label-custom">Description</label>
-                <textarea name="description" class="form-control-custom" rows="2"><%= sub.description || '' %></textarea>
-              </div>
+      <div class="edit-field-group" style="grid-column:1/-1;">
+        <label class="form-label-custom">Description</label>
+        <textarea name="description" class="form-control-custom" rows="2"><%= sub.description || '' %></textarea>
+      </div>
 
-              <div class="edit-field-group">
-                <label class="form-label-custom">Day Number</label>
-                <input type="number" name="dayNumber" class="form-control-custom" min="1" value="<%= sub.dayNumber || '' %>" placeholder="e.g. 1">
-              </div>
+      <div class="edit-field-group">
+        <label class="form-label-custom">Day Number</label>
+        <input type="number" name="dayNumber" class="form-control-custom" min="1"
+          value="<%= sub.dayNumber || '' %>" placeholder="e.g. 1">
+      </div>
 
-              <div class="edit-field-group">
-                <label class="form-label-custom">Event Date</label>
-                <input type="date" name="eventDate" class="form-control-custom"
-                  value="<%= sub.eventDate ? new Date(sub.eventDate).toISOString().split('T')[0] : '' %>">
-              </div>
+      <div class="edit-field-group">
+        <label class="form-label-custom">Event Date</label>
+        <input type="date" name="eventDate" class="form-control-custom"
+          value="<%= sub.eventDate ? new Date(sub.eventDate).toISOString().split('T')[0] : '' %>">
+      </div>
 
-              <div class="edit-field-group">
-                <label class="form-label-custom">Start Time</label>
-                <select name="startTime" class="form-control-custom">
-                  <option value="">— Select —</option>
-                  <%- generateTimeOptions(sub.startTime || '') %>
-                </select>
-              </div>
+      <div class="edit-field-group">
+        <label class="form-label-custom">Start Time</label>
+        <select name="startTime" class="form-control-custom">
+          <option value="">— Select —</option>
+          <%- generateTimeOptions(sub.startTime || '') %>
+        </select>
+      </div>
 
-              <div class="edit-field-group">
-                <label class="form-label-custom">End Time</label>
-                <select name="endTime" class="form-control-custom">
-                  <option value="">— Select —</option>
-                  <%- generateTimeOptions(sub.endTime || '') %>
-                </select>
-              </div>
+      <div class="edit-field-group">
+        <label class="form-label-custom">End Time</label>
+        <select name="endTime" class="form-control-custom">
+          <option value="">— Select —</option>
+          <%- generateTimeOptions(sub.endTime || '') %>
+        </select>
+      </div>
 
-              <div class="edit-field-group" style="grid-column:1/-1;">
-                <label class="form-label-custom">Registration Deadline
-                  <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(leave blank for no deadline)</span>
-                </label>
-                <input type="datetime-local" name="registrationDeadline" class="form-control-custom"
-                  value="<%= sub.registrationDeadline ? new Date(sub.registrationDeadline).toISOString().slice(0,16) : '' %>">
-                <% if (sub.registrationDeadline) { %>
-                  <%
-                    var dlPast = new Date(sub.registrationDeadline) < new Date();
-                  %>
-                  <div style="font-size:0.75rem;margin-top:4px;font-weight:600;color:<%= dlPast ? '#c0392b' : '#27ae60' %>;">
-                    <%= dlPast ? '🔒 Registration CLOSED' : '🟢 Registration open until ' + new Date(sub.registrationDeadline).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) %>
-                  </div>
-                <% } %>
-              </div>
+      <div class="edit-field-group" style="grid-column:1/-1;">
+        <label class="form-label-custom">
+          Registration Deadline
+          <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(leave blank for no deadline)</span>
+        </label>
+        <input type="datetime-local" name="registrationDeadline" class="form-control-custom"
+          value="<%= sub.registrationDeadline ? new Date(sub.registrationDeadline).toISOString().slice(0,16) : '' %>">
+        <% if (sub.registrationDeadline) { %>
+          <%
+            var dlPast = new Date(sub.registrationDeadline) < new Date();
+          %>
+          <div style="font-size:0.75rem;margin-top:4px;font-weight:600;color:<%= dlPast ? '#c0392b' : '#27ae60' %>;">
+            <%= dlPast
+              ? '🔒 Registration CLOSED (deadline passed)'
+              : '🟢 Open until ' + new Date(sub.registrationDeadline).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) %>
+          </div>
+        <% } %>
+      </div>
 
-              <div class="edit-field-group">
-                <label class="form-label-custom">Max Participants</label>
-                <input type="number" name="maxParticipants" class="form-control-custom"
-                  value="<%= sub.maxParticipants || '' %>" placeholder="Unlimited">
-              </div>
+      <div class="edit-field-group">
+        <label class="form-label-custom">Max Participants</label>
+        <input type="number" name="maxParticipants" class="form-control-custom"
+          value="<%= sub.maxParticipants || '' %>" placeholder="Unlimited">
+      </div>
 
-              <div class="edit-field-group">
-                <label class="form-label-custom">Event Type</label>
-                <select name="isGroupEvent" class="form-control-custom">
-                  <option value="false" <%= !sub.isGroupEvent ? 'selected' : '' %>>👤 Individual</option>
-                  <option value="true" <%= sub.isGroupEvent ? 'selected' : '' %>>👥 Team / Group</option>
-                </select>
-              </div>
+      <div class="edit-field-group">
+        <label class="form-label-custom">Event Type</label>
+        <select name="isGroupEvent" class="form-control-custom">
+          <option value="false" <%= !sub.isGroupEvent ? 'selected' : '' %>>👤 Individual</option>
+          <option value="true"  <%= sub.isGroupEvent  ? 'selected' : '' %>>👥 Team / Group</option>
+        </select>
+      </div>
 
-              <div class="edit-field-group">
-                <label class="form-label-custom">Min Team Size</label>
-                <input type="number" name="minTeamSize" class="form-control-custom" value="<%= sub.minTeamSize || 1 %>" min="1">
-              </div>
+      <div class="edit-field-group">
+        <label class="form-label-custom">Min Team Size</label>
+        <input type="number" name="minTeamSize" class="form-control-custom"
+          value="<%= sub.minTeamSize || 1 %>" min="1">
+      </div>
 
-              <div class="edit-field-group">
-                <label class="form-label-custom">Max Team Size</label>
-                <input type="number" name="maxTeamSize" class="form-control-custom" value="<%= sub.maxTeamSize || 1 %>" min="1">
-              </div>
-            </div>
+      <div class="edit-field-group">
+        <label class="form-label-custom">Max Team Size</label>
+        <input type="number" name="maxTeamSize" class="form-control-custom"
+          value="<%= sub.maxTeamSize || 1 %>" min="1">
+      </div>
 
-            <%# Hidden fallback inputs ensure unchecked = false is sent to controller %>
-            <div style="display:flex;flex-wrap:wrap;gap:12px;margin:14px 0;">
-              <label class="toggle-pill">
-                <input type="hidden" name="enableTeamMembers" value="">
-                <input type="checkbox" name="enableTeamMembers" value="on" <%= sub.enableTeamMembers ? 'checked' : '' %>>
-                <span class="toggle-track"></span>
-                Enable Team Member Input
-              </label>
-              <label class="toggle-pill">
-                <input type="hidden" name="requirePaymentScreenshot" value="">
-                <input type="checkbox" name="requirePaymentScreenshot" value="on" <%= sub.requirePaymentScreenshot ? 'checked' : '' %>>
-                <span class="toggle-track"></span>
-                Require Payment Screenshot
-              </label>
-            </div>
+    </div><!-- end grid -->
 
-            <!-- QR Image -->
-            <div class="edit-field-group">
-              <label class="form-label-custom">QR Code Image <span style="font-weight:400;color:var(--tx-muted);font-size:0.75rem;">(for payment)</span></label>
-              <% if (sub.qrImage) { %>
-                <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                  <img src="<%= sub.qrImage %>" style="width:56px;height:56px;object-fit:contain;border-radius:var(--r-sm);border:1px solid var(--border-l);">
-                  <span style="font-size:0.78rem;color:#27ae60;font-weight:600;">✓ QR uploaded</span>
-                  <button type="button" class="btn-admin-danger" style="font-size:0.72rem;padding:4px 10px;" onclick="submitDeleteForm('deleteQrForm_<%= sub._id %>')">🗑 Delete QR</button>
-                </div>
-              <% } %>
-              <input type="file" name="qrImage" class="form-control-custom" accept="image/*"
-                onchange="markImageSelected('<%= sub._id %>', 'qrImage', this)">
-              <div id="qr-selected-<%= sub._id %>" style="display:none;font-size:0.75rem;color:var(--br);margin-top:4px;font-weight:600;">
-                📎 New QR selected — click Save Settings to upload
-              </div>
-            </div>
 
-            <!-- Poster Image -->
-            <div class="edit-field-group">
-              <label class="form-label-custom">Sub-Event Poster</label>
-              <% if (sub.posterImage) { %>
-                <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                  <img src="<%= sub.posterImage %>" style="max-height:70px;border-radius:var(--r-sm);border:1px solid var(--border-l);" id="poster-preview-<%= sub._id %>">
-                  <span style="font-size:0.78rem;color:#27ae60;font-weight:600;">✓ Poster uploaded</span>
-                  <button type="button" class="btn-admin-danger" style="font-size:0.72rem;padding:4px 10px;" onclick="submitDeleteForm('deletePosterForm_<%= sub._id %>')">🗑 Delete Poster</button>
-                </div>
-              <% } %>
-              <input type="file" name="posterImage" class="form-control-custom" accept="image/*"
-                onchange="markImageSelected('<%= sub._id %>', 'posterImage', this)">
-              <div id="poster-selected-<%= sub._id %>" style="display:none;font-size:0.75rem;color:var(--br);margin-top:4px;font-weight:600;">
-                📎 New poster selected — click Save Settings to upload
-              </div>
-            </div>
+    <!-- ── Toggles ── -->
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin:16px 0 10px;">
 
-            <!-- External Registration Link -->
-            <div class="edit-field-group">
-              <label class="form-label-custom">Google Form / Registration Link
-                <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(optional)</span>
-              </label>
-              <input type="url" name="externalRegistrationLink" class="form-control-custom"
-                value="<%= sub.externalRegistrationLink || '' %>" placeholder="https://forms.google.com/...">
-              <% if (sub.externalRegistrationLink && sub.externalRegistrationLink.trim() !== '') { %>
-                <div style="margin-top:6px;font-size:0.75rem;color:#27ae60;font-weight:600;">
-                  ✓ <a href="<%= sub.externalRegistrationLink %>" target="_blank" style="color:var(--br);"><%= sub.externalRegistrationLink %></a>
-                </div>
-              <% } %>
-            </div>
+      <%# registrationOpen toggle — controls the CLOSED badge in show.ejs %>
+      <label class="toggle-pill">
+        <input type="hidden"   name="registrationOpen" value="">
+        <input type="checkbox" name="registrationOpen" value="on"
+          <%= sub.registrationOpen !== false ? 'checked' : '' %>>
+        <span class="toggle-track"></span>
+        Registration Open
+      </label>
 
-            <%# ── SAVE BUTTON — always does a normal POST submit ── %>
-            <%# This is required for file uploads (multipart/form-data) to work correctly. %>
-            <%# fetch() was removed because it caused images to silently fail or not update the preview. %>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-              <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.88rem;">
-                <i class="bi bi-floppy"></i> Save Settings
-              </button>
-              <span style="font-size:0.75rem;color:var(--tx-muted);">Page will reload and scroll back here</span>
-            </div>
-          </form>
+      <label class="toggle-pill">
+        <input type="hidden"   name="enableTeamMembers" value="">
+        <input type="checkbox" name="enableTeamMembers" value="on"
+          <%= sub.enableTeamMembers ? 'checked' : '' %>>
+        <span class="toggle-track"></span>
+        Enable Team Member Input
+      </label>
 
-          <%# FIX: Standalone delete forms outside the settings form. Submitted by submitDeleteForm() JS. %>
-          <% if (sub.qrImage) { %><form id="deleteQrForm_<%= sub._id %>" action="/subevents/<%= sub._id %>/qr/delete" method="POST" style="display:none;"></form><% } %>
-          <% if (sub.posterImage) { %><form id="deletePosterForm_<%= sub._id %>" action="/subevents/<%= sub._id %>/poster/delete" method="POST" style="display:none;"></form><% } %>
+      <label class="toggle-pill" id="payToggle_<%= sub._id %>">
+        <input type="hidden"   name="requirePaymentScreenshot" value="">
+        <input type="checkbox" name="requirePaymentScreenshot" value="on"
+          id="payCheck_<%= sub._id %>"
+          onchange="togglePaySection('<%= sub._id %>')"
+          <%= sub.requirePaymentScreenshot ? 'checked' : '' %>>
+        <span class="toggle-track"></span>
+        Require Payment Screenshot
+      </label>
 
-                    <!-- Delete sub-event -->
-          <form action="/subevents/<%= sub._id %>/delete" method="POST"
-            onsubmit="return confirm('Delete this sub-event and all its registrations?')"
-            style="margin-top:10px;">
-            <button type="submit" class="btn-admin-danger" style="font-size:0.85rem;">
-              <i class="bi bi-trash3"></i> Delete Sub-Event
-            </button>
-          </form>
+    </div>
+
+
+    <!-- ── Payment Details (shown/hidden by toggle above) ── -->
+    <div id="paySection_<%= sub._id %>"
+      style="display:<%= sub.requirePaymentScreenshot ? 'block' : 'none' %>;
+             background:rgba(39,174,96,0.06);
+             border:1.5px solid rgba(39,174,96,0.22);
+             border-radius:var(--r-md);
+             padding:16px 18px;
+             margin-bottom:16px;">
+
+      <div class="subevent-part-label" style="margin-bottom:12px;">
+        <i class="bi bi-credit-card"></i> Payment Details
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+        <div class="edit-field-group">
+          <label class="form-label-custom">Amount (₹)</label>
+          <input type="number" name="paymentAmount" class="form-control-custom"
+            value="<%= sub.paymentAmount || '' %>" placeholder="e.g. 100">
         </div>
 
+        <div class="edit-field-group">
+          <label class="form-label-custom">UPI ID</label>
+          <input type="text" name="paymentUpiId" class="form-control-custom"
+            value="<%= sub.paymentUpiId || '' %>" placeholder="e.g. name@upi">
+        </div>
+
+        <div class="edit-field-group" style="grid-column:1/-1;">
+          <label class="form-label-custom">Payment Instructions</label>
+          <textarea name="paymentInstructions" class="form-control-custom" rows="2"
+            placeholder="e.g. Pay via Google Pay / PhonePe and upload screenshot below"><%= sub.paymentInstructions || '' %></textarea>
+        </div>
+
+      </div>
+    </div><!-- end paySection -->
+
+
+    <!-- ── QR Code Image ── -->
+    <div class="edit-field-group">
+      <label class="form-label-custom">
+        QR Code Image
+        <span style="font-weight:400;color:var(--tx-muted);font-size:0.75rem;">(for payment)</span>
+      </label>
+      <% if (sub.qrImage) { %>
+        <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <img src="<%= sub.qrImage %>" style="width:56px;height:56px;object-fit:contain;border-radius:var(--r-sm);border:1px solid var(--border-l);">
+          <span style="font-size:0.78rem;color:#27ae60;font-weight:600;">✓ QR uploaded</span>
+          <button type="button" class="btn-admin-danger" style="font-size:0.72rem;padding:4px 10px;"
+            onclick="submitDeleteForm('deleteQrForm_<%= sub._id %>')">
+            🗑 Delete QR
+          </button>
+        </div>
+      <% } %>
+      <input type="file" name="qrImage" class="form-control-custom" accept="image/*"
+        onchange="markImageSelected('<%= sub._id %>', 'qrImage', this)">
+      <div id="qr-selected-<%= sub._id %>"
+        style="display:none;font-size:0.75rem;color:var(--br);margin-top:4px;font-weight:600;">
+        📎 New QR selected — click Save Settings to upload
+      </div>
+    </div>
+
+
+    <!-- ── Sub-Event Poster ── -->
+    <div class="edit-field-group">
+      <label class="form-label-custom">Sub-Event Poster</label>
+      <% if (sub.posterImage) { %>
+        <div style="margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <img src="<%= sub.posterImage %>"
+            style="max-height:70px;border-radius:var(--r-sm);border:1px solid var(--border-l);"
+            id="poster-preview-<%= sub._id %>">
+          <span style="font-size:0.78rem;color:#27ae60;font-weight:600;">✓ Poster uploaded</span>
+          <button type="button" class="btn-admin-danger" style="font-size:0.72rem;padding:4px 10px;"
+            onclick="submitDeleteForm('deletePosterForm_<%= sub._id %>')">
+            🗑 Delete Poster
+          </button>
+        </div>
+      <% } %>
+      <input type="file" name="posterImage" class="form-control-custom" accept="image/*"
+        onchange="markImageSelected('<%= sub._id %>', 'posterImage', this)">
+      <div id="poster-selected-<%= sub._id %>"
+        style="display:none;font-size:0.75rem;color:var(--br);margin-top:4px;font-weight:600;">
+        📎 New poster selected — click Save Settings to upload
+      </div>
+    </div>
+
+
+    <!-- ── External Registration Link ── -->
+    <div class="edit-field-group">
+      <label class="form-label-custom">
+        Google Form / Registration Link
+        <span style="font-weight:400;color:var(--tx-muted);text-transform:none;letter-spacing:0;font-size:0.75rem;">(optional — overrides built-in registration)</span>
+      </label>
+      <input type="url" name="externalRegistrationLink" class="form-control-custom"
+        value="<%= sub.externalRegistrationLink || '' %>" placeholder="https://forms.google.com/...">
+      <% if (sub.externalRegistrationLink && sub.externalRegistrationLink.trim() !== '') { %>
+        <div style="margin-top:6px;font-size:0.75rem;color:#27ae60;font-weight:600;">
+          ✓ <a href="<%= sub.externalRegistrationLink %>" target="_blank" style="color:var(--br);">
+            <%= sub.externalRegistrationLink %>
+          </a>
+        </div>
+      <% } %>
+    </div>
+
+
+    <!-- ── Save Button ── -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">
+      <button type="submit" class="btn-register" style="padding:9px 20px;font-size:0.88rem;">
+        <i class="bi bi-floppy"></i> Save Settings
+      </button>
+      <span style="font-size:0.75rem;color:var(--tx-muted);">Page will reload and scroll back here</span>
+    </div>
+
+  </form><!-- end settingsForm -->
+
+
+  <!-- Standalone delete forms (outside main form to avoid nested form bug) -->
+  <% if (sub.qrImage) { %>
+    <form id="deleteQrForm_<%= sub._id %>"
+      action="/subevents/<%= sub._id %>/qr/delete" method="POST" style="display:none;"></form>
+  <% } %>
+  <% if (sub.posterImage) { %>
+    <form id="deletePosterForm_<%= sub._id %>"
+      action="/subevents/<%= sub._id %>/poster/delete" method="POST" style="display:none;"></form>
+  <% } %>
+
+
+  <!-- Delete Sub-Event -->
+  <form action="/subevents/<%= sub._id %>/delete" method="POST"
+    onsubmit="return confirm('Delete this sub-event and ALL its registrations? This cannot be undone.')"
+    style="margin-top:14px;">
+    <button type="submit" class="btn-admin-danger" style="font-size:0.85rem;">
+      <i class="bi bi-trash3"></i> Delete Sub-Event
+    </button>
+  </form>
+
+</div>
 
         <!-- ── Part B: Form Builder ── -->
         <div class="subevent-part" style="border-top:1px dashed var(--border-l);">
@@ -1246,6 +1332,12 @@ window['scExistData_new'] = null;
 /* ── submitDeleteForm: submits standalone hidden delete forms ──
    QR/Poster delete buttons are type="button" (outside any form).
    This avoids the nested-forms HTML bug that broke Save Settings. */
+   function togglePaySection(subId) {
+  var checkbox = document.getElementById('payCheck_' + subId);
+  var section  = document.getElementById('paySection_' + subId);
+  if (!checkbox || !section) return;
+  section.style.display = checkbox.checked ? 'block' : 'none';
+}
 function submitDeleteForm(formId) {
   var label = formId.indexOf('Qr') !== -1 ? 'QR image' : 'poster image';
   if (!confirm('Delete this ' + label + '? This cannot be undone.')) return;
