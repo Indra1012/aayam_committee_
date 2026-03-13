@@ -573,6 +573,7 @@ function generateTimeOptions(selected) {
 body.dark-mode .slideshow-wrap { background: #1a1a1a; }
 .slideshow-track { position: relative; width: 100%; }
 .slide-item { width: 100%; position: relative; }
+.slideshow-track { will-change: contents; }
 .slide-img {
   width: 100%;
   height: auto;
@@ -782,7 +783,7 @@ function slideTo(n) {
   if (dots[slideIndex]) dots[slideIndex].classList.add('active');
 }
 function slideMove(dir) { slideTo(slideIndex + dir); resetAutoTimer(); }
-function startAutoTimer() { if (slides.length <= 1) return; slideTimer = setInterval(function(){ slideTo(slideIndex + 1); }, 3000); }
+function startAutoTimer() { if (slides.length <= 1) return; slideTimer = setInterval(function(){ slideTo(slideIndex + 1); }, 5000); }
 function resetAutoTimer() { clearInterval(slideTimer); startAutoTimer(); }
 function stopAutoTimer() { clearInterval(slideTimer); }
 
