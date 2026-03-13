@@ -1,3 +1,5 @@
+<!-- views/events/show.ejs -->
+
 <%
 function generateTimeOptions(selected) {
   var out = '';
@@ -12,7 +14,6 @@ function generateTimeOptions(selected) {
   return out;
 }
 %>
-<!-- views/events/show.ejs -->
 <div class="container my-5">
   <div class="event-detail-content">
 
@@ -101,84 +102,85 @@ function generateTimeOptions(selected) {
       <% } %>
     </div>
 
-
-    <!-- ══════════════════════════
-         SCHEDULE CARDS
-    ══════════════════════════ -->
-    <% if (event.scheduleCards && event.scheduleCards.length > 0) { %>
-      <div class="detail-section" data-aos="fade-up">
-        <h2 class="detail-section-title">📅 Event Schedule</h2>
-        <div class="sched-btn-row">
-          <% event.scheduleCards.forEach(function(card, ci) { %>
-            <button
-              type="button"
-              class="sched-pill-btn"
-              onclick="openSchedModal('<%= card._id %>')"
-              data-aos="fade-up"
-              data-aos-delay="<%= ci * 60 %>"
-            >
-              <i class="bi bi-calendar-week"></i>
-              <%= card.heading %>
-              <i class="bi bi-chevron-right" style="margin-left:4px;font-size:0.7rem;opacity:0.7;"></i>
-            </button>
-          <% }) %>
-        </div>
-      </div>
-    <% } %>
-
-    <!-- Schedule Card Modals -->
-    <% if (event.scheduleCards && event.scheduleCards.length > 0) { %>
-      <% event.scheduleCards.forEach(function(card) { %>
-        <div class="sched-modal-overlay" id="sched-modal-<%= card._id %>" onclick="closeSchedModal(event, '<%= card._id %>')">
-          <div class="sched-modal-card" role="dialog" aria-modal="true">
-            <button class="sched-modal-close" onclick="closeSchedModalById('<%= card._id %>')" aria-label="Close">
-              <i class="bi bi-x-lg"></i>
-            </button>
-            <div class="sched-modal-heading">
-              <i class="bi bi-calendar-week" style="color:var(--br);margin-right:8px;"></i><%= card.heading %>
-            </div>
-            <% if (card.body && card.body.trim() !== '') { %>
-              <div class="sched-modal-body event-description-body"><%- card.body %></div>
-            <% } %>
-            <% if (card.tableData && card.tableData.columns && card.tableData.columns.length > 0) { %>
-              <div class="sched-table-wrap">
-                <table class="sched-table">
-                  <thead>
-                    <tr>
-                      <% card.tableData.columns.forEach(function(col) { %>
-                        <th><%= col %></th>
-                      <% }) %>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% (card.tableData.rows || []).forEach(function(row) { %>
-                      <tr>
-                        <% card.tableData.columns.forEach(function(col, ci) { %>
-                          <td><%= row[ci] || '' %></td>
-                        <% }) %>
-                      </tr>
-                    <% }) %>
-                  </tbody>
-                </table>
-              </div>
-            <% } %>
-            <% if ((!card.body || card.body.trim() === '') && (!card.tableData || !card.tableData.columns || card.tableData.columns.length === 0)) { %>
-              <div class="sched-modal-body"><em style="opacity:0.5;">No details added yet.</em></div>
-            <% } %>
-          </div>
-        </div>
+<!-- ══════════════════════════
+     SCHEDULE CARDS
+══════════════════════════ -->
+<% if (event.scheduleCards && event.scheduleCards.length > 0) { %>
+  <% var sortedCards = event.scheduleCards.slice().sort(function(a, b) {
+       return a.heading.localeCompare(b.heading, undefined, { numeric: true });
+     }); %>
+  <div class="detail-section" data-aos="fade-up">
+    <h2 class="detail-section-title">
+      <i class="bi bi-calendar2-week" style="color:var(--br);margin-right:8px;"></i> Event Schedule
+    </h2>
+    <div class="sched-btn-row">
+      <% sortedCards.forEach(function(card, ci) { %>
+        <button
+          type="button"
+          class="sched-pill-btn"
+          onclick="openSchedModal('<%= card._id %>')"
+          data-aos="fade-up"
+          data-aos-delay="<%= ci * 60 %>"
+        >
+          <i class="bi bi-calendar-week"></i>
+          <%= card.heading %>
+          <i class="bi bi-chevron-right" style="margin-left:4px;font-size:0.7rem;opacity:0.7;"></i>
+        </button>
       <% }) %>
-    <% } %>
+    </div>
+  </div>
+<% } %>
 
+<!-- Schedule Card Modals -->
+<% if (event.scheduleCards && event.scheduleCards.length > 0) { %>
+  <% sortedCards.forEach(function(card) { %>
+    <div class="sched-modal-overlay" id="sched-modal-<%= card._id %>" onclick="closeSchedModal(event, '<%= card._id %>')">
+      <div class="sched-modal-card" role="dialog" aria-modal="true">
+        <button class="sched-modal-close" onclick="closeSchedModalById('<%= card._id %>')" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+        <div class="sched-modal-heading">
+          <i class="bi bi-calendar2-week" style="color:var(--br);margin-right:8px;"></i><%= card.heading %>
+        </div>
+        <% if (card.body && card.body.trim() !== '') { %>
+          <div class="sched-modal-body event-description-body"><%- card.body %></div>
+        <% } %>
+        <% if (card.tableData && card.tableData.columns && card.tableData.columns.length > 0) { %>
+          <div class="sched-table-wrap">
+            <table class="sched-table">
+              <thead>
+                <tr>
+                  <% card.tableData.columns.forEach(function(col) { %>
+                    <th><%= col %></th>
+                  <% }) %>
+                </tr>
+              </thead>
+              <tbody>
+                <% (card.tableData.rows || []).forEach(function(row) { %>
+                  <tr>
+                    <% card.tableData.columns.forEach(function(col, ci) { %>
+                      <td><%= row[ci] || '' %></td>
+                    <% }) %>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
+        <% if ((!card.body || card.body.trim() === '') && (!card.tableData || !card.tableData.columns || card.tableData.columns.length === 0)) { %>
+          <div class="sched-modal-body"><em style="opacity:0.5;">No details added yet.</em></div>
+        <% } %>
+      </div>
+    </div>
+  <% }) %>
+<% } %>
 
-    <%
-      var isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
-      var hasSubEvents = subEvents && subEvents.length > 0;
-      var hasExternalLink = event.registrationLink && event.registrationLink.trim() !== '';
-      var showRegSection = !isPast || isAdmin;
-    %>
-
-
+<%
+  var isAdmin = user && (user.role === 'admin' || user.role === 'superadmin');
+  var hasSubEvents = subEvents && subEvents.length > 0;
+  var hasExternalLink = event.registrationLink && event.registrationLink.trim() !== '';
+  var showRegSection = !isPast || isAdmin;
+%>
     <!-- ═══ REGISTRATION ═══ -->
     <% if (showRegSection) { %>
       <% if (hasExternalLink && !hasSubEvents) { %>
