@@ -250,16 +250,15 @@
   transform: translateY(-2px);
 }
 
-/* Image link wrapper — padding-bottom trick for reliable ratio */
 .ev-img-link {
   display: block;
   text-decoration: none;
   width: 100%;
-  position: relative;
-  padding-bottom: 43.75%; /* 16:7 ratio */
-  overflow: hidden;
-  background: rgba(166,124,82,0.06);
   flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 ratio */
+  background: #06080f;
 }
 
 .ev-img {
@@ -268,8 +267,22 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top;
   display: block;
   transition: transform 0.38s ease;
+}
+
+.ev-img-placeholder {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  color: rgba(166,124,82,0.3);
+  background: rgba(166,124,82,0.05);
 }
 .ev-img-past { filter: grayscale(18%); }
 .ev-card-uniform:hover .ev-img { transform: scale(1.04); }
@@ -278,8 +291,8 @@
 .ev-img-placeholder {
   position: absolute;
   top: 0; left: 0;
-  width: 100%;
-  height: 100%;
+  width: 70%;
+  height: 70%;
   display: flex;
   align-items: center;
   justify-content: center;
