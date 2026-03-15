@@ -1247,7 +1247,7 @@ exports.exportRegistrationsCSV = async (req, res) => {
     });
 
     const csv      = [headerCols.join(","), ...rows].join("\n");
-    const filename = `${subEvent.title.replace(/\s+/g, "_")}_registrations.csv`;
+const filename = `${subEvent.title.replace(/[^a-zA-Z0-9_\- ]/g, "_").replace(/\s+/g, "_")}_registrations.csv`;    
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send("\uFEFF" + csv);
