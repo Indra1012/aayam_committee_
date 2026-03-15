@@ -50,20 +50,21 @@
         <% if (!promoExpired) { %>
           <div class="hpb-wrapper" data-aos="fade-up" data-aos-delay="700" id="heroPromoBanner">
 
-            <!-- Top row: 🔥 REGISTER NOW 🔥 -->
-            <div class="hpb-top-row">
-              <span class="hpb-fire">🔥</span>
-              <span class="hpb-register-heading">REGISTER NOW</span>
-              <span class="hpb-fire">🔥</span>
-            </div>
+           <!-- Sub-heading -->
+         <!-- Sub-heading -->
+          <% if (promo.heading && promo.heading.trim() !== '') { %>
+            <div class="hpb-sub-heading"><%= promo.heading %></div>
+          <% } %>
 
-            <!-- Sub-heading -->
-            <% if (promo.heading && promo.heading.trim() !== '') { %>
-              <div class="hpb-sub-heading"><%= promo.heading %></div>
-            <% } %>
+          <!-- Event title with fire -->
+          <div class="hpb-top-row">
+            <span class="hpb-fire">🔥</span>
+            <span class="hpb-register-heading"><%= promo.title %></span>
+            <span class="hpb-fire">🔥</span>
+          </div>
 
-            <!-- Event title -->
-            <div class="hpb-event-title"><%= promo.title %></div>
+          <!-- Register Now -->
+          <div class="hpb-event-title">REGISTER NOW</div>
 
             <% if (promo.description) { %>
               <div class="hpb-event-desc"><%= promo.description %></div>
