@@ -73,6 +73,8 @@ router.post("/events/:eventId/speakers/:imageId/delete", isAdmin, eventControlle
 ================================ */
 router.post("/events/:id/conducted-by", isAdmin, eventController.addCoordinator);
 router.post("/events/:eventId/conducted-by/:index/delete", isAdmin, eventController.deleteCoordinator);
+router.post("/events/:id/student-coordinators", isAdmin, eventController.addStudentCoordinator);
+router.post("/events/:eventId/student-coordinators/:index/delete", isAdmin, eventController.deleteStudentCoordinator);
 router.post("/events/:id/documents", isAdmin, uploadDoc.single("document"), eventController.addDocument);
 router.post("/events/:eventId/documents/:index/delete", isAdmin, eventController.deleteDocument);
 

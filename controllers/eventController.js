@@ -1543,7 +1543,39 @@ exports.exportAllRegistrationsCSV = async (req, res) => {
     }
   }
 };
+/* ===============================
+   ADD STUDENT COORDINATOR
+================================ */
+exports.addStudentCoordinator = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    if (!name || !email) return res.redirect(`/events/${req.params.id}`);
+    await Event.findByIdAndUpdate(req.params.id, {
+      $push: { studentCoordinators: { name, email } }
+    });
+    res.redirect(`/events/${req.params.id}`);
+  } catch (error) {
+    console.error("Add Student Coordinator Error:", error.message);
+    res.redirect("/events");
+  }
+};
 
+/* ===============================
+   DELETE STUDENT COORDINATOR
+================================ */
+exports.deleteStudentCoordinator = async (req, res) => {
+  try {
+    const { eventId, index } = req.params;
+    const event = await Event.findById(eventId);
+    if (!event) return res.redirect("/events");
+    event.studentCoordinators.splice(index, 1);
+    await event.save();
+    res.redirect(`/events/${eventId}`);
+  } catch (error) {
+    console.error("Delete Student Coordinator Error:", error.message);
+    res.redirect("/events");
+  }
+};
 
 exports.getSubEventsByEvent = async (eventId) => {
   return await SubEvent.find({ eventId }).lean();

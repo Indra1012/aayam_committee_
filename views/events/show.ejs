@@ -525,35 +525,35 @@ function generateTimeOptions(selected) {
     </div>
 <% } %>
     
-    <!-- ═══ CONDUCTED BY students═══ -->
-      <% if ((event.conductedBy && event.conductedBy.length > 0) || isAdmin) { %>
-    <div class="detail-section" data-aos="fade-up">
-      <h2 class="detail-section-title">Conducted By Student Coordinator</h2>
-      <% if (event.conductedBy && event.conductedBy.length > 0) { %>
-        <% event.conductedBy.forEach(function(person, i) { %>
-          <div class="person-item">
-            <div><div class="person-name"><%= person.name %></div><div class="person-email"><%= person.email %></div></div>
-            <% if (isAdmin) { %>
-              <form action="/events/<%= event._id %>/conducted-by/<%= i %>/delete" method="POST" onsubmit="return confirm('Remove?')">
-                <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
-              </form>
-            <% } %>
-          </div>
-        <% }) %>
-      <% } else { %>
-        <p style="color:var(--tx-muted);font-size:0.92rem;">Coordinator details will be updated.</p>
-      <% } %>
-      <% if (isAdmin) { %>
-        <form action="/events/<%= event._id %>/conducted-by" method="POST" class="admin-add-form mt-3">
-          <div class="row g-2">
-            <div class="col-md-5"><input type="text" name="name" class="form-control" placeholder="Coordinator name" required></div>
-            <div class="col-md-5"><input type="email" name="email" class="form-control" placeholder="Email address" required></div>
-            <div class="col-md-2"><button type="submit" class="btn-register w-100">Add</button></div>
-          </div>
-        </form>
-      <% } %>
-    </div>
-    <% } %>
+  <!-- ═══ CONDUCTED BY students ═══ -->
+<% if ((event.studentCoordinators && event.studentCoordinators.length > 0) || isAdmin) { %>
+<div class="detail-section" data-aos="fade-up">
+  <h2 class="detail-section-title">Conducted By Student Coordinator</h2>
+  <% if (event.studentCoordinators && event.studentCoordinators.length > 0) { %>
+    <% event.studentCoordinators.forEach(function(person, i) { %>
+      <div class="person-item">
+        <div><div class="person-name"><%= person.name %></div><div class="person-email"><%= person.email %></div></div>
+        <% if (isAdmin) { %>
+          <form action="/events/<%= event._id %>/student-coordinators/<%= i %>/delete" method="POST" onsubmit="return confirm('Remove?')">
+            <button type="submit" class="btn-admin-danger" style="padding:5px 12px;font-size:0.8rem;">✕</button>
+          </form>
+        <% } %>
+      </div>
+    <% }) %>
+  <% } else { %>
+    <p style="color:var(--tx-muted);font-size:0.92rem;">Coordinator details will be updated.</p>
+  <% } %>
+  <% if (isAdmin) { %>
+    <form action="/events/<%= event._id %>/student-coordinators" method="POST" class="admin-add-form mt-3">
+      <div class="row g-2">
+        <div class="col-md-5"><input type="text" name="name" class="form-control" placeholder="Coordinator name" required></div>
+        <div class="col-md-5"><input type="email" name="email" class="form-control" placeholder="Email address" required></div>
+        <div class="col-md-2"><button type="submit" class="btn-register w-100">Add</button></div>
+      </div>
+    </form>
+  <% } %>
+</div>
+<% } %>
 
     <!-- ═══ DOCUMENTS ═══ -->
       <% if ((event.documents && event.documents.length > 0) || isAdmin) { %>

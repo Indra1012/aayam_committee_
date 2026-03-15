@@ -34,6 +34,7 @@ const eventSchema = new mongoose.Schema(
     galleryImages:    [galleryItemSchema],
     speakerImages:    [galleryItemSchema],
     conductedBy:      [{ name: String, email: String }],
+    studentCoordinators: [{ name: String, email: String }],
     contacts:         [String],
     prizes:           [String],
     documents: [{
