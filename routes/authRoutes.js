@@ -24,26 +24,24 @@ router.get(
 );
 
 // Step 2 — Google callback
-router.get(
-  "/auth/google/callback",
-  // ✅ Added failureMessage so stale/malformed OAuth codes don't crash the app
- passport.authenticate("google", {
-  failureRedirect: "/auth?error=google_failed",
-  failureMessage: false,
-  failureFlash: false,
-}),
-  (req, res) => {
+router.get("/auth/google/callback", (req, res, next) => {
+  passport.authenticate("google", (err, user) => {
+    if (err || !user) {
+      console.error("OAuth error:", err?.message || "No user returned");
+      return res.redirect("/auth?error=google_failed");
+    }
+
     req.session.user = {
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      isActive: req.user.isActive,
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
     };
 
     req.session.save(() => res.redirect("/"));
-  }
-);
+  })(req, res, next);
+});
 
 /* ===============================
    LOGOUT

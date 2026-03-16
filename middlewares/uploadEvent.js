@@ -2,6 +2,8 @@ const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
 
+const MAX_DOC_SIZE = 9 * 1024 * 1024; // 9MB — just under Cloudinary free plan's 10MB limit
+
 // ─── Images (banner, gallery, qr, poster) ────────────────────────────────────
 const imageStorage = new CloudinaryStorage({
   cloudinary,
@@ -40,6 +42,14 @@ const docFilter = (req, file, cb) => {
 // ─── Manual Cloudinary upload for documents ───────────────────────────────────
 const uploadDocToCloud = (buffer, originalname) => {
   return new Promise((resolve, reject) => {
+    if (buffer.length > MAX_DOC_SIZE) {
+      return reject(
+        new Error(
+          `File too large. Maximum allowed is 9MB. Got ${(buffer.length / 1024 / 1024).toFixed(1)}MB`
+        )
+      );
+    }
+
     const nameWithoutExt = originalname
       .replace(/\s+/g, "_")
       .replace(/\.[^/.]+$/, "");
@@ -62,12 +72,14 @@ const uploadDocToCloud = (buffer, originalname) => {
 // ─── Standard image uploader (banner, gallery, speakers, slides) ──────────────
 const uploadImage = multer({ storage: imageStorage, fileFilter: imageFilter });
 
-// ─── Document uploader ────────────────────────────────────────────────────────
-const uploadDoc = multer({ storage: docMemoryStorage, fileFilter: docFilter });
+// ─── Document uploader (9MB hard limit — Cloudinary free plan caps at 10MB) ───
+const uploadDoc = multer({
+  storage: docMemoryStorage,
+  fileFilter: docFilter,
+  limits: { fileSize: MAX_DOC_SIZE },
+});
 
 // ─── Sub-event image uploader (qrImage + posterImage) ────────────────────────
-// Wrapped in error-handling so if Cloudinary fails or no file is uploaded,
-// the request still continues and text fields + toggles are saved normally.
 const _subEventMulter = multer({ storage: imageStorage, fileFilter: imageFilter }).fields([
   { name: "qrImage",     maxCount: 1 },
   { name: "posterImage", maxCount: 1 },
