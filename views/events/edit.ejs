@@ -520,8 +520,7 @@ function generateTimeOptions(selected) {
                 <% if (sub.dayNumber) { %> · Day <%= sub.dayNumber %><% } %>
                 <% if (sub.startTime) { %> · <%= sub.startTime %><% if (sub.endTime) { %> – <%= sub.endTime %><% } %><% } %>
                 <% if (sub.maxParticipants) { %> · Max <%= sub.maxParticipants %><% } %>
-                <% if (sub.registrationDeadline) { %> · Deadline: <%= new Date(sub.registrationDeadline).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) %><% } %>
-              </div>
+                <% if (sub.registrationDeadline) { %> · Deadline: <%= new Date(sub.registrationDeadline).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) %><% } %>              </div>
             </div>
           </div>
           <a href="/admin/subevents/<%= sub._id %>/registrations" class="btn-details" style="font-size:0.78rem;padding:5px 12px;flex-shrink:0;">
@@ -589,9 +588,9 @@ function generateTimeOptions(selected) {
             var dlPast = new Date(sub.registrationDeadline) < new Date();
           %>
           <div style="font-size:0.75rem;margin-top:4px;font-weight:600;color:<%= dlPast ? '#c0392b' : '#27ae60' %>;">
-            <%= dlPast
-              ? '🔒 Registration CLOSED (deadline passed)'
-              : '🟢 Open until ' + new Date(sub.registrationDeadline).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) %>
+           <%= dlPast
+            ? '🔒 Registration CLOSED (deadline passed)'
+            : '🟢 Open until ' + new Date(sub.registrationDeadline).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) %>
           </div>
         <% } %>
       </div>

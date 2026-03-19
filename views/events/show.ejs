@@ -85,12 +85,11 @@ function generateTimeOptions(selected) {
         <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 16px;background:rgba(166,124,82,0.08);border:1px solid rgba(166,124,82,0.2);border-radius:var(--r-full);margin-bottom:20px;">
           <i class="bi bi-calendar3" style="color:var(--br);"></i>
           <span style="font-size:0.88rem;font-weight:600;color:var(--tx-mid);">
-            <% if (new Date(event.startDate).toDateString() === new Date(event.endDate).toDateString()) { %>
-              <%= new Date(event.startDate).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) %>
-            <% } else { %>
-              <%= new Date(event.startDate).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) %> →
-              <%= new Date(event.endDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) %>
-            <% } %>
+            <%
+            const _s = new Date(event.startDate).toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'long',year:'numeric'});
+            const _e = new Date(event.endDate).toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'long',year:'numeric'});
+          %>
+          <%= _s === _e ? _s : _s + ' → ' + _e %>
           </span>
         </div>
       <% } %>
@@ -274,7 +273,7 @@ function generateTimeOptions(selected) {
                   <div style="padding:4px 16px;background:linear-gradient(135deg,var(--br),var(--br-deep));color:#fff;border-radius:var(--r-full);font-size:0.78rem;font-weight:700;letter-spacing:1px;white-space:nowrap;">
                     DAY <%= group.day %>
                     <% var firstSub = group.subEvents[0]; %>
-                    <% if (firstSub && firstSub.eventDate) { %>&nbsp;·&nbsp;<%= new Date(firstSub.eventDate).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) %><% } %>
+                   <% if (firstSub && firstSub.eventDate) { %>&nbsp;·&nbsp;<%= new Date(firstSub.eventDate).toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'short',year:'numeric'}) %><% } %>
                   </div>
                   <div style="flex:1;height:1px;background:var(--border-l);"></div>
                 </div>
@@ -317,8 +316,7 @@ function generateTimeOptions(selected) {
                           <% if (sub.registrationDeadline && !isPast) { %>
                             <%
                               var dlDate = new Date(sub.registrationDeadline);
-                              var dlStr  = dlDate.toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-                            %>
+var dlStr  = dlDate.toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});                            %>
                             <span class="spill <%= isClosed ? 'spill-closed' : 'spill-deadline' %>">
                               <i class="bi bi-alarm"></i>
                               <%= isClosed ? 'Closed' : ('Closes ' + dlStr) %>

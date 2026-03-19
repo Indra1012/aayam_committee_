@@ -94,11 +94,11 @@
               <% if (event.startDate && event.endDate) { %>
                 <div class="ev-date">
                   <i class="bi bi-calendar3"></i>
-                  <% if (new Date(event.startDate).toDateString() === new Date(event.endDate).toDateString()) { %>
-                    <%= new Date(event.startDate).toDateString() %>
-                  <% } else { %>
-                    <%= new Date(event.startDate).toDateString() %> → <%= new Date(event.endDate).toDateString() %>
-                  <% } %>
+                 <% 
+                    const _s = new Date(event.startDate).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "long", year: "numeric" });
+                    const _e = new Date(event.endDate).toLocaleDateString("en-IN",   { timeZone: "Asia/Kolkata", day: "numeric", month: "long", year: "numeric" });
+                  %>
+                  <%= _s === _e ? _s : _s + " → " + _e %>
                 </div>
               <% } %>
 
@@ -203,10 +203,11 @@
               <% if (event.startDate && event.endDate) { %>
                 <div class="ev-date">
                   <i class="bi bi-calendar3"></i>
-                  <%= new Date(event.startDate).toDateString() %>
-                  <% if (new Date(event.startDate).toDateString() !== new Date(event.endDate).toDateString()) { %>
-                    → <%= new Date(event.endDate).toDateString() %>
-                  <% } %>
+                  <%
+                  const _s = new Date(event.startDate).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "long", year: "numeric" });
+                  const _e = new Date(event.endDate).toLocaleDateString("en-IN",   { timeZone: "Asia/Kolkata", day: "numeric", month: "long", year: "numeric" });
+                %>
+                <%= _s === _e ? _s : _s + " → " + _e %>
                 </div>
               <% } %>
 

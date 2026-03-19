@@ -1,3 +1,4 @@
+// controllers/eventController.js
 const Event = require("../models/Event");
 const mongoose = require("mongoose");
 const Review = require("../models/Review");
@@ -66,7 +67,9 @@ function parseCheckbox(val) {
   if (Array.isArray(val)) return val.includes("on");
   return val === "on";
 }
-
+function toISTEndOfDay(dateStr) {
+  return new Date(dateStr + "T23:59:59+05:30");
+}
 
 /* ===============================
    EVENTS LIST PAGE
@@ -74,7 +77,6 @@ function parseCheckbox(val) {
 exports.getEventsPage = async (req, res) => {
   try {
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
     await Event.updateMany(
       { type: "upcoming", endDate: { $lt: today } },
       { $set: { type: "past" } }
@@ -208,7 +210,7 @@ exports.addEvent = async (req, res) => {
     if (!title || !startDate || !endDate || !req.file) return res.redirect("/events");
 
     await Event.create({
-      type, title, shortDescription, description, about, startDate, endDate,
+      type, title, shortDescription, description, about, startDate, endDate:toISTEndOfDay(endDate),
       bannerImage: req.file.path,
       registrationLink: registrationLink ? registrationLink.trim() : "",
       isPublic: isPublic !== "false",
@@ -263,7 +265,7 @@ exports.updateEvent = async (req, res) => {
   try {
     const { title, shortDescription, description, about, startDate, endDate, registrationLink } = req.body;
     const updateData = {
-      title, shortDescription, description, about, startDate, endDate,
+      title, shortDescription, description, about, startDate, endDate:toISTEndOfDay(endDate),
       registrationLink: registrationLink ? registrationLink.trim() : "",
       isPublic: req.body.isPublic !== "false",
     };
