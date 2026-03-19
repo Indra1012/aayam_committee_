@@ -2,7 +2,7 @@ const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
 
-const MAX_DOC_SIZE = 9 * 1024 * 1024; // 9MB — just under Cloudinary free plan's 10MB limit
+const MAX_DOC_SIZE = 25 * 1024 * 1024; // 25MB — just under Cloudinary free plan's 10MB limit
 
 // ─── Images (banner, gallery, qr, poster) ────────────────────────────────────
 const imageStorage = new CloudinaryStorage({

@@ -20,12 +20,23 @@ router.post("/auth/email", auth.emailAuth);
 // Step 1 — Redirect to Google
 router.get(
   "/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account", // ✅ always issues a fresh auth code
+  })
 );
 
 // Step 2 — Google callback
 router.get("/auth/google/callback", (req, res, next) => {
+  // ✅ Prevent duplicate callback hits (double-fire on Render deploys)
+  if (req.session.oauthProcessing) {
+    return res.redirect("/");
+  }
+  req.session.oauthProcessing = true;
+
   passport.authenticate("google", (err, user) => {
+    req.session.oauthProcessing = false; // ✅ reset after done
+
     if (err || !user) {
       console.error("OAuth error:", err?.message || "No user returned");
       return res.redirect("/auth?error=google_failed");

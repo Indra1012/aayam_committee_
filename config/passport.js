@@ -16,7 +16,18 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        // ✅ Guard: profile must have emails
+        if (!profile.emails || profile.emails.length === 0) {
+          return done(null, false, { message: "No email from Google" });
+        }
+
         const email = profile.emails[0].value;
+
+        // ✅ Guard: email must exist
+        if (!email) {
+          return done(null, false, { message: "Empty email from Google" });
+        }
+
         let user = await User.findOne({ email });
         if (!user) {
           user = await User.create({
@@ -29,7 +40,8 @@ passport.use(
         }
         return done(null, user);
       } catch (err) {
-        done(err, null);
+        console.error("Google OAuth Strategy Error:", err.message);
+        return done(err, null);
       }
     }
   )

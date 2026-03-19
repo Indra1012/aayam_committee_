@@ -74,6 +74,7 @@ function parseCheckbox(val) {
 exports.getEventsPage = async (req, res) => {
   try {
     const today = new Date();
+    today.setHours(23, 59, 59, 999);
     await Event.updateMany(
       { type: "upcoming", endDate: { $lt: today } },
       { $set: { type: "past" } }
